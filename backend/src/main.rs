@@ -1,11 +1,18 @@
 use std::{borrow::BorrowMut, ops::Deref};
 
 use actix_cors::Cors;
-use actix_web::{get, web, App, HttpServer, Responder};
-use serde::Serialize;
-use sqlx::{types::chrono::{DateTime, Local}, Pool, Sqlite, SqlitePool};
+use actix_web::{
+    get, post,
+    web::{self, post, scope},
+    App, HttpResponse, HttpServer, Responder,
+};
+use serde::{Deserialize, Serialize};
+use sqlx::{
+    types::chrono::{DateTime, Local},
+    Pool, Sqlite, SqlitePool,
+};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug)]
 enum Location {
     Cleaning,
     ToiletCabinet,
@@ -26,7 +33,7 @@ impl From<String> for Location {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Item {
     name: Option<String>,
     location: Location,
@@ -48,22 +55,45 @@ struct ItemRef {
 }
 
 #[derive(Serialize)]
-struct Providor {
+struct Supplier {
     name: Option<String>,
     url: Option<String>,
     order_specification: Option<String>,
 }
 
-#[get("/items")]
-async fn items(pool: web::Data<Pool<Sqlite>>) -> impl Responder {
-    let items = sqlx::query_as!(Item, "SELECT name, location, min, max, current_amount FROM items").fetch_all(pool.get_ref()).await.unwrap();
+#[post("/{club}/item")]
+async fn add_item(
+    body: String,
+    club: web::Path<String>,
+    pool: web::Data<Pool<Sqlite>>,
+) -> HttpResponse {
+    let item: Item = serde_json::from_str(&body).unwrap();
+    println!("item: {:?}", item);
+    HttpResponse::Ok().body(format!("{:?}", item))
+}
+
+#[get("/{club}/items")]
+async fn items(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
+    let items = sqlx::query_as!(
+        Item,
+        "SELECT name, location, min, max, current_amount FROM items"
+    )
+    .fetch_all(pool.get_ref())
+    .await
+    .unwrap();
 
     web::Json(items)
 }
 
-#[get("/providors")]
-async fn providors(pool: web::Data<Pool<Sqlite>>) -> impl Responder {
-    let providors = sqlx::query_as!(Providor, "SELECT name, url, order_specification FROM providors").fetch_all(pool.get_ref()).await.unwrap();
+#[get("/{club}/supplier")]
+async fn supplier(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
+    let providors = sqlx::query_as!(
+        Supplier,
+        "SELECT name, url, order_specification FROM providors"
+    )
+    .fetch_all(pool.get_ref())
+    .await
+    .unwrap();
 
     web::Json(providors)
 }
@@ -73,7 +103,12 @@ async fn main() -> std::io::Result<()> {
     let pool = web::Data::new(SqlitePool::connect("db.sqlite").await.unwrap());
     HttpServer::new(move || {
         let cors = Cors::default().allow_any_origin();
-        App::new().wrap(cors).app_data(pool.clone()).service(providors).service(items)
+        App::new().wrap(cors).app_data(pool.clone()).service(
+            scope("/api")
+                .service(supplier)
+                .service(items)
+                .service(add_item),
+        )
     })
     .bind(("localhost", 8080))?
     .run()
