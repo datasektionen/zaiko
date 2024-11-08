@@ -3,6 +3,7 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
+  <div id="methone-buffer"></div>
   <header>
       <nav>
         <RouterLink to="/">Home</RouterLink>
@@ -14,4 +15,7 @@ import { RouterLink, RouterView } from 'vue-router'
 </template>
 
 <style scoped>
+#methone-buffer {
+  height: 50px;
+}
 </style>
