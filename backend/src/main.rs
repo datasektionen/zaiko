@@ -13,30 +13,9 @@ use sqlx::{
 };
 
 #[derive(Serialize, Deserialize, Debug)]
-enum Location {
-    Cleaning,
-    ToiletCabinet,
-    METAdorCabinet,
-    Kitchen,
-    Unknown,
-}
-
-impl From<String> for Location {
-    fn from(value: String) -> Self {
-        match value.as_str() {
-            "Cleaning" => Location::Cleaning,
-            "ToiletCabinet" => Location::ToiletCabinet,
-            "METAdorCabinet" => Location::METAdorCabinet,
-            "Kitchen" => Location::Kitchen,
-            _ => Location::Unknown,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 struct Item {
     name: Option<String>,
-    location: Location,
+    location: String,
     min: i64,
     max: i64,
     current_amount: i64,
@@ -69,7 +48,10 @@ async fn add_item(
 ) -> HttpResponse {
     let item: Item = serde_json::from_str(&body).unwrap();
     println!("item: {:?}", item);
-    HttpResponse::Ok().body(format!("{:?}", item))
+    match sqlx::query!("INSERT INTO items (name, location, min, max, current_amount) VALUES ($1, $2, $3, $4, $5)", item.name, item.location, item.min, item.max, item.current_amount).execute(pool.get_ref()).await {
+        Ok(_) => HttpResponse::Ok().body(format!("{:?}", item)),
+        Err(_) => HttpResponse::BadRequest().body(format!("{:?}", item)),
+    }
 }
 
 #[get("/{club}/items")]
