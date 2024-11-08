@@ -1,12 +1,12 @@
 <template>
   <div>
     <form v-on:submit.prevent="addItem">
-      <input v-model="club">
-      <input v-model="name">
-      <input v-model="location">
-      <input type="number" v-model="min">
-      <input type="number" v-model="max">
-      <input type="number" v-model="current">
+      <input v-model="club" placeholder="club">
+      <input v-model="name" placeholder="name">
+      <input v-model="location" placeholder="locatian">
+      <input type="number" v-model="min" placeholder="min">
+      <input type="number" v-model="max" placeholder="max">
+      <input type="number" v-model="current" placeholder="current">
       <input type="submit">
     </form>
   </div>
