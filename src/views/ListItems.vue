@@ -1,7 +1,7 @@
 <template>
   <div>
     <li v-for="item in data">
-      {{item.name}}: {{item.current_amount}}
+      {{item.name}}: {{item.current}}
     </li>
   </div>
 </template>

@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, ops::Deref};
+use std::{borrow::BorrowMut, ops::Deref, time::{SystemTime, UNIX_EPOCH}};
 
 use actix_cors::Cors;
 use actix_web::{
@@ -16,9 +16,23 @@ use sqlx::{
 struct Item {
     name: String,
     location: String,
-    min: f64,
-    max: f64,
-    current_amount: f64,
+    min: Option<f64>,
+    max: Option<f64>,
+    current: f64,
+    supplier: Option<i64>,
+    updated: i64,
+    link: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct AddItem {
+    name: String,
+    location: String,
+    min: Option<f64>,
+    max: Option<f64>,
+    current: f64,
+    supplier: Option<String>,
+    link: Option<String>,
 }
 
 struct Order {
@@ -55,17 +69,19 @@ async fn add_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
-    let item: Item = serde_json::from_str(&body).unwrap();
+    let item: AddItem = serde_json::from_str(&body).unwrap();
     let club = club.as_ref();
     println!("item: {:?}", item);
     match sqlx::query!(
-        "INSERT INTO items (name, location, min, max, current_amount, club) VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
         item.name,
         item.location,
         item.min,
         item.max,
-        item.current_amount,
-        club
+        item.current,
+        item.supplier,
+        item.link,
+        club,
     )
     .execute(pool.get_ref())
     .await
@@ -80,7 +96,7 @@ async fn get_items(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> im
     let club = club.as_ref();
     let items = sqlx::query_as!(
         Item,
-        "SELECT name, location, min, max, current_amount FROM items WHERE club = $1",
+        "SELECT name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
         club
     )
     .fetch_all(pool.get_ref())
@@ -95,7 +111,7 @@ async fn get_shortage(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) ->
     let club = club.as_ref();
     let items = sqlx::query_as!(
         Item,
-        "SELECT name, location, min, max, current_amount FROM items WHERE current_amount <= min AND club = $1",
+        "SELECT name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",
         club
     )
     .fetch_all(pool.get_ref())
@@ -107,9 +123,9 @@ async fn get_shortage(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) ->
         .map(|item| ShortageItem {
             name: item.name.clone(),
             location: item.location.clone(),
-            current_amount: item.current_amount,
-            order_amount: item.max - item.current_amount,
-            min: item.min,
+            current_amount: item.current,
+            order_amount: item.max.unwrap() - item.current,
+            min: item.min.unwrap(),
         })
         .collect();
 
