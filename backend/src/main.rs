@@ -6,7 +6,8 @@ use actix_web::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{
-    types::chrono::{DateTime, Local}, Pool, Sqlite, SqlitePool
+    types::chrono::{DateTime, Local},
+    Pool, Sqlite, SqlitePool,
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -66,9 +67,13 @@ async fn add_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
-    let item: AddItem = serde_json::from_str(&body).unwrap();
+    let item: AddItem = match serde_json::from_str(&body) {
+        Ok(item) => item,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+
     let club = club.as_ref();
-    println!("item: {:?}", item);
+
     match sqlx::query!(
         "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
         item.name,
@@ -88,77 +93,84 @@ async fn add_item(
     }
 }
 
+
 #[get("/{club}/items")]
 async fn get_items(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
     let club = club.as_ref();
-    let items = sqlx::query_as!(
+    match sqlx::query_as!(
         Item,
         "SELECT name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
         club
     )
     .fetch_all(pool.get_ref())
-    .await
-    .unwrap();
-
-    web::Json(items)
+    .await {
+        Ok(items) => HttpResponse::Ok().json(items),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
 }
 
 #[get("/{club}/shortage")]
 async fn get_shortage(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
     let club = club.as_ref();
-    let items = sqlx::query_as!(
-        Item,
-        "SELECT name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",
-        club
-    )
-    .fetch_all(pool.get_ref())
-    .await
-    .unwrap();
+    let items = match sqlx::query_as!(Item,"SELECT name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",club).fetch_all(pool.get_ref()).await {
+        Ok(items) => items,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
 
     let items: Vec<ShortageItem> = items
         .iter()
-        .map(|item| ShortageItem {
-            name: item.name.clone(),
-            location: item.location.clone(),
-            current_amount: item.current,
-            order_amount: item.max.unwrap() - item.current,
-            min: item.min.unwrap(),
+        .filter_map(|item| {
+            Some(ShortageItem {
+                name: item.name.clone(),
+                location: item.location.clone(),
+                current_amount: item.current,
+                order_amount: item.max? - item.current,
+                min: item.min?,
+            })
         })
         .collect();
 
-    web::Json(items)
+    HttpResponse::Ok().json(items)
 }
 
 #[post("/{club}/take_stock")]
-async fn take_stock(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>, body: String) -> impl Responder {
-    let items: Vec<(String, i64)> = serde_json::from_str(&body).unwrap();
+async fn take_stock(
+    club: web::Path<String>,
+    pool: web::Data<Pool<Sqlite>>,
+    body: String,
+) -> impl Responder {
+    let items: Vec<(String, i64)> = match serde_json::from_str(&body) {
+        Ok(items) => items,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+
     let club = club.as_ref();
 
     for item in items {
-        sqlx::query!(
-            "UPDATE items SET current = $1 WHERE name = $2 AND club = $3", item.1, item.0, club
-        ).execute(pool.as_ref()).await.unwrap();
+        if sqlx::query!(
+            "UPDATE items SET current = $1 WHERE name = $2 AND club = $3",
+            item.1,
+            item.0,
+            club
+        )
+        .execute(pool.as_ref())
+        .await
+        .is_err()
+        {
+            return HttpResponse::InternalServerError().finish();
+        }
     }
 
-    HttpResponse::Ok()
+    HttpResponse::Ok().finish()
 }
-
-// #[get("/{club}/supplier")]
-// async fn get_suppliers(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
-//     let providors = sqlx::query_as!(
-//         Supplier,
-//         "SELECT name, url, order_specification FROM providors"
-//     )
-//     .fetch_all(pool.get_ref())
-//     .await
-//     .unwrap();
-//
-//     web::Json(providors)
-// }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let pool = web::Data::new(SqlitePool::connect("db.sqlite").await.unwrap());
+    let pool = web::Data::new(
+        SqlitePool::connect("db.sqlite")
+            .await
+            .expect("Expected sqlite database with name db.sqlite"),
+    );
     HttpServer::new(move || {
         let cors = Cors::default().allow_any_origin();
         App::new().wrap(cors).app_data(pool.clone()).service(
