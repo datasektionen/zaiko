@@ -1,15 +1,12 @@
-use std::{borrow::BorrowMut, ops::Deref, time::{SystemTime, UNIX_EPOCH}};
-
 use actix_cors::Cors;
 use actix_web::{
     get, post,
-    web::{self, post, scope},
+    web::{self, scope},
     App, HttpResponse, HttpServer, Responder,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{
-    types::chrono::{DateTime, Local},
-    Pool, Sqlite, SqlitePool,
+    types::chrono::{DateTime, Local}, Pool, Sqlite, SqlitePool
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -132,6 +129,20 @@ async fn get_shortage(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) ->
     web::Json(items)
 }
 
+#[post("/{club}/take_stock")]
+async fn take_stock(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>, body: String) -> impl Responder {
+    let items: Vec<(String, i64)> = serde_json::from_str(&body).unwrap();
+    let club = club.as_ref();
+
+    for item in items {
+        sqlx::query!(
+            "UPDATE items SET current = $1 WHERE name = $2 AND club = $3", item.1, item.0, club
+        ).execute(pool.as_ref()).await.unwrap();
+    }
+
+    HttpResponse::Ok()
+}
+
 // #[get("/{club}/supplier")]
 // async fn get_suppliers(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
 //     let providors = sqlx::query_as!(
@@ -155,7 +166,8 @@ async fn main() -> std::io::Result<()> {
                 // .service(get_suppliers)
                 .service(get_items)
                 .service(get_shortage)
-                .service(add_item),
+                .service(add_item)
+                .service(take_stock),
         )
     })
     .bind(("localhost", 8080))?
