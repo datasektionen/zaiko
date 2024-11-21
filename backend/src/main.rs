@@ -93,6 +93,32 @@ async fn add_item(
     }
 }
 
+#[post("/{club}/update")]
+async fn update_item(club: web::Path<String>, body: String, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
+    let item: AddItem = match serde_json::from_str(&body) {
+        Ok(item) => item,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+    let club = club.as_ref();
+
+    match sqlx::query!(
+        "UPDATE items SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = strftime('%s', 'now'), link = $6  WHERE name = $7 AND club = $8",
+        item.location,
+        item.min,
+        item.max,
+        item.current,
+        item.supplier,
+        item.link,
+        item.name,
+        club,
+    )
+    .execute(pool.get_ref())
+    .await
+    {
+        Ok(_) => HttpResponse::Ok().body(format!("{:?}", item)),
+        Err(_) => HttpResponse::BadRequest().body(format!("{:?}", item)),
+    }
+}
 
 #[get("/{club}/items")]
 async fn get_items(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
@@ -179,7 +205,8 @@ async fn main() -> std::io::Result<()> {
                 .service(get_items)
                 .service(get_shortage)
                 .service(add_item)
-                .service(take_stock),
+                .service(take_stock)
+                .service(update_item),
         )
     })
     .bind(("localhost", 8080))?
