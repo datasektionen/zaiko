@@ -26,7 +26,6 @@ defineProps({
   },
 });
 
-
 </script>
 
 <style scoped>
@@ -35,13 +34,16 @@ defineProps({
   }
 
   div {
-    display: flex;
-    flex-direction: row;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
   }
 
-  p {
+  p,a {
     border-right: 1px solid lightgray;
-    padding: 5px;
+    padding: 1rem;
+  }
+
+  button {
+    padding: 1rem;
   }
 </style>

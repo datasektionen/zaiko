@@ -1,25 +1,41 @@
 <template>
   <div class="main">
     <div>
-      <h1>Items</h1>
-      <div class="header">
-        <p>Produkt</p>
-        <p>Plats</p>
-        <p>Nämnd</p>
-        <p>Min</p>
-        <p>Max</p>
-        <p>Nuvarande</p>
-        <p>Leverantör</p>
-        <p>Länk</p>
-      </div>
-      <div v-for="item in items" :key="item.name" class="list">
-        <FrontPageItem :item="item" />
+      <h1>Produkter</h1>
+      <div class="itemGrid">
+        <div class="header">
+          <p>Produkt</p>
+          <p>Plats</p>
+          <p>Nämnd</p>
+          <p>Min</p>
+          <p>Max</p>
+          <p>Nuvarande</p>
+          <p>Leverantör</p>
+          <p>Länk</p>
+          <p>Edit</p>
+        </div>
+        <div v-for="item in items" :key="item.name" class="Items">
+          <FrontPageItem :item="item" />
+        </div>
       </div>
     </div>
     <div>
-      <h1>Shortage</h1>
-      <div v-for="item in shortage" :key="item.name">
-        <FrontPageItem :item="item" />
+      <h1>Brist</h1>
+      <div class="itemGrid">
+        <div class="header">
+          <p>Produkt</p>
+          <p>Plats</p>
+          <p>Nämnd</p>
+          <p>Min</p>
+          <p>Max</p>
+          <p>Nuvarande</p>
+          <p>Leverantör</p>
+          <p>Länk</p>
+          <p>Edit</p>
+        </div>
+        <div v-for="item in shortage" :key="item.name">
+          <FrontPageItem :item="item" />
+        </div>
       </div>
     </div>
   </div>
@@ -45,7 +61,14 @@ fetch(HOST + "/api/metadorerna/shortage").then((res) => res.json()).then((json) 
 .main {
   display: grid;
   grid-template-columns: 50% 50%;
+  gap: 1rem;
   padding: 4rem;
+}
+
+.itemGrid {
+  display: grid;
+  grid-auto-flow: row;
+  overflow-x: scroll;
 }
 
 .list {
@@ -55,13 +78,12 @@ fetch(HOST + "/api/metadorerna/shortage").then((res) => res.json()).then((json) 
 }
 
 .header {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
 }
 
 .header p {
   border-right: 1px solid lightgray;
-  padding: 5px;
+  padding: 1rem;
 }
 </style>
