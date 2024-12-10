@@ -17,7 +17,7 @@ struct ShortageItem {
 #[get("/{club}/shortage")]
 pub(crate) async fn get_shortage(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
     let club = club.as_ref();
-    let items = match sqlx::query_as!(Item,"SELECT name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",club).fetch_all(pool.get_ref()).await {
+    let items = match sqlx::query_as!(Item,"SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",club).fetch_all(pool.get_ref()).await {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
@@ -44,7 +44,7 @@ pub(crate) async fn take_stock(
     pool: web::Data<Pool<Sqlite>>,
     body: String,
 ) -> impl Responder {
-    let items: Vec<(String, f64)> = match serde_json::from_str(&body) {
+    let items: Vec<(i64, f64)> = match serde_json::from_str(&body) {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
@@ -53,7 +53,7 @@ pub(crate) async fn take_stock(
 
     for item in items {
         if sqlx::query!(
-            "UPDATE items SET current = $1 WHERE name = $2 AND club = $3",
+            "UPDATE items SET current = $1 WHERE id = $2 AND club = $3",
             item.1,
             item.0,
             club
@@ -63,6 +63,19 @@ pub(crate) async fn take_stock(
         .is_err()
         {
             return HttpResponse::InternalServerError().finish();
+        }
+
+        match sqlx::query!(
+            "INSERT INTO log (item, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            item.0,
+            item.1,
+            club
+        )
+        .execute(pool.get_ref())
+        .await
+        {
+            Ok(_) => {}
+            Err(_) => return HttpResponse::BadRequest().finish(),
         }
     }
 

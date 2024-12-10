@@ -8,9 +8,11 @@ use sqlx::SqlitePool;
 mod items;
 mod supplier;
 mod shortage;
+mod log;
 
 use crate::items::{get_items, update_item, add_item};
 use crate::shortage::{get_shortage, take_stock};
+use crate::log::get_log;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -29,7 +31,8 @@ async fn main() -> std::io::Result<()> {
                 .service(get_shortage)
                 .service(add_item)
                 .service(take_stock)
-                .service(update_item),
+                .service(update_item)
+                .service(get_log)
         )
     })
     .bind(("localhost", 8080))?
