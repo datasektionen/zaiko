@@ -1,5 +1,5 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use sqlx::{Pool, Sqlite};
 
 #[derive(Serialize, Deserialize, Debug)]
