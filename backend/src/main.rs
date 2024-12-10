@@ -12,6 +12,7 @@ mod log;
 
 use crate::items::{get_items, update_item, add_item};
 use crate::shortage::{get_shortage, take_stock};
+use crate::supplier::{get_supplier, add_supplier, update_supplier};
 use crate::log::get_log;
 
 #[actix_web::main]
@@ -26,11 +27,14 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default().allow_any_origin();
         App::new().wrap(cors).app_data(pool.clone()).service(
             scope("/api")
-                // .service(get_suppliers)
                 .service(get_items)
-                .service(get_shortage)
                 .service(add_item)
+                .service(update_item)
+                .service(get_shortage)
                 .service(take_stock)
+                .service(get_supplier)
+                .service(add_supplier)
+                .service(update_supplier)
                 .service(update_item)
                 .service(get_log)
         )
