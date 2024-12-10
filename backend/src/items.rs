@@ -4,6 +4,7 @@ use sqlx::{Pool, Sqlite};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct Item {
+    pub(crate) id: i64,
     pub(crate) name: String,
     pub(crate) location: String,
     pub(crate) min: Option<f64>,
@@ -16,6 +17,18 @@ pub(crate) struct Item {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct AddItem {
+    pub(crate) name: String,
+    pub(crate) location: String,
+    pub(crate) min: Option<f64>,
+    pub(crate) max: Option<f64>,
+    pub(crate) current: f64,
+    pub(crate) supplier: Option<String>,
+    pub(crate) link: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct UpdateItem {
+    pub(crate) id: i64,
     pub(crate) name: String,
     pub(crate) location: String,
     pub(crate) min: Option<f64>,
@@ -38,7 +51,7 @@ pub(crate) async fn add_item(
 
     let club = club.as_ref();
 
-    match sqlx::query!(
+    let res = match sqlx::query!(
         "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
         item.name,
         item.location,
@@ -54,16 +67,73 @@ pub(crate) async fn add_item(
     {
         Ok(_) => HttpResponse::Ok().body(format!("{:?}", item)),
         Err(_) => HttpResponse::BadRequest().body(format!("{:?}", item)),
+    };
+
+    let id = match sqlx::query!(
+        "SELECT id FROM items WHERE name = $1 AND club = $2",
+        item.name,
+        club
+    )
+    .fetch_one(pool.get_ref())
+    .await {
+        Ok(id) => id.id,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+
+    match sqlx::query!(
+        "INSERT INTO log (item, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+        id,
+        item.current,
+        club
+    )
+    .execute(pool.get_ref())
+    .await
+    {
+        Ok(_) => {}
+        Err(_) => return HttpResponse::BadRequest().finish(),
     }
+
+    res
 }
 
 #[post("/{club}/update")]
-pub(crate) async fn update_item(club: web::Path<String>, body: String, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
-    let item: AddItem = match serde_json::from_str(&body) {
+pub(crate) async fn update_item(
+    club: web::Path<String>,
+    body: String,
+    pool: web::Data<Pool<Sqlite>>,
+) -> impl Responder {
+    let item: UpdateItem = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
     let club = club.as_ref();
+
+    let current = match sqlx::query!(
+        "SELECT current FROM items WHERE name = $1 AND club = $2",
+        item.name,
+        club
+    )
+    .fetch_one(pool.as_ref())
+    .await
+    {
+        Ok(current) => current.current,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+
+    if current != item.current {
+        match sqlx::query!(
+            "INSERT INTO log (item, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            item.id,
+            item.current,
+            club
+        )
+        .execute(pool.get_ref())
+        .await
+        {
+            Ok(_) => {}
+            Err(_) => return HttpResponse::BadRequest().finish(),
+        }
+    }
 
     match sqlx::query!(
         "UPDATE items SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = strftime('%s', 'now'), link = $6  WHERE name = $7 AND club = $8",
@@ -85,11 +155,14 @@ pub(crate) async fn update_item(club: web::Path<String>, body: String, pool: web
 }
 
 #[get("/{club}/items")]
-pub(crate) async fn get_items(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
+pub(crate) async fn get_items(
+    club: web::Path<String>,
+    pool: web::Data<Pool<Sqlite>>,
+) -> impl Responder {
     let club = club.as_ref();
     match sqlx::query_as!(
         Item,
-        "SELECT name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
+        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
         club
     )
     .fetch_all(pool.get_ref())
@@ -115,7 +188,9 @@ mod tests {
         );
 
         let app = test::init_service(App::new().app_data(pool).service(get_items)).await;
-        let req = test::TestRequest::get().uri("/metadorerna/items").to_request();
+        let req = test::TestRequest::get()
+            .uri("/metadorerna/items")
+            .to_request();
         let res = test::call_service(&app, req).await;
         assert!(res.status().is_success());
     }
@@ -139,7 +214,10 @@ mod tests {
         };
 
         let app = test::init_service(App::new().app_data(pool).service(add_item)).await;
-        let req = test::TestRequest::post().uri("/metadorerna/item").set_json(body).to_request();
+        let req = test::TestRequest::post()
+            .uri("/metadorerna/item")
+            .set_json(body)
+            .to_request();
         let res = test::call_service(&app, req).await;
         assert!(res.status().is_success());
     }
@@ -181,7 +259,10 @@ mod tests {
         body.location = String::from("Metador closet");
 
         let app = test::init_service(App::new().app_data(pool).service(update_item)).await;
-        let req = test::TestRequest::post().uri("/metadorerna/update").set_json(body).to_request();
+        let req = test::TestRequest::post()
+            .uri("/metadorerna/update")
+            .set_json(body)
+            .to_request();
         let res = test::call_service(&app, req).await;
         assert!(res.status().is_success());
     }
