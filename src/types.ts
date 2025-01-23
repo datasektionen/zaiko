@@ -1,4 +1,4 @@
-type Item {
+export interface Item {
   id: number,
   name: string,
   location: string,
@@ -10,7 +10,7 @@ type Item {
   link?: string,
 }
 
-type AddItem {
+export interface AddItem {
   name: string,
   location: string,
   min?: number,
@@ -20,7 +20,7 @@ type AddItem {
   link?: string,
 }
 
-type UpdateItem {
+export interface UpdateItem {
   id: number,
   name: string,
   location: string,
@@ -31,7 +31,7 @@ type UpdateItem {
   link?: string,
 }
 
-type Supplier {
+export interface Supplier {
   name: string,
   link?: string,
   notes?: string,
@@ -40,7 +40,7 @@ type Supplier {
   club: string,
 }
 
-type ShortageItem {
+export interface ShortageItem {
   name: string,
   location: string,
   min: number,
@@ -48,7 +48,8 @@ type ShortageItem {
   order_amount: number,
 }
 
-type Log {
+export interface Log {
   amount: number,
   time: number,
 }
+
