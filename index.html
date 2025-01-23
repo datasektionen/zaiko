@@ -15,17 +15,18 @@
 </html>
 
 <script>
+    const HOST = "%VITE_HOST_FRONTEND%"
     window.methone_conf = {
         system_name: "zaiko",
         color_scheme: "teal",
         links: [
             {
                 str: "Lägg till",
-                href: "http://localhost:5173/add"
+                href: HOST + "/add"
             },
             {
                 str: "Inventera",
-                href: "http://localhost:5173/stock"
+                href: HOST + "/stock"
             }
         ]
     }
