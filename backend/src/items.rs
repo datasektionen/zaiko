@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, patch, web, HttpResponse, Responder};
 use serde::{Serialize, Deserialize};
 use sqlx::{Pool, Sqlite};
 
@@ -36,6 +36,24 @@ pub(crate) struct UpdateItem {
     pub(crate) current: f64,
     pub(crate) supplier: Option<String>,
     pub(crate) link: Option<String>,
+}
+
+#[get("/{club}/item")]
+pub(crate) async fn get_item(
+    club: web::Path<String>,
+    pool: web::Data<Pool<Sqlite>>,
+) -> impl Responder {
+    let club = club.as_ref();
+    match sqlx::query_as!(
+        Item,
+        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
+        club
+    )
+    .fetch_all(pool.get_ref())
+    .await {
+        Ok(items) => HttpResponse::Ok().json(items),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
 }
 
 #[post("/{club}/item")]
@@ -96,7 +114,7 @@ pub(crate) async fn add_item(
     res
 }
 
-#[post("/{club}/update")]
+#[patch("/{club}/item")]
 pub(crate) async fn update_item(
     club: web::Path<String>,
     body: String,
@@ -154,30 +172,13 @@ pub(crate) async fn update_item(
     }
 }
 
-#[get("/{club}/items")]
-pub(crate) async fn get_items(
-    club: web::Path<String>,
-    pool: web::Data<Pool<Sqlite>>,
-) -> impl Responder {
-    let club = club.as_ref();
-    match sqlx::query_as!(
-        Item,
-        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
-        club
-    )
-    .fetch_all(pool.get_ref())
-    .await {
-        Ok(items) => HttpResponse::Ok().json(items),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use actix_web::{test, web, App};
     use sqlx::SqlitePool;
 
-    use super::{add_item, get_items, update_item, AddItem};
+    use super::{add_item, get_item, update_item, AddItem};
 
     #[actix_web::test]
     async fn test_get_all_items() {
@@ -187,7 +188,7 @@ mod tests {
                 .expect("Expected sqlite database with name db.sqlite"),
         );
 
-        let app = test::init_service(App::new().app_data(pool).service(get_items)).await;
+        let app = test::init_service(App::new().app_data(pool).service(get_item)).await;
         let req = test::TestRequest::get()
             .uri("/metadorerna/items")
             .to_request();

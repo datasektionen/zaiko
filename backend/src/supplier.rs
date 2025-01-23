@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, patch, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
@@ -29,7 +29,7 @@ pub(crate) async fn get_supplier(club: web::Path<String>, pool: web::Data<Pool<S
     }
 }
 
-#[post("/{club}/add_supplier")]
+#[post("/{club}/supplier")]
 pub(crate) async fn add_supplier(
     body: String,
     club: web::Path<String>,
@@ -59,7 +59,7 @@ pub(crate) async fn add_supplier(
     }
 }
 
-#[post("/{club}/update_supplier")]
+#[patch("/{club}/supplier")]
 pub(crate) async fn update_supplier(club: web::Path<String>, body: String, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
     let supplier: Supplier = match serde_json::from_str(&body) {
         Ok(item) => item,

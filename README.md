@@ -1,6 +1,39 @@
 # zaiko
 
-prototype of an inventory management system for the computer sciense chapter at KTH university
+prototype of an inventory management system for the computer science chapter at KTH university
+
+# API
+
+| Endpoint   | Description        |
+|------------|--------------------|
+| item       |                    |
+|------------|--------------------|
+|        get | get all items      |
+|------------|--------------------|
+|       post | add new item       |
+|------------|--------------------|
+|      patch | update item        |
+|------------|--------------------|
+| supplier   |                    |
+|------------|--------------------|
+|        get | get supplier by id |
+|------------|--------------------|
+|       post | add new supplier   |
+|------------|--------------------|
+|      patch | update supplier    |
+|------------|--------------------|
+| log        |                    |
+|------------|--------------------|
+|        get | get all logs       |
+|------------|--------------------|
+| shortage   |                    |
+|------------|--------------------|
+|        get | get shortage       |
+|------------|--------------------|
+| take_stock |                    |
+|------------|--------------------|
+|       post | take stock         |
+|------------|--------------------|
 
 ## Type Support for `.vue` Imports in TS
 

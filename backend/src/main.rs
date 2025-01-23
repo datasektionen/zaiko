@@ -10,7 +10,7 @@ mod supplier;
 mod shortage;
 mod log;
 
-use crate::items::{get_items, update_item, add_item};
+use crate::items::{get_item, update_item, add_item};
 use crate::shortage::{get_shortage, take_stock};
 use crate::supplier::{get_supplier, add_supplier, update_supplier};
 use crate::log::get_log;
@@ -27,7 +27,7 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default().allow_any_origin();
         App::new().wrap(cors).app_data(pool.clone()).service(
             scope("/api")
-                .service(get_items)
+                .service(get_item)
                 .service(add_item)
                 .service(update_item)
                 .service(get_shortage)
