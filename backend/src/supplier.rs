@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, patch, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
@@ -29,7 +29,7 @@ pub(crate) async fn get_supplier(club: web::Path<String>, pool: web::Data<Pool<S
     }
 }
 
-#[post("/{club}/add_supplier")]
+#[post("/{club}/supplier")]
 pub(crate) async fn add_supplier(
     body: String,
     club: web::Path<String>,
@@ -59,7 +59,7 @@ pub(crate) async fn add_supplier(
     }
 }
 
-#[post("/{club}/update_supplier")]
+#[patch("/{club}/supplier")]
 pub(crate) async fn update_supplier(club: web::Path<String>, body: String, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
     let supplier: Supplier = match serde_json::from_str(&body) {
         Ok(item) => item,
@@ -81,5 +81,22 @@ pub(crate) async fn update_supplier(club: web::Path<String>, body: String, pool:
     {
         Ok(_) => HttpResponse::Ok().body(format!("{:?}", supplier)),
         Err(_) => HttpResponse::BadRequest().body(format!("{:?}", supplier)),
+    }
+}
+
+
+#[get("/{club}/suppliers")]
+pub(crate) async fn get_suppliers(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
+    let club = club.as_ref();
+
+    match sqlx::query_as!(
+        Supplier,
+        "SELECT name, link, username, password, notes, club FROM suppliers WHERE club = $1",
+        club
+    )
+    .fetch_all(pool.get_ref())
+    .await {
+        Ok(items) => HttpResponse::Ok().json(items),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }

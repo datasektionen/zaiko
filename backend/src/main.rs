@@ -11,11 +11,11 @@ mod serve;
 mod shortage;
 mod supplier;
 
-use crate::items::{add_item, get_items, update_item};
+use crate::items::{add_item, get_item, update_item};
 use crate::log::get_log;
 use crate::serve::serve_frontend;
 use crate::shortage::{get_shortage, take_stock};
-use crate::supplier::{add_supplier, get_supplier, update_supplier};
+use crate::supplier::{add_supplier, get_supplier, update_supplier, get_suppliers};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(pool.clone())
             .service(
                 scope("/api")
-                    .service(get_items)
+                    .service(get_item)
                     .service(add_item)
                     .service(update_item)
                     .service(get_shortage)
@@ -40,6 +40,7 @@ async fn main() -> std::io::Result<()> {
                     .service(get_supplier)
                     .service(add_supplier)
                     .service(update_supplier)
+                    .service(get_suppliers)
                     .service(update_item)
                     .service(get_log),
             )

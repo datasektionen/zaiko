@@ -48,7 +48,7 @@ const items = ref([])
 const shortage = ref(null)
 const HOST = import.meta.env.VITE_HOST;
 
-fetch(HOST + "/api/metadorerna/items", {
+fetch(HOST + "/api/metadorerna/item", {
   method: "GET",
 })
   .then((res) => res.json())
