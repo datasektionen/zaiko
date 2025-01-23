@@ -22,7 +22,7 @@ pub(crate) struct AddItem {
     pub(crate) min: Option<f64>,
     pub(crate) max: Option<f64>,
     pub(crate) current: f64,
-    pub(crate) supplier: Option<String>,
+    pub(crate) supplier: Option<i64>,
     pub(crate) link: Option<String>,
 }
 
@@ -34,7 +34,7 @@ pub(crate) struct UpdateItem {
     pub(crate) min: Option<f64>,
     pub(crate) max: Option<f64>,
     pub(crate) current: f64,
-    pub(crate) supplier: Option<String>,
+    pub(crate) supplier: Option<i64>,
     pub(crate) link: Option<String>,
 }
 
