@@ -12,7 +12,7 @@ mod log;
 
 use crate::items::{get_item, update_item, add_item};
 use crate::shortage::{get_shortage, take_stock};
-use crate::supplier::{get_supplier, add_supplier, update_supplier};
+use crate::supplier::{get_supplier, add_supplier, update_supplier, get_suppliers};
 use crate::log::get_log;
 
 #[actix_web::main]
@@ -35,6 +35,7 @@ async fn main() -> std::io::Result<()> {
                 .service(get_supplier)
                 .service(add_supplier)
                 .service(update_supplier)
+                .service(get_suppliers)
                 .service(update_item)
                 .service(get_log)
         )

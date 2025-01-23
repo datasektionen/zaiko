@@ -83,3 +83,20 @@ pub(crate) async fn update_supplier(club: web::Path<String>, body: String, pool:
         Err(_) => HttpResponse::BadRequest().body(format!("{:?}", supplier)),
     }
 }
+
+
+#[get("/{club}/suppliers")]
+pub(crate) async fn get_suppliers(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
+    let club = club.as_ref();
+
+    match sqlx::query_as!(
+        Supplier,
+        "SELECT name, link, username, password, notes, club FROM suppliers WHERE club = $1",
+        club
+    )
+    .fetch_all(pool.get_ref())
+    .await {
+        Ok(items) => HttpResponse::Ok().json(items),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
