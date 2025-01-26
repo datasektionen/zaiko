@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
@@ -10,12 +9,18 @@ import { RouterLink, RouterView } from 'vue-router'
   <!--       <RouterLink to="/about">About</RouterLink> -->
   <!--     </nav> -->
   <!-- </header> -->
-
-  <RouterView />
+  <main>
+    <RouterView />
+  </main>
 </template>
 
 <style scoped>
 #methone-buffer {
   height: 50px;
+}
+
+main {
+  max-width: 1280px;
+  margin: auto;
 }
 </style>

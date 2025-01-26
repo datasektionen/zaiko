@@ -1,32 +1,23 @@
 <template>
   <div>
-    <a :href="item.link" v-if="item.link">{{ item.name }}</a>
-    <p v-else>{{ item.name }}</p>
+    <p>{{ item.name }}</p>
     <p>{{ item.location }}</p>
-    <p>{{ item.current }}</p>
-    <p>{{ status }}</p>
+    <p>{{ item.current_amount }}</p>
+    <p>{{ toOrder }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Item } from '@/types';
+import type { ShortageItem } from '@/types';
 import { computed } from 'vue';
 
 const props = defineProps<{
-  item: Item
+  item: ShortageItem
 }>()
 
-const status = computed<string>(() => {
-  const min = props.item.min ? props.item.min : 0
-  const diff = props.item.current - min
-
-  if (diff > 3) {
-    return '✅'
-  } if (diff > 0) {
-    return '⚠️'
-  } else {
-    return '🛑'
-  }
+const toOrder = computed<number>(() => {
+  const diff = props.item.min - props.item.current_amount;
+  return diff;
 });
 
 </script>
