@@ -1,7 +1,6 @@
 <template>
   <div class="main-content">
-    <h1>Lägg till</h1>
-    <form v-on:submit.prevent="addItem">
+    <form v-on:submit.prevent="updateItem">
       <div class="item">
         <p>Namn</p>
         <input v-model="name" placeholder="Namn">
@@ -26,27 +25,30 @@
       </div>
       <input v-model="club" placeholder="Nämnd">
       <div class="submit">
-        <input class="button" type="submit" value="Lägg till">
+        <input class="button" type="submit" value="Spara">
       </div>
     </form>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { Supplier } from '@/types';
 import { ref } from 'vue';
 const HOST = import.meta.env.VITE_HOST;
 
-const emit = defineEmits([ "done" ]);
+const props = defineProps<{
+  item: Supplier
+}>()
 
-const name = ref("")
-const username = ref("")
-const password = ref("")
-const link = ref("")
-const note = ref("")
+const name = ref(props.item.name)
+const username = ref(props.item.username)
+const password = ref(props.item.password)
+const link = ref(props.item.link)
+const note = ref(props.item.notes)
 const club = ref("metadorerna")
 
-const addItem = async () => {
-  const res = {
+const updateItem = async () => {
+  const res: Supplier = {
     name: name.value,
     username: username.value,
     password: password.value,
@@ -58,7 +60,6 @@ const addItem = async () => {
     method: "POST",
     body: JSON.stringify(res),
   })
-  emit('done')
 }
 </script>
 
@@ -69,7 +70,7 @@ const addItem = async () => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 2rem;
-  max-width: 700px;
+  max-width: 1024px;
   margin: 2rem auto;
 }
 
@@ -111,7 +112,6 @@ p {
   border: none;
   background-color: inherit;
   text-align: right;
-  width: 100%;
 }
 
 .area {

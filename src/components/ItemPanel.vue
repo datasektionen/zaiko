@@ -1,7 +1,6 @@
 <template>
   <div class="main-content">
-    <h1>Lägg till</h1>
-    <form v-on:submit.prevent="addItem">
+    <form v-on:submit.prevent="updateItem">
       <div class="item">
         <p>Produkt</p>
         <input v-model="name" placeholder="Produkt">
@@ -34,43 +33,45 @@
       </div>
       <input v-model="club" placeholder="Nämnd">
       <div class="submit">
-        <input class="button" type="submit" value="Lägg till">
+        <input class="button" type="submit" value="Spara">
       </div>
     </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { AddItem } from '@/types';
+import type { AddItem, Item } from '@/types';
 import { ref } from 'vue'
 const HOST = import.meta.env.VITE_HOST;
 
+const props = defineProps<{
+  item: Item
+}>()
+
 const club = ref("metadorerna")
-const name = ref("")
-const location = ref("")
-const min = ref(0)
-const max = ref(0)
-const current = ref(0)
-const supplier = ref("")
-const link = ref("")
+const name = ref(props.item.name)
+const location = ref(props.item.location)
+const min = ref(props.item.min)
+const max = ref(props.item.max)
+const current = ref(props.item.current)
+const supplier = ref(props.item.supplier)
+const link = ref(props.item.link)
 
-const emit = defineEmits([ "done" ]);
 
-const addItem = async () => {
+const updateItem = async () => {
   const res: AddItem = {
     name: name.value,
     location: location.value,
     min: min.value,
     max: max.value,
     current: current.value,
-    supplier: Number.parseInt(supplier.value),
+    supplier: supplier.value,
     link: link.value,
   }
   await fetch(HOST + "/api/" + club.value + "/item", {
-    method: "POST",
+    method: "PATCH",
     body: JSON.stringify(res),
   })
-  emit('done')
 }
 
 </script>

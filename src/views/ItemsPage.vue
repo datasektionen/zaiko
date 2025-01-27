@@ -15,26 +15,13 @@
         <p>Status</p>
       </div>
       <div class="items">
-        <FrontPageItem :item="item" v-for="item in items" :key="item.id" />
-      </div>
-    </div>
-    <div class="left-panel">
-      <div class="top-bar">
-        <h2 class="brist">Brist</h2>
-        <div class="top-bar filter-bar">
-          <p>Filter</p>
-          <input type="text">
+        <div :class="itemSelected(idx)" v-for="(item, idx) in items" :key="item.id" @click="selected = idx">
+          <FrontPageItem :item="item" />
         </div>
       </div>
-      <div class="header">
-        <p>Produkt</p>
-        <p>Leverantör</p>
-        <p>Mängd</p>
-        <p>Att köpa</p>
-      </div>
-      <div class="items">
-        <FrontPageShortageItem :item="item" v-for="item in shortage" :key="item.name" />
-      </div>
+    </div>
+    <div class="left-panel" v-if="items.length > 0 && selectedIndex">
+      <ItemPanel :item="selectedIndex" :key="selectedIndex.id" />
     </div>
     <PopupModal :modal="openModal" @exit="openModal = false">
       <AddForm @done="DoneModal()" />
@@ -43,37 +30,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import FrontPageItem from '@/components/FrontPageItem.vue'
-import PopupModal from '@/components/PopupModal.vue'
-import AddForm from '@/components/AddForm.vue'
-import FrontPageShortageItem from '@/components/FrontPageShortageItem.vue';
-import type { Item, ShortageItem } from '@/types';
-
+import { computed, ref } from 'vue';
+import FrontPageItem from '@/components/FrontPageItem.vue';
+import PopupModal from '@/components/PopupModal.vue';
+import AddForm from '@/components/AddForm.vue';
+import ItemPanel from '@/components/ItemPanel.vue';
+import type { Item } from '@/types';
 const HOST = import.meta.env.VITE_HOST;
-const items = ref<Array<Item>>();
-const shortage = ref<Array<ShortageItem>>()
 
-const openModal = ref<boolean>(false)
-
-const DoneModal = () => {
-  openModal.value = false;
-  GetData();
-}
+const items = ref<Array<Item>>([]);
 
 const GetData = () => {
   fetch(HOST + "/api/metadorerna/item", {
     method: "GET",
-  })
-    .then((res) => res.json())
-    .then((json) => items.value = json)
-
-  fetch(HOST + "/api/metadorerna/shortage")
-    .then((res) => res.json())
-    .then((json) => shortage.value = json)
+  }).then((r) => r.json()).then((r) => items.value = r);
 
 }
-GetData();
+GetData()
+
+const DoneModal = () => {
+  openModal.value = false;
+  GetData()
+}
+
+const openModal = ref<boolean>(false)
+const selected = ref<number>(-1);
+
+const itemSelected = (id: number) => {
+  if (id == selected.value) {
+    return "item-selected"
+  } else {
+    return "item"
+  }
+}
+
+const selectedIndex = computed<Item>(() => {
+  return items.value[selected.value];
+})
+
+
 </script>
 
 <style scoped>
@@ -94,6 +89,15 @@ div {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.item {
+  border-radius: 2px;
+}
+
+.item-selected {
+  border-radius: 2px;
+  background-color: rgba(0, 105, 92, 0.25);
 }
 
 .header {
@@ -130,12 +134,5 @@ div {
 .filter-bar p {
   margin: 0;
   text-align: center;
-}
-
-.brist {
-  padding-bottom: 1rem;
-  margin: 0;
-  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
-
 }
 </style>
