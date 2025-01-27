@@ -22,5 +22,6 @@
 main {
   max-width: 1280px;
   margin: auto;
+  position: relative;
 }
 </style>
