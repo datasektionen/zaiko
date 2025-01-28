@@ -13,7 +13,7 @@
         <p>Leverantör</p>
         <p>Gammla</p>
         <p>Nya</p>
-        <p>Diffrens</p>
+        <p>Differens</p>
       </div>
       <form v-on:submit.prevent="updateItems" class="items">
         <StockItem v-for="item in items" :key="item.id" :item="item" />

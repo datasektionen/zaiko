@@ -1,7 +1,7 @@
 <template>
   <div>
     <p>{{ item.name }}</p>
-    <p>{{ item.location }}</p>
+    <p>{{ item.supplier }}</p>
     <p>{{ item.current }}</p>
     <input type="number" v-model.number="input" />
     <p :class="diffClass">{{ input - item.current }}</p>
