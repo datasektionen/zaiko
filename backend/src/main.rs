@@ -20,7 +20,7 @@ use crate::supplier::{add_supplier, get_supplier, update_supplier};
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let pool = web::Data::new(
-        SqlitePool::connect("db.sqlite")
+        SqlitePool::connect("/bin/db.sqlite")
             .await
             .expect("Expected sqlite database with name db.sqlite"),
     );
@@ -46,7 +46,7 @@ async fn main() -> std::io::Result<()> {
             .service(serve_frontend)
             .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
     })
-    .bind(("localhost", 8080))?
+    .bind(("0.0.0.0", 8080))?
     .run()
     .await
 }
