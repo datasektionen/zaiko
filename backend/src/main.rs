@@ -5,17 +5,17 @@ use actix_web::{
 };
 use sqlx::SqlitePool;
 
-mod items;
+mod item;
 mod log;
 mod serve;
 mod shortage;
 mod supplier;
 
-use crate::items::{add_item, get_item, update_item};
+use crate::item::{add_item, delete_item, get_item, update_item};
 use crate::log::get_log;
 use crate::serve::serve_frontend;
 use crate::shortage::{get_shortage, take_stock};
-use crate::supplier::{add_supplier, get_supplier, update_supplier, get_suppliers};
+use crate::supplier::{add_supplier, delete_supplier, get_supplier, update_supplier};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -35,13 +35,13 @@ async fn main() -> std::io::Result<()> {
                     .service(get_item)
                     .service(add_item)
                     .service(update_item)
-                    .service(get_shortage)
-                    .service(take_stock)
+                    .service(delete_item)
                     .service(get_supplier)
                     .service(add_supplier)
                     .service(update_supplier)
-                    .service(get_suppliers)
-                    .service(update_item)
+                    .service(delete_supplier)
+                    .service(get_shortage)
+                    .service(take_stock)
                     .service(get_log),
             )
             .service(serve_frontend)
