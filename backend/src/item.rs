@@ -1,5 +1,5 @@
-use actix_web::{get, post, patch, web, HttpResponse, Responder};
-use serde::{Serialize, Deserialize};
+use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -16,7 +16,7 @@ pub(crate) struct Item {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct AddItem {
+pub(crate) struct ItemAddRequest {
     pub(crate) name: String,
     pub(crate) location: String,
     pub(crate) min: Option<f64>,
@@ -27,7 +27,7 @@ pub(crate) struct AddItem {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct UpdateItem {
+pub(crate) struct ItemUpdateRequest {
     pub(crate) id: i64,
     pub(crate) name: String,
     pub(crate) location: String,
@@ -62,7 +62,7 @@ pub(crate) async fn add_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
-    let item: AddItem = match serde_json::from_str(&body) {
+    let item: ItemAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
@@ -83,8 +83,8 @@ pub(crate) async fn add_item(
     .execute(pool.get_ref())
     .await
     {
-        Ok(_) => HttpResponse::Ok().body(format!("{:?}", item)),
-        Err(_) => HttpResponse::BadRequest().body(format!("{:?}", item)),
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
     };
 
     let id = match sqlx::query!(
@@ -93,13 +93,14 @@ pub(crate) async fn add_item(
         club
     )
     .fetch_one(pool.get_ref())
-    .await {
+    .await
+    {
         Ok(id) => id.id,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
 
     match sqlx::query!(
-        "INSERT INTO log (item, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+        "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
         id,
         item.current,
         club
@@ -120,7 +121,7 @@ pub(crate) async fn update_item(
     body: String,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
-    let item: UpdateItem = match serde_json::from_str(&body) {
+    let item: ItemUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
@@ -140,7 +141,7 @@ pub(crate) async fn update_item(
 
     if current != item.current {
         match sqlx::query!(
-            "INSERT INTO log (item, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
             item.id,
             item.current,
             club
@@ -167,18 +168,41 @@ pub(crate) async fn update_item(
     .execute(pool.get_ref())
     .await
     {
-        Ok(_) => HttpResponse::Ok().body(format!("{:?}", item)),
-        Err(_) => HttpResponse::BadRequest().body(format!("{:?}", item)),
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
     }
 }
 
+#[delete("/{club}/item")]
+pub(crate) async fn delete_item(
+    club: web::Path<String>,
+    id: web::Query<i64>,
+    pool: web::Data<Pool<Sqlite>>,
+) -> impl Responder {
+    let club = club.as_ref();
+    match sqlx::query!("DELETE FROM items WHERE id = $1 AND club = $2", id.0, club)
+        .execute(pool.get_ref())
+        .await
+    {
+        Ok(_) => {}
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    }
+
+    match sqlx::query!("DELETE FROM log WHERE id = $1 AND club = $2", id.0, club)
+        .execute(pool.get_ref())
+        .await
+    {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use actix_web::{test, web, App};
     use sqlx::SqlitePool;
 
-    use super::{add_item, get_item, update_item, AddItem};
+    use super::{add_item, get_item, update_item, ItemAddRequest};
 
     #[actix_web::test]
     async fn test_get_all_items() {
@@ -204,7 +228,7 @@ mod tests {
                 .expect("Expected sqlite database with name db.sqlite"),
         );
 
-        let body = AddItem {
+        let body = ItemAddRequest {
             name: String::from("tejp"),
             min: Some(10.0),
             max: Some(20.0),
@@ -231,7 +255,7 @@ mod tests {
                 .expect("Expected sqlite database with name db.sqlite"),
         );
 
-        let mut body = AddItem {
+        let mut body = ItemAddRequest {
             name: String::from("tejp"),
             min: Some(10.0),
             max: Some(20.0),

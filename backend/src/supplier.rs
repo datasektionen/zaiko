@@ -1,31 +1,64 @@
-use actix_web::{get, patch, post, web, HttpResponse, Responder};
+use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Supplier {
+    id: i64,
     name: String,
     link: Option<String>,
     notes: Option<String>,
     username: Option<String>,
     password: Option<String>,
-    club: String,
+    updated: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SupplierAddRequest {
+    name: String,
+    link: Option<String>,
+    notes: Option<String>,
+    username: Option<String>,
+    password: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SupplierUpdateRequest {
+    id: i64,
+    name: String,
+    link: Option<String>,
+    notes: Option<String>,
+    username: Option<String>,
+    password: Option<String>,
 }
 
 #[get("/{club}/supplier")]
-pub(crate) async fn get_supplier(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>, id: web::Query<i64>) -> impl Responder {
-    let _club = club.as_ref();
-    let id = id.0;
-
-    match sqlx::query_as!(
-        Supplier,
-        "SELECT name, link, username, password, notes, club FROM suppliers WHERE id = $1",
-        id
-    )
-    .fetch_all(pool.get_ref())
-    .await {
-        Ok(items) => HttpResponse::Ok().json(items),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+pub(crate) async fn get_supplier(
+    club: web::Path<String>,
+    pool: web::Data<Pool<Sqlite>>,
+    id: Option<web::Query<i64>>,
+) -> impl Responder {
+    let club = club.as_ref();
+    if let Some(id) = id {
+        match sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id.0)
+            .fetch_one(pool.get_ref())
+            .await
+        {
+            Ok(items) => HttpResponse::Ok().json(items.name),
+            Err(_) => HttpResponse::InternalServerError().finish(),
+        }
+    } else {
+        match sqlx::query_as!(
+            Supplier,
+            "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1",
+            club
+        )
+        .fetch_all(pool.get_ref())
+        .await
+        {
+            Ok(supplier) => HttpResponse::Ok().json(supplier),
+            Err(_) => HttpResponse::InternalServerError().finish(),
+        }
     }
 }
 
@@ -35,7 +68,7 @@ pub(crate) async fn add_supplier(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
-    let supplier: Supplier = match serde_json::from_str(&body) {
+    let supplier: SupplierAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
@@ -54,49 +87,58 @@ pub(crate) async fn add_supplier(
     .execute(pool.get_ref())
     .await
     {
-        Ok(_) => HttpResponse::Ok().body(format!("{:?}", supplier)),
-        Err(_) => HttpResponse::BadRequest().body(format!("{:?}", supplier)),
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
     }
 }
 
 #[patch("/{club}/supplier")]
-pub(crate) async fn update_supplier(club: web::Path<String>, body: String, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
-    let supplier: Supplier = match serde_json::from_str(&body) {
+pub(crate) async fn update_supplier(
+    club: web::Path<String>,
+    body: String,
+    pool: web::Data<Pool<Sqlite>>,
+) -> impl Responder {
+    let supplier: SupplierUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
     let club = club.as_ref();
 
     match sqlx::query!(
-        "UPDATE suppliers SET link = $1, notes = $2, username = $3, password = $4 WHERE name = $5 AND club = $6",
+        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5 WHERE id = $6 AND club = $7",
+        supplier.name,
         supplier.link,
         supplier.notes,
         supplier.username,
         supplier.password,
-        supplier.name,
+        supplier.id,
         club,
     )
     .execute(pool.get_ref())
     .await
     {
-        Ok(_) => HttpResponse::Ok().body(format!("{:?}", supplier)),
-        Err(_) => HttpResponse::BadRequest().body(format!("{:?}", supplier)),
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
     }
 }
 
-
-#[get("/{club}/suppliers")]
-pub(crate) async fn get_suppliers(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
+#[delete("/{club}/supplier")]
+pub(crate) async fn delete_supplier(
+    club: web::Path<String>,
+    id: web::Query<i64>,
+    pool: web::Data<Pool<Sqlite>>,
+) -> impl Responder {
     let club = club.as_ref();
 
-    match sqlx::query_as!(
-        Supplier,
-        "SELECT name, link, username, password, notes, club FROM suppliers WHERE club = $1",
+    match sqlx::query!(
+        "DELETE FROM suppliers WHERE id = $1 AND club = $2",
+        id.0,
         club
     )
-    .fetch_all(pool.get_ref())
-    .await {
-        Ok(items) => HttpResponse::Ok().json(items),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+    .execute(pool.get_ref())
+    .await
+    {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
     }
 }
