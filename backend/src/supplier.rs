@@ -32,16 +32,21 @@ struct SupplierUpdateRequest {
     password: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct Query {
+    id: Option<i64>
+}
+
 #[get("/{club}/supplier")]
 pub(crate) async fn get_supplier(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
-    id: Option<web::Query<i64>>,
+    query: web::Query<Query>,
 ) -> impl Responder {
     log::info!("get supplier");
     let club = club.as_ref();
-    if let Some(id) = id {
-        match sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id.0)
+    if let Some(id) = query.id {
+        match sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id)
             .fetch_one(pool.get_ref())
             .await
         {
