@@ -32,15 +32,21 @@ struct SupplierUpdateRequest {
     password: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct Query {
+    id: Option<i64>
+}
+
 #[get("/{club}/supplier")]
 pub(crate) async fn get_supplier(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
-    id: Option<web::Query<i64>>,
+    query: web::Query<Query>,
 ) -> impl Responder {
+    log::info!("get supplier");
     let club = club.as_ref();
-    if let Some(id) = id {
-        match sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id.0)
+    if let Some(id) = query.id {
+        match sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id)
             .fetch_one(pool.get_ref())
             .await
         {
@@ -68,6 +74,8 @@ pub(crate) async fn add_supplier(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
+    log::info!("add supplier");
+    log::debug!("{}", body);
     let supplier: SupplierAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
@@ -76,7 +84,7 @@ pub(crate) async fn add_supplier(
     let club = club.as_ref();
 
     match sqlx::query!(
-        "INSERT INTO suppliers (name, link, notes, username, password, club) VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, strftime('%s', 'now'), $6)",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -88,7 +96,7 @@ pub(crate) async fn add_supplier(
     .await
     {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -98,6 +106,8 @@ pub(crate) async fn update_supplier(
     body: String,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
+    log::info!("update supplier");
+    log::debug!("{}", body);
     let supplier: SupplierUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
@@ -105,7 +115,7 @@ pub(crate) async fn update_supplier(
     let club = club.as_ref();
 
     match sqlx::query!(
-        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5 WHERE id = $6 AND club = $7",
+        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = strftime('%s', 'now') WHERE id = $6 AND club = $7",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -118,7 +128,7 @@ pub(crate) async fn update_supplier(
     .await
     {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -139,6 +149,6 @@ pub(crate) async fn delete_supplier(
     .await
     {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }

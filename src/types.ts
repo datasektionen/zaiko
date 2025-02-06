@@ -1,4 +1,5 @@
-export interface ItemGetRespones {
+
+export interface ItemGetResponse {
   id: number,
   name: string,
   location: string,
@@ -31,13 +32,14 @@ export interface ItemUpdateRequest {
   link?: string,
 }
 
-export interface SupplierGetRespones {
+export interface SupplierGetResponse {
   id: number,
   name: string,
   link?: string,
   notes?: string,
   username?: string,
   password?: string,
+  updated: number
 }
 
 export interface SupplierAddRequest {
@@ -57,13 +59,17 @@ export interface SupplierUpdateRequest {
   password?: string,
 }
 
-export interface ShortageItem {
+export interface StockGetResponse {
   id: number,
   name: string,
   location: string,
   min: number,
   current_amount: number,
   order_amount: number,
+}
+
+export interface StockUpdateRequest {
+  items: Array<Array<number>>
 }
 
 export interface Log {

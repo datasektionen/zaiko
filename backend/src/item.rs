@@ -43,6 +43,7 @@ pub(crate) async fn get_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
+    log::info!("get items");
     let club = club.as_ref();
     match sqlx::query_as!(
         ItemGetResponse,
@@ -62,6 +63,8 @@ pub(crate) async fn add_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
+    log::info!("add item");
+    log::debug!("{}", body);
     let item: ItemAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
@@ -100,7 +103,7 @@ pub(crate) async fn add_item(
     };
 
     match sqlx::query!(
-        "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+        "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
         id,
         item.current,
         club
@@ -121,6 +124,8 @@ pub(crate) async fn update_item(
     body: String,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
+    log::info!("update item");
+    log::debug!("{}", body);
     let item: ItemUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
@@ -141,7 +146,7 @@ pub(crate) async fn update_item(
 
     if current != item.current {
         match sqlx::query!(
-            "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
             item.id,
             item.current,
             club
@@ -188,7 +193,7 @@ pub(crate) async fn delete_item(
         Err(_) => return HttpResponse::BadRequest().finish(),
     }
 
-    match sqlx::query!("DELETE FROM log WHERE id = $1 AND club = $2", id.0, club)
+    match sqlx::query!("DELETE FROM log WHERE item_id = $1 AND club = $2", id.0, club)
         .execute(pool.get_ref())
         .await
     {

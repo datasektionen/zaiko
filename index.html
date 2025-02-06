@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.png">
@@ -12,6 +12,7 @@
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
+    <div id="modal"></div>
 </html>
 
 <script>
@@ -21,20 +22,16 @@
         color_scheme: "teal",
         links: [
             {
-                str: "Lägg till",
-                href: HOST + "/add"
-            },
-            {
-                str: "Inventera",
-                href: HOST + "/stock"
-            },
-            {
-                str: "Lägg till leverantör",
-                href: HOST + "/addSupplier"
+                str: "Produkter",
+                href: HOST + "/items"
             },
             {
                 str: "Leverantörer",
                 href: HOST + "/suppliers"
+            },
+            {
+                str: "Inventera",
+                href: HOST + "/stock"
             },
         ]
     }

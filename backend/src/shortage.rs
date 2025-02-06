@@ -1,5 +1,5 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
 use crate::item::ItemGetResponse;
@@ -14,11 +14,17 @@ struct ShortageItem {
     order: f64,
 }
 
+#[derive(Deserialize)]
+struct StockUpdateRequest {
+    items: Vec<(i64, f64)>
+}
+
 #[get("/{club}/stock")]
 pub(crate) async fn get_shortage(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
+    log::info!("get shortage");
     let club = club.as_ref();
     let items = match sqlx::query_as!(ItemGetResponse, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await {
         Ok(items) => items,
@@ -48,18 +54,20 @@ pub(crate) async fn take_stock(
     pool: web::Data<Pool<Sqlite>>,
     body: String,
 ) -> impl Responder {
-    let items: Vec<(i64, f64)> = match serde_json::from_str(&body) {
+    log::info!("update inventory");
+    log::debug!("{}", body);
+    let items: StockUpdateRequest = match serde_json::from_str(&body) {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
 
     let club = club.as_ref();
 
-    for item in items {
+    for (id, amount) in items.items {
         if sqlx::query!(
             "UPDATE items SET current = $1 WHERE id = $2 AND club = $3",
-            item.1,
-            item.0,
+            amount,
+            id,
             club
         )
         .execute(pool.as_ref())
@@ -70,16 +78,16 @@ pub(crate) async fn take_stock(
         }
 
         match sqlx::query!(
-            "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
-            item.0,
-            item.1,
+            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            id,
+            amount,
             club
         )
         .execute(pool.get_ref())
         .await
         {
             Ok(_) => {}
-            Err(_) => return HttpResponse::BadRequest().finish(),
+            Err(_) => return HttpResponse::InternalServerError().finish(),
         }
     }
 

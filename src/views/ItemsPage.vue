@@ -9,53 +9,47 @@
         </div>
       </div>
       <div class="header">
-        <p>Namn</p>
-        <p>Länk</p>
+        <p>Produkt</p>
+        <p>Plats</p>
+        <p>Mängd</p>
+        <p>Status</p>
       </div>
       <div class="items">
-        <div :class="itemSelected(idx)" v-for="(item, idx) in suppliers" :key="item.name" @click="selected = idx">
-          <SupplierItem :item="item" />
+        <div :class="itemSelected(idx)" v-for="(item, idx) in items" :key="item.id" @click="selected = idx">
+          <FrontPageItem :item="item" />
         </div>
       </div>
     </div>
-    <div class="left-panel" v-if="suppliers.length > 0 && selectedIndex">
-      <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" @deleted="Refresh()"/>
+    <div class="left-panel" v-if="items.length > 0 && selectedIndex">
+      <ItemPanel :item="selectedIndex" :key="selectedIndex.id" />
     </div>
     <PopupModal :modal="openModal" @exit="openModal = false">
-      <SupplierForm @done="DoneModal()" />
+      <AddForm @done="DoneModal()" />
     </PopupModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import SupplierItem from '../components/SupplierItem.vue';
-import SupplierPanel from '@/components/SupplierPanel.vue';
+import FrontPageItem from '@/components/FrontPageItem.vue';
 import PopupModal from '@/components/PopupModal.vue';
-import SupplierForm from '@/components/SupplierForm.vue';
-import type { SupplierGetResponse } from '@/types';
-
+import AddForm from '@/components/AddForm.vue';
+import ItemPanel from '@/components/ItemPanel.vue';
+import type { ItemGetResponse } from '@/types';
 const HOST = import.meta.env.VITE_HOST;
 
-const suppliers = ref<Array<SupplierGetResponse>>([])
+const items = ref<Array<ItemGetResponse>>([]);
 
 const GetData = () => {
-  fetch(HOST + "/api/metadorerna/supplier", {
+  fetch(HOST + "/api/metadorerna/item", {
     method: "GET",
-  })
-    .then((res) => res.json())
-    .then((json) => suppliers.value = json)
-}
-GetData();
+  }).then((r) => r.json()).then((r) => items.value = r);
 
+}
+GetData()
 
 const DoneModal = () => {
   openModal.value = false;
-  GetData()
-}
-
-const Refresh = () => {
-  selected.value = -1;
   GetData()
 }
 
@@ -70,9 +64,10 @@ const itemSelected = (id: number) => {
   }
 }
 
-const selectedIndex = computed<SupplierGetResponse>(() => {
-  return suppliers.value[selected.value];
+const selectedIndex = computed<ItemGetResponse>(() => {
+  return items.value[selected.value];
 })
+
 
 </script>
 
@@ -107,7 +102,7 @@ div {
 
 .header {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   border-bottom: 2px solid rgba(0, 105, 92, 0.25);
   padding: 0.5rem;
   text-align: center;

@@ -33,3 +33,4 @@ coverage
 # Backend
 /backend/target/
 /backend/Cargo.lock
+/backend/*.sqlite

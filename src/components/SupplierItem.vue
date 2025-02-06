@@ -1,43 +1,36 @@
 <template>
   <div>
-    <p>{{item.name}}</p>
-    <p>{{item.username}}</p>
-    <p>{{item.password}}</p>
-    <a :href="item.link">Link</a>
-    <p>{{item.note}}</p>
-    <button>Edit</button>
+    <p>{{ item.name }}</p>
+    <a target="_blank" :href="item.link">{{ item.link }}</a>
   </div>
 </template>
 
 <script setup lang="ts">
-defineProps({
-  item: {
-    name: String,
-    username: String,
-    password: String,
-    link: String,
-    note: String,
-  },
-});
+import type { SupplierGetResponse } from '@/types';
+
+defineProps<{
+  item: SupplierGetResponse
+}>();
 
 </script>
 
 <style scoped>
-  * {
-    font-family: Lato;
-  }
+* {
+  font-family: Lato;
+}
 
-  div {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 2fr 1fr;
-  }
+div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
+  padding: 10px 0;
+  background-color: rgba(0, 0, 0, 0);
+}
 
-  p,a {
-    border-right: 1px solid lightgray;
-    padding: 1rem;
-  }
-
-  button {
-    padding: 1rem;
-  }
+p,
+a {
+  text-align: center;
+  text-overflow: ellipsis;
+  margin: 0;
+}
 </style>
