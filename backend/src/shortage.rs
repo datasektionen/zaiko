@@ -78,7 +78,7 @@ pub(crate) async fn take_stock(
         }
 
         match sqlx::query!(
-            "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
             id,
             amount,
             club
@@ -87,7 +87,7 @@ pub(crate) async fn take_stock(
         .await
         {
             Ok(_) => {}
-            Err(_) => return HttpResponse::BadRequest().finish(),
+            Err(_) => return HttpResponse::InternalServerError().finish(),
         }
     }
 
