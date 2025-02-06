@@ -84,7 +84,7 @@ pub(crate) async fn add_supplier(
     let club = club.as_ref();
 
     match sqlx::query!(
-        "INSERT INTO suppliers (name, link, notes, username, password, club) VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, strftime('%s', 'now'), $6)",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -115,7 +115,7 @@ pub(crate) async fn update_supplier(
     let club = club.as_ref();
 
     match sqlx::query!(
-        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5 WHERE id = $6 AND club = $7",
+        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = strftime('%s', 'now') WHERE id = $6 AND club = $7",
         supplier.name,
         supplier.link,
         supplier.notes,

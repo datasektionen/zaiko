@@ -38,6 +38,7 @@ export interface SupplierGetResponse {
   notes?: string,
   username?: string,
   password?: string,
+  updated: number
 }
 
 export interface SupplierAddRequest {
