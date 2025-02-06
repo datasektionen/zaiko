@@ -19,6 +19,7 @@ pub(crate) async fn get_shortage(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
+    log::info!("get shortage");
     let club = club.as_ref();
     let items = match sqlx::query_as!(ItemGetResponse, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await {
         Ok(items) => items,
@@ -48,6 +49,8 @@ pub(crate) async fn take_stock(
     pool: web::Data<Pool<Sqlite>>,
     body: String,
 ) -> impl Responder {
+    log::info!("update inventory");
+    log::debug!("{}", body);
     let items: Vec<(i64, f64)> = match serde_json::from_str(&body) {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),

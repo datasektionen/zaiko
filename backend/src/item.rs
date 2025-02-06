@@ -43,6 +43,7 @@ pub(crate) async fn get_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
+    log::info!("get items");
     let club = club.as_ref();
     match sqlx::query_as!(
         ItemGetResponse,
@@ -62,6 +63,8 @@ pub(crate) async fn add_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
+    log::info!("add item");
+    log::debug!("{}", body);
     let item: ItemAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
@@ -121,6 +124,8 @@ pub(crate) async fn update_item(
     body: String,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
+    log::info!("update item");
+    log::debug!("{}", body);
     let item: ItemUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),

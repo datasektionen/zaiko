@@ -38,6 +38,7 @@ pub(crate) async fn get_supplier(
     pool: web::Data<Pool<Sqlite>>,
     id: Option<web::Query<i64>>,
 ) -> impl Responder {
+    log::info!("get supplier");
     let club = club.as_ref();
     if let Some(id) = id {
         match sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id.0)
@@ -68,6 +69,8 @@ pub(crate) async fn add_supplier(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
+    log::info!("add supplier");
+    log::debug!("{}", body);
     let supplier: SupplierAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
@@ -98,6 +101,8 @@ pub(crate) async fn update_supplier(
     body: String,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
+    log::info!("update supplier");
+    log::debug!("{}", body);
     let supplier: SupplierUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
