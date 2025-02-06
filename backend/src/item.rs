@@ -103,7 +103,7 @@ pub(crate) async fn add_item(
     };
 
     match sqlx::query!(
-        "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+        "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
         id,
         item.current,
         club
@@ -146,7 +146,7 @@ pub(crate) async fn update_item(
 
     if current != item.current {
         match sqlx::query!(
-            "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
             item.id,
             item.current,
             club
@@ -193,7 +193,7 @@ pub(crate) async fn delete_item(
         Err(_) => return HttpResponse::BadRequest().finish(),
     }
 
-    match sqlx::query!("DELETE FROM log WHERE id = $1 AND club = $2", id.0, club)
+    match sqlx::query!("DELETE FROM log WHERE item_id = $1 AND club = $2", id.0, club)
         .execute(pool.get_ref())
         .await
     {
