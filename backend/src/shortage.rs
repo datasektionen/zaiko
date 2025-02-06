@@ -66,8 +66,8 @@ pub(crate) async fn take_stock(
     for (id, amount) in items.items {
         if sqlx::query!(
             "UPDATE items SET current = $1 WHERE id = $2 AND club = $3",
-            id,
             amount,
+            id,
             club
         )
         .execute(pool.as_ref())
