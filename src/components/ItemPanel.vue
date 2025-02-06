@@ -25,7 +25,7 @@
       </fieldset>
       <div class="item">
         <p>Leverantör</p>
-        <input v-model="supplier" placeholder="Leverantör">
+        <input type="number" v-model="supplier" placeholder="Leverantör">
       </div>
       <div class="item">
         <p>Länk</p>

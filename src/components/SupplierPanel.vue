@@ -61,7 +61,7 @@ const updateItem = async () => {
     notes: note.value,
   }
   await fetch(HOST + "/api/" + club.value + "/supplier", {
-    method: "POST",
+    method: "PATCH",
     body: JSON.stringify(supplier),
   })
 }
