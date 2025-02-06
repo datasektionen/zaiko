@@ -1,4 +1,4 @@
-export interface Item {
+export interface ItemGetRespones {
   id: number,
   name: string,
   location: string,
@@ -10,7 +10,7 @@ export interface Item {
   link?: string,
 }
 
-export interface AddItem {
+export interface ItemAddRequest {
   name: string,
   location: string,
   min?: number,
@@ -20,7 +20,7 @@ export interface AddItem {
   link?: string,
 }
 
-export interface UpdateItem {
+export interface ItemUpdateRequest {
   id: number,
   name: string,
   location: string,
@@ -31,16 +31,34 @@ export interface UpdateItem {
   link?: string,
 }
 
-export interface Supplier {
+export interface SupplierGetRespones {
+  id: number,
   name: string,
   link?: string,
   notes?: string,
   username?: string,
   password?: string,
-  club: string,
+}
+
+export interface SupplierAddRequest {
+  name: string,
+  link?: string,
+  notes?: string,
+  username?: string,
+  password?: string,
+}
+
+export interface SupplierUpdateRequest {
+  id: number,
+  name: string,
+  link?: string,
+  notes?: string,
+  username?: string,
+  password?: string,
 }
 
 export interface ShortageItem {
+  id: number,
   name: string,
   location: string,
   min: number,
