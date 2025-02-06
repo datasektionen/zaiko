@@ -96,7 +96,7 @@ pub(crate) async fn add_supplier(
     .await
     {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -128,7 +128,7 @@ pub(crate) async fn update_supplier(
     .await
     {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -149,6 +149,6 @@ pub(crate) async fn delete_supplier(
     .await
     {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
