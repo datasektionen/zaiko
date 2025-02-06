@@ -8,11 +8,11 @@
 </template>
 
 <script setup lang="ts">
-import type { ShortageItem } from '@/types';
+import type { StockGetResponse } from '@/types';
 import { computed } from 'vue';
 
 const props = defineProps<{
-  item: ShortageItem
+  item: StockGetResponse
 }>()
 
 const toOrder = computed<number>(() => {

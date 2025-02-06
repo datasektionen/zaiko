@@ -16,7 +16,7 @@
         <p>Differens</p>
       </div>
       <form v-on:submit.prevent="updateItems" class="items">
-        <StockItem v-for="item in items" :key="item.id" :item="item" v-model="input[item.id]" />
+        <StockItem v-for="(item, idx) in items" :key="item.id" :item="item" v-model="input.items[idx][1]" />
         <div class="saveDiv">
           <input class="button" type="submit" value="Inventera" />
         </div>
@@ -27,16 +27,16 @@
 
 <script setup lang="ts">
 import StockItem from '@/components/StockItem.vue';
-import type { ItemGetResponse } from '@/types'
+import type { ItemGetResponse, StockUpdateRequest } from '@/types'
 import { ref } from 'vue'
 const items = ref<Array<ItemGetResponse>>([])
-const input = ref<Record<number, number>>({});
+const input = ref<StockUpdateRequest>({ items: [] });
 const HOST: string = import.meta.env.VITE_HOST;
 
 const GetData = async () => {
   await fetch(HOST + "/api/metadorerna/item").then((res) => res.json()).then((json) => {
     items.value = json
-    items.value.forEach((e: ItemGetResponse) => input.value[e.id] = e.current)
+    items.value.forEach((e: ItemGetResponse, idx) => input.value.items[idx] = [e.id, e.current])
   })
   // console.log(items.value, input.value)
 }
