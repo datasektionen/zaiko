@@ -2,22 +2,25 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::Serialize;
 use sqlx::{Pool, Sqlite};
 
-use crate::items::Item;
+use crate::item::ItemGetResponse;
 
 #[derive(Serialize)]
 struct ShortageItem {
+    id: i64,
     name: String,
     location: String,
     min: f64,
-    current_amount: f64,
-    order_amount: f64,
+    current: f64,
+    order: f64,
 }
 
-
-#[get("/{club}/shortage")]
-pub(crate) async fn get_shortage(club: web::Path<String>, pool: web::Data<Pool<Sqlite>>) -> impl Responder {
+#[get("/{club}/stock")]
+pub(crate) async fn get_shortage(
+    club: web::Path<String>,
+    pool: web::Data<Pool<Sqlite>>,
+) -> impl Responder {
     let club = club.as_ref();
-    let items = match sqlx::query_as!(Item,"SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",club).fetch_all(pool.get_ref()).await {
+    let items = match sqlx::query_as!(ItemGetResponse, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
@@ -26,10 +29,11 @@ pub(crate) async fn get_shortage(club: web::Path<String>, pool: web::Data<Pool<S
         .iter()
         .filter_map(|item| {
             Some(ShortageItem {
+                id: item.id,
                 name: item.name.clone(),
                 location: item.location.clone(),
-                current_amount: item.current,
-                order_amount: item.max? - item.current,
+                current: item.current,
+                order: item.max? - item.current,
                 min: item.min?,
             })
         })
@@ -38,7 +42,7 @@ pub(crate) async fn get_shortage(club: web::Path<String>, pool: web::Data<Pool<S
     HttpResponse::Ok().json(items)
 }
 
-#[post("/{club}/take_stock")]
+#[post("/{club}/stock")]
 pub(crate) async fn take_stock(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
@@ -66,7 +70,7 @@ pub(crate) async fn take_stock(
         }
 
         match sqlx::query!(
-            "INSERT INTO log (item, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
             item.0,
             item.1,
             club
@@ -87,7 +91,7 @@ mod tests {
     use actix_web::{test, web, App};
     use sqlx::SqlitePool;
 
-    use crate::items::AddItem;
+    use crate::item::ItemAddRequest;
 
     use super::{get_shortage, take_stock};
 
@@ -99,7 +103,7 @@ mod tests {
                 .expect("Expected sqlite database with name db.sqlite"),
         );
 
-        let item = AddItem {
+        let item = ItemAddRequest {
             name: String::from("tejp"),
             min: Some(10.0),
             max: Some(20.0),
@@ -126,7 +130,9 @@ mod tests {
         .await.unwrap();
 
         let app = test::init_service(App::new().app_data(pool).service(get_shortage)).await;
-        let req = test::TestRequest::get().uri("/metadorerna/shortage").to_request();
+        let req = test::TestRequest::get()
+            .uri("/metadorerna/shortage")
+            .to_request();
         let res = test::call_service(&app, req).await;
         assert!(res.status().is_success());
     }
@@ -139,7 +145,7 @@ mod tests {
                 .expect("Expected sqlite database with name db.sqlite"),
         );
 
-        let item = AddItem {
+        let item = ItemAddRequest {
             name: String::from("tejp"),
             min: Some(10.0),
             max: Some(20.0),
@@ -165,10 +171,14 @@ mod tests {
         .execute(pool.get_ref())
         .await.unwrap();
 
-        let body = vec![(String::from("tejp"), 5.0)];
+        let mut body = Vec::new();
+        body.push((String::from("tejp"), 15.0));
 
         let app = test::init_service(App::new().app_data(pool).service(take_stock)).await;
-        let req = test::TestRequest::post().uri("/metadorerna/take_stock").set_json(body).to_request();
+        let req = test::TestRequest::post()
+            .uri("/metadorerna/take_stock")
+            .set_json(body)
+            .to_request();
         let res = test::call_service(&app, req).await;
         assert!(res.status().is_success());
     }

@@ -15,17 +15,16 @@ pub(crate) async fn get_log(
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
     let club = club.as_ref();
-    let item = *item;
     match sqlx::query_as!(
         Log,
-        "SELECT amount, time FROM log WHERE item = $1 AND club = $2",
-        item,
+        "SELECT amount, time FROM log WHERE id = $1 AND club = $2",
+        item.0,
         club
     )
     .fetch_all(pool.get_ref())
-    .await {
+    .await
+    {
         Ok(items) => HttpResponse::Ok().json(items),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
-
