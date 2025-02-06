@@ -40,7 +40,7 @@ const HOST = import.meta.env.VITE_HOST;
 const suppliers = ref<Array<SupplierGetResponse>>([])
 
 const GetData = () => {
-  fetch(HOST + "/api/metadorerna/suppliers", {
+  fetch(HOST + "/api/metadorerna/supplier", {
     method: "GET",
   })
     .then((res) => res.json())

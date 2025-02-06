@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import type { SupplierAddRequest } from '@/types';
 import { ref } from 'vue';
 const HOST = import.meta.env.VITE_HOST;
 
@@ -46,17 +47,16 @@ const note = ref("")
 const club = ref("metadorerna")
 
 const addItem = async () => {
-  const res = {
+  const supplier: SupplierAddRequest = {
     name: name.value,
     username: username.value,
     password: password.value,
     link: link.value,
     notes: note.value,
-    club: club.value,
   }
   await fetch(HOST + "/api/" + club.value + "/supplier", {
     method: "POST",
-    body: JSON.stringify(res),
+    body: JSON.stringify(supplier),
   })
   emit('done')
 }

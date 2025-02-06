@@ -68,7 +68,7 @@ const GetData = () => {
     .then((res) => res.json())
     .then((json) => items.value = json)
 
-  fetch(HOST + "/api/metadorerna/shortage")
+  fetch(HOST + "/api/metadorerna/stock")
     .then((res) => res.json())
     .then((json) => shortage.value = json)
 
