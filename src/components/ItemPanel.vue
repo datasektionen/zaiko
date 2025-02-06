@@ -33,6 +33,7 @@
       </div>
       <input v-model="club" placeholder="Nämnd">
       <div class="submit">
+        <button @click="Delete()" class="delete">Ta bort</button>
         <input class="button" type="submit" value="Spara">
       </div>
     </form>
@@ -47,6 +48,8 @@ const HOST = import.meta.env.VITE_HOST;
 const props = defineProps<{
   item: Item
 }>()
+
+const emit = defineEmits(["deleted"]);
 
 const club = ref("metadorerna")
 const name = ref(props.item.name)
@@ -72,6 +75,14 @@ const updateItem = async () => {
     method: "PATCH",
     body: JSON.stringify(res),
   })
+}
+
+const Delete = async () => {
+  await fetch(HOST + "/api/" + club.value + "/item", {
+    method: "DELETE",
+    body: JSON.stringify({ name: name.value })
+  })
+  emit("deleted")
 }
 
 </script>
@@ -135,7 +146,13 @@ fieldset .item input {
 
 .submit {
   display: flex;
-  align-items: flex-end;
-  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2rem;
+  flex-direction: row;
+}
+
+.delete {
+  background-color: #eb4034;
+  color: #fafafa;
 }
 </style>

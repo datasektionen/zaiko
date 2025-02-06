@@ -10,11 +10,11 @@
 
 <script setup lang="ts">
 import type { Item } from '@/types';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps<{ item: Item }>()
 
-const input = ref(props.item.current)
+const input = defineModel<number>({ default: 0 });
 
 const diffClass = computed(() => {
   const diff = input.value - props.item.current
@@ -37,10 +37,11 @@ div {
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   border-bottom: 2px solid rgba(0, 105, 92, 0.25);
   padding: 10px 0;
-  background-color: rgba(0,0,0,0);
+  background-color: rgba(0, 0, 0, 0);
 }
 
-p, a {
+p,
+a {
   text-align: center;
   text-overflow: ellipsis;
   margin: 0;

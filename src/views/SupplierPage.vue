@@ -19,7 +19,7 @@
       </div>
     </div>
     <div class="left-panel" v-if="suppliers.length > 0 && selectedIndex">
-      <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" />
+      <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" @deleted="Refresh()"/>
     </div>
     <PopupModal :modal="openModal" @exit="openModal = false">
       <SupplierForm @done="DoneModal()" />
@@ -51,6 +51,11 @@ GetData();
 
 const DoneModal = () => {
   openModal.value = false;
+  GetData()
+}
+
+const Refresh = () => {
+  selected.value = -1;
   GetData()
 }
 
