@@ -58,13 +58,17 @@ export interface SupplierUpdateRequest {
   password?: string,
 }
 
-export interface ShortageItem {
+export interface StockGetResponse {
   id: number,
   name: string,
   location: string,
   min: number,
   current_amount: number,
   order_amount: number,
+}
+
+export interface StockUpdateRequest {
+  items: Array<Array<number>>
 }
 
 export interface Log {
