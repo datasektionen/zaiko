@@ -1,5 +1,5 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
 use crate::item::ItemGetResponse;
@@ -12,6 +12,11 @@ struct ShortageItem {
     min: f64,
     current: f64,
     order: f64,
+}
+
+#[derive(Deserialize)]
+struct StockUpdateRequest {
+    items: Vec<(i64, f64)>
 }
 
 #[get("/{club}/stock")]
@@ -51,18 +56,18 @@ pub(crate) async fn take_stock(
 ) -> impl Responder {
     log::info!("update inventory");
     log::debug!("{}", body);
-    let items: Vec<(i64, f64)> = match serde_json::from_str(&body) {
+    let items: StockUpdateRequest = match serde_json::from_str(&body) {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
 
     let club = club.as_ref();
 
-    for item in items {
+    for (id, amount) in items.items {
         if sqlx::query!(
             "UPDATE items SET current = $1 WHERE id = $2 AND club = $3",
-            item.1,
-            item.0,
+            id,
+            amount,
             club
         )
         .execute(pool.as_ref())
@@ -74,8 +79,8 @@ pub(crate) async fn take_stock(
 
         match sqlx::query!(
             "INSERT INTO log (id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
-            item.0,
-            item.1,
+            id,
+            amount,
             club
         )
         .execute(pool.get_ref())
