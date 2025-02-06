@@ -2,7 +2,7 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::Serialize;
 use sqlx::{Pool, Sqlite};
 
-use crate::item::Item;
+use crate::item::ItemGetResponse;
 
 #[derive(Serialize)]
 struct ShortageItem {
@@ -10,8 +10,8 @@ struct ShortageItem {
     name: String,
     location: String,
     min: f64,
-    current_amount: f64,
-    order_amount: f64,
+    current: f64,
+    order: f64,
 }
 
 #[get("/{club}/stock")]
@@ -20,7 +20,7 @@ pub(crate) async fn get_shortage(
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
     let club = club.as_ref();
-    let items = match sqlx::query_as!(Item, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await {
+    let items = match sqlx::query_as!(ItemGetResponse, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
@@ -32,8 +32,8 @@ pub(crate) async fn get_shortage(
                 id: item.id,
                 name: item.name.clone(),
                 location: item.location.clone(),
-                current_amount: item.current,
-                order_amount: item.max? - item.current,
+                current: item.current,
+                order: item.max? - item.current,
                 min: item.min?,
             })
         })

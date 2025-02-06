@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct Item {
+pub(crate) struct ItemGetResponse {
     pub(crate) id: i64,
     pub(crate) name: String,
     pub(crate) location: String,
@@ -45,7 +45,7 @@ pub(crate) async fn get_item(
 ) -> impl Responder {
     let club = club.as_ref();
     match sqlx::query_as!(
-        Item,
+        ItemGetResponse,
         "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
         club
     )

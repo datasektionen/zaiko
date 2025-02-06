@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Supplier {
+struct SupplierGetResponse {
     id: i64,
     name: String,
     link: Option<String>,
@@ -49,7 +49,7 @@ pub(crate) async fn get_supplier(
         }
     } else {
         match sqlx::query_as!(
-            Supplier,
+            SupplierGetResponse,
             "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1",
             club
         )
