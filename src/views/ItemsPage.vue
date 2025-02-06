@@ -35,10 +35,10 @@ import FrontPageItem from '@/components/FrontPageItem.vue';
 import PopupModal from '@/components/PopupModal.vue';
 import AddForm from '@/components/AddForm.vue';
 import ItemPanel from '@/components/ItemPanel.vue';
-import type { Item } from '@/types';
+import type { ItemGetResponse } from '@/types';
 const HOST = import.meta.env.VITE_HOST;
 
-const items = ref<Array<Item>>([]);
+const items = ref<Array<ItemGetResponse>>([]);
 
 const GetData = () => {
   fetch(HOST + "/api/metadorerna/item", {
@@ -64,7 +64,7 @@ const itemSelected = (id: number) => {
   }
 }
 
-const selectedIndex = computed<Item>(() => {
+const selectedIndex = computed<ItemGetResponse>(() => {
   return items.value[selected.value];
 })
 

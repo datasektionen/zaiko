@@ -1,4 +1,4 @@
-export interface ItemGetRespones {
+export interface ItemGetResponse {
   id: number,
   name: string,
   location: string,
@@ -31,7 +31,7 @@ export interface ItemUpdateRequest {
   link?: string,
 }
 
-export interface SupplierGetRespones {
+export interface SupplierGetResponse {
   id: number,
   name: string,
   link?: string,

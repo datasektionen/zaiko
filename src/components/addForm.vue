@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AddItem } from '@/types';
+import type { ItemAddRequest } from '@/types';
 import { ref } from 'vue'
 const HOST = import.meta.env.VITE_HOST;
 
@@ -57,7 +57,7 @@ const link = ref("")
 const emit = defineEmits([ "done" ]);
 
 const addItem = async () => {
-  const res: AddItem = {
+  const res: ItemAddRequest = {
     name: name.value,
     location: location.value,
     min: min.value,

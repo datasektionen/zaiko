@@ -6,10 +6,10 @@
 </template>
 
 <script setup lang="ts">
-import type { Supplier } from '@/types';
+import type { SupplierGetResponse } from '@/types';
 
 defineProps<{
-  item: Supplier
+  item: SupplierGetResponse
 }>();
 
 </script>

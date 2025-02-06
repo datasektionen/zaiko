@@ -33,15 +33,15 @@
 </template>
 
 <script setup lang="ts">
-import type { Supplier } from '@/types';
+import type { SupplierGetResponse, SupplierUpdateRequest } from '@/types';
 import { ref } from 'vue';
 const HOST = import.meta.env.VITE_HOST;
 
 const props = defineProps<{
-  item: Supplier
+  item: SupplierGetResponse
 }>()
 
-const emit = defineEmits([ "deleted" ]);
+const emit = defineEmits(["deleted"]);
 
 const name = ref(props.item.name)
 const username = ref(props.item.username)
@@ -49,15 +49,16 @@ const password = ref(props.item.password)
 const link = ref(props.item.link)
 const note = ref(props.item.notes)
 const club = ref("metadorerna")
+const id = ref(props.item.id)
 
 const updateItem = async () => {
-  const res: Supplier = {
+  const res: SupplierUpdateRequest = {
+    id: id.value,
     name: name.value,
     username: username.value,
     password: password.value,
     link: link.value,
     notes: note.value,
-    club: club.value,
   }
   await fetch(HOST + "/api/" + club.value + "/supplier", {
     method: "POST",
@@ -66,10 +67,13 @@ const updateItem = async () => {
 }
 
 const Delete = async () => {
-  await fetch(HOST + "/api/" + club.value + "/supplier", {
-    method: "DELETE",
-    body: JSON.stringify({ name: props.item.name })
-  })
+  await fetch(
+    HOST + "/api/" +
+      club.value + "/supplier?"
+      + new URLSearchParams({ id: id.value.toString() }).toString(),
+    {
+      method: "DELETE",
+    })
   emit("deleted")
 }
 </script>

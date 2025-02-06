@@ -9,11 +9,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Item } from '@/types';
+import type { ItemGetResponse } from '@/types';
 import { computed } from 'vue';
 
 const props = defineProps<{
-  item: Item
+  item: ItemGetResponse
 }>()
 
 const status = computed<string>(() => {
