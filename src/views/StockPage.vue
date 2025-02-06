@@ -30,22 +30,20 @@ import StockItem from '@/components/StockItem.vue';
 import type { ItemGetResponse } from '@/types'
 import { ref } from 'vue'
 const items = ref<Array<ItemGetResponse>>([])
-const input = ref<Array<number>>([]);
+const input = ref<Record<number, number>>({});
 const HOST: string = import.meta.env.VITE_HOST;
 
 const GetData = async () => {
   await fetch(HOST + "/api/metadorerna/item").then((res) => res.json()).then((json) => {
     items.value = json
     items.value.forEach((e: ItemGetResponse) => input.value[e.id] = e.current)
-    input.value = input.value.filter((e) => e >= 0)
   })
   // console.log(items.value, input.value)
 }
 GetData();
 
 const updateItems = async () => {
-
-  await fetch(HOST + "/api/metadorerna/take_stock", {
+  await fetch(HOST + "/api/metadorerna/stock", {
     method: "POST",
     body: JSON.stringify(input.value),
   })
