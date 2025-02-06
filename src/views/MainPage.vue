@@ -48,10 +48,10 @@ import FrontPageItem from '@/components/FrontPageItem.vue'
 import PopupModal from '@/components/PopupModal.vue'
 import AddForm from '@/components/AddForm.vue'
 import FrontPageShortageItem from '@/components/FrontPageShortageItem.vue';
-import type { Item, ShortageItem } from '@/types';
+import type { ItemGetResponse, ShortageItem } from '@/types';
 
 const HOST = import.meta.env.VITE_HOST;
-const items = ref<Array<Item>>();
+const items = ref<Array<ItemGetResponse>>();
 const shortage = ref<Array<ShortageItem>>()
 
 const openModal = ref<boolean>(false)

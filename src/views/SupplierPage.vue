@@ -33,11 +33,11 @@ import SupplierItem from '../components/SupplierItem.vue';
 import SupplierPanel from '@/components/SupplierPanel.vue';
 import PopupModal from '@/components/PopupModal.vue';
 import SupplierForm from '@/components/SupplierForm.vue';
-import type { Supplier } from '@/types';
+import type { SupplierGetResponse } from '@/types';
 
 const HOST = import.meta.env.VITE_HOST;
 
-const suppliers = ref<Array<Supplier>>([])
+const suppliers = ref<Array<SupplierGetResponse>>([])
 
 const GetData = () => {
   fetch(HOST + "/api/metadorerna/suppliers", {
@@ -70,7 +70,7 @@ const itemSelected = (id: number) => {
   }
 }
 
-const selectedIndex = computed<Supplier>(() => {
+const selectedIndex = computed<SupplierGetResponse>(() => {
   return suppliers.value[selected.value];
 })
 
