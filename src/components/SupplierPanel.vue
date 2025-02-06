@@ -52,7 +52,7 @@ const club = ref("metadorerna")
 const id = ref(props.item.id)
 
 const updateItem = async () => {
-  const res: SupplierUpdateRequest = {
+  const supplier: SupplierUpdateRequest = {
     id: id.value,
     name: name.value,
     username: username.value,
@@ -62,7 +62,7 @@ const updateItem = async () => {
   }
   await fetch(HOST + "/api/" + club.value + "/supplier", {
     method: "POST",
-    body: JSON.stringify(res),
+    body: JSON.stringify(supplier),
   })
 }
 

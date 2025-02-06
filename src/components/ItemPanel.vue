@@ -41,12 +41,12 @@
 </template>
 
 <script setup lang="ts">
-import type { AddItem, Item } from '@/types';
+import type { ItemGetResponse, ItemUpdateRequest } from '@/types';
 import { ref } from 'vue'
 const HOST = import.meta.env.VITE_HOST;
 
 const props = defineProps<{
-  item: Item
+  item: ItemGetResponse
 }>()
 
 const emit = defineEmits(["deleted"]);
@@ -62,7 +62,8 @@ const link = ref(props.item.link)
 
 
 const updateItem = async () => {
-  const res: AddItem = {
+  const res: ItemUpdateRequest = {
+    id: props.item.id,
     name: name.value,
     location: location.value,
     min: min.value,
