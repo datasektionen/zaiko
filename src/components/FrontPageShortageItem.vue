@@ -2,23 +2,17 @@
   <div>
     <p>{{ item.name }}</p>
     <p>{{ item.location }}</p>
-    <p>{{ item.current_amount }}</p>
-    <p>{{ toOrder }}</p>
+    <p>{{ item.current }}</p>
+    <p>{{ item.order }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { StockGetResponse } from '@/types';
-import { computed } from 'vue';
 
-const props = defineProps<{
+defineProps<{
   item: StockGetResponse
 }>()
-
-const toOrder = computed<number>(() => {
-  const diff = props.item.min - props.item.current_amount;
-  return diff;
-});
 
 </script>
 

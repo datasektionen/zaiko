@@ -64,8 +64,8 @@ export interface StockGetResponse {
   name: string,
   location: string,
   min: number,
-  current_amount: number,
-  order_amount: number,
+  current: number,
+  order: number,
 }
 
 export interface StockUpdateRequest {
@@ -77,3 +77,9 @@ export interface Log {
   time: number,
 }
 
+export interface Notification {
+  id: number,
+  title: string,
+  message: string,
+  severity: string,
+}
