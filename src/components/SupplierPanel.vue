@@ -33,7 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import type { SupplierGetResponse, SupplierUpdateRequest } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications';
+import type { SupplierGetResponse, SupplierUpdateRequest, Notification } from '@/types';
 import { ref } from 'vue';
 const HOST = import.meta.env.VITE_HOST;
 
@@ -42,6 +43,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(["deleted"]);
+
+const notificationsStore = useNotificationsStore();
 
 const name = ref(props.item.name)
 const username = ref(props.item.username)
@@ -64,6 +67,34 @@ const updateItem = async () => {
     method: "PATCH",
     body: JSON.stringify(supplier),
   })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Updaterad",
+          message: "Leverantören har uppdaterats",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
 }
 
 const Delete = async () => {
@@ -73,6 +104,34 @@ const Delete = async () => {
       + new URLSearchParams({ id: id.value.toString() }).toString(),
     {
       method: "DELETE",
+    })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Borttagen",
+          message: "Leverantören har tagits bort",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
     })
   emit("deleted")
 }

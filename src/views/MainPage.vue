@@ -34,10 +34,8 @@
       </div>
       <div class="items">
         <FrontPageShortageItem :item="item" v-for="item in shortage" :key="item.name" />
-        <button @click="notificationsStore.add(noti)">TEST</button>
       </div>
     </div>
-    <NotificationList />
     <PopupModal :modal="openModal" @exit="openModal = false">
       <AddForm @done="DoneModal()" />
     </PopupModal>
@@ -50,7 +48,6 @@ import FrontPageItem from '@/components/FrontPageItem.vue'
 import PopupModal from '@/components/PopupModal.vue'
 import AddForm from '@/components/AddForm.vue'
 import FrontPageShortageItem from '@/components/FrontPageShortageItem.vue';
-import NotificationList from '@/components/NotificationList.vue';
 import type { ItemGetResponse, StockGetResponse } from '@/types';
 import { useNotificationsStore } from '@/stores/notifications';
 import type { Notification } from '@/types';
@@ -60,13 +57,6 @@ const items = ref<Array<ItemGetResponse>>();
 const shortage = ref<Array<StockGetResponse>>()
 
 const openModal = ref<boolean>(false)
-
-const noti: Notification = {
-  id: 1,
-  title: "Test",
-  message: "Test",
-  severity: "info",
-};
 
 const notificationsStore = useNotificationsStore();
 
@@ -81,10 +71,28 @@ const GetData = () => {
   })
     .then((res) => res.json())
     .then((json) => items.value = json)
+    .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+    })
 
   fetch(HOST + "/api/metadorerna/stock")
     .then((res) => res.json())
     .then((json: Array<StockGetResponse>) => shortage.value = json)
+    .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+    })
 
 }
 GetData();

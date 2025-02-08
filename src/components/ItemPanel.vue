@@ -41,7 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import type { ItemGetResponse, ItemUpdateRequest } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications';
+import type { ItemGetResponse, ItemUpdateRequest, Notification } from '@/types';
 import { ref } from 'vue'
 const HOST = import.meta.env.VITE_HOST;
 
@@ -50,6 +51,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(["deleted"]);
+
+const notificationsStore = useNotificationsStore();
 
 const club = ref("metadorerna")
 const name = ref(props.item.name)
@@ -76,6 +79,34 @@ const updateItem = async () => {
     method: "PATCH",
     body: JSON.stringify(res),
   })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Updaterad",
+          message: "Produkten har uppdaterats",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
 }
 
 const Delete = async () => {
@@ -83,6 +114,34 @@ const Delete = async () => {
     method: "DELETE",
     body: JSON.stringify({ name: name.value })
   })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Borttagen",
+          message: "Produkten har tagits bort",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
   emit("deleted")
 }
 

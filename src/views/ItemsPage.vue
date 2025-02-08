@@ -35,15 +35,26 @@ import FrontPageItem from '@/components/FrontPageItem.vue';
 import PopupModal from '@/components/PopupModal.vue';
 import AddForm from '@/components/AddForm.vue';
 import ItemPanel from '@/components/ItemPanel.vue';
-import type { ItemGetResponse } from '@/types';
+import type { ItemGetResponse, Notification } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications';
 const HOST = import.meta.env.VITE_HOST;
 
 const items = ref<Array<ItemGetResponse>>([]);
+const notificationsStore = useNotificationsStore();
 
 const GetData = () => {
   fetch(HOST + "/api/metadorerna/item", {
     method: "GET",
-  }).then((r) => r.json()).then((r) => items.value = r);
+  }).then((r) => r.json()).then((r) => items.value = r)
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
 
 }
 GetData()

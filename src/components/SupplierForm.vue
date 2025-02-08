@@ -33,11 +33,12 @@
 </template>
 
 <script setup lang="ts">
-import type { SupplierAddRequest } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications';
+import type { SupplierAddRequest, Notification } from '@/types';
 import { ref } from 'vue';
 const HOST = import.meta.env.VITE_HOST;
 
-const emit = defineEmits([ "done" ]);
+const emit = defineEmits(["done"]);
 
 const name = ref("")
 const username = ref("")
@@ -45,6 +46,8 @@ const password = ref("")
 const link = ref("")
 const note = ref("")
 const club = ref("metadorerna")
+
+const notificationsStore = useNotificationsStore();
 
 const addItem = async () => {
   const supplier: SupplierAddRequest = {
@@ -58,6 +61,35 @@ const addItem = async () => {
     method: "POST",
     body: JSON.stringify(supplier),
   })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Sparad",
+          message: "Leverantören lades till",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+
   emit('done')
 }
 </script>

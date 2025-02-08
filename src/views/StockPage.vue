@@ -27,17 +27,31 @@
 
 <script setup lang="ts">
 import StockItem from '@/components/StockItem.vue';
-import type { ItemGetResponse, StockUpdateRequest } from '@/types'
+import { useNotificationsStore } from '@/stores/notifications';
+import type { ItemGetResponse, StockUpdateRequest, Notification } from '@/types'
 import { ref } from 'vue'
 const items = ref<Array<ItemGetResponse>>([])
 const input = ref<StockUpdateRequest>({ items: [] });
 const HOST: string = import.meta.env.VITE_HOST;
 
+const notificationsStore = useNotificationsStore();
+
 const GetData = async () => {
-  await fetch(HOST + "/api/metadorerna/item").then((res) => res.json()).then((json) => {
-    items.value = json
-    items.value.forEach((e: ItemGetResponse, idx) => input.value.items[idx] = [e.id, e.current])
-  })
+  fetch(HOST + "/api/metadorerna/item")
+    .then((res) => res.json())
+    .then((json) => {
+      items.value = json
+      items.value.forEach((e: ItemGetResponse, idx) => input.value.items[idx] = [e.id, e.current])
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
   // console.log(items.value, input.value)
 }
 GetData();
@@ -47,6 +61,34 @@ const updateItems = async () => {
     method: "POST",
     body: JSON.stringify(input.value),
   })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Sparad",
+          message: "Inventeringen lyckades",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Inventeringen misslyckades",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
   GetData()
 }
 </script>
