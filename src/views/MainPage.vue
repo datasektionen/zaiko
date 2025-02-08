@@ -34,8 +34,10 @@
       </div>
       <div class="items">
         <FrontPageShortageItem :item="item" v-for="item in shortage" :key="item.name" />
+        <button @click="notificationsStore.add(noti)">TEST</button>
       </div>
     </div>
+    <NotificationList />
     <PopupModal :modal="openModal" @exit="openModal = false">
       <AddForm @done="DoneModal()" />
     </PopupModal>
@@ -48,13 +50,25 @@ import FrontPageItem from '@/components/FrontPageItem.vue'
 import PopupModal from '@/components/PopupModal.vue'
 import AddForm from '@/components/AddForm.vue'
 import FrontPageShortageItem from '@/components/FrontPageShortageItem.vue';
+import NotificationList from '@/components/NotificationList.vue';
 import type { ItemGetResponse, StockGetResponse } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications';
+import type { Notification } from '@/types';
 
 const HOST = import.meta.env.VITE_HOST;
 const items = ref<Array<ItemGetResponse>>();
 const shortage = ref<Array<StockGetResponse>>()
 
 const openModal = ref<boolean>(false)
+
+const noti: Notification = {
+  id: 1,
+  title: "Test",
+  message: "Test",
+  severity: "info",
+};
+
+const notificationsStore = useNotificationsStore();
 
 const DoneModal = () => {
   openModal.value = false;
@@ -70,7 +84,7 @@ const GetData = () => {
 
   fetch(HOST + "/api/metadorerna/stock")
     .then((res) => res.json())
-    .then((json) => shortage.value = json)
+    .then((json: Array<StockGetResponse>) => shortage.value = json)
 
 }
 GetData();
