@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import NotificationList from '@/components/NotificationList.vue';
 </script>
 
 <template>
@@ -11,6 +12,7 @@
   <!-- </header> -->
   <main>
     <RouterView />
+    <NotificationList />
   </main>
 </template>
 

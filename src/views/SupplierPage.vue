@@ -33,11 +33,13 @@ import SupplierItem from '../components/SupplierItem.vue';
 import SupplierPanel from '@/components/SupplierPanel.vue';
 import PopupModal from '@/components/PopupModal.vue';
 import SupplierForm from '@/components/SupplierForm.vue';
-import type { SupplierGetResponse } from '@/types';
+import type { SupplierGetResponse, Notification } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications';
 
 const HOST = import.meta.env.VITE_HOST;
 
 const suppliers = ref<Array<SupplierGetResponse>>([])
+const notificationsStore = useNotificationsStore();
 
 const GetData = () => {
   fetch(HOST + "/api/metadorerna/supplier", {
@@ -45,6 +47,15 @@ const GetData = () => {
   })
     .then((res) => res.json())
     .then((json) => suppliers.value = json)
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
 }
 GetData();
 

@@ -49,12 +49,16 @@ import PopupModal from '@/components/PopupModal.vue'
 import AddForm from '@/components/AddForm.vue'
 import FrontPageShortageItem from '@/components/FrontPageShortageItem.vue';
 import type { ItemGetResponse, StockGetResponse } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications';
+import type { Notification } from '@/types';
 
 const HOST = import.meta.env.VITE_HOST;
 const items = ref<Array<ItemGetResponse>>();
 const shortage = ref<Array<StockGetResponse>>()
 
 const openModal = ref<boolean>(false)
+
+const notificationsStore = useNotificationsStore();
 
 const DoneModal = () => {
   openModal.value = false;
@@ -67,10 +71,28 @@ const GetData = () => {
   })
     .then((res) => res.json())
     .then((json) => items.value = json)
+    .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+    })
 
   fetch(HOST + "/api/metadorerna/stock")
     .then((res) => res.json())
-    .then((json) => shortage.value = json)
+    .then((json: Array<StockGetResponse>) => shortage.value = json)
+    .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+    })
 
 }
 GetData();

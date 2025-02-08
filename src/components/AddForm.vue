@@ -41,7 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import type { ItemAddRequest } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications';
+import type { ItemAddRequest, Notification } from '@/types';
 import { ref } from 'vue'
 const HOST = import.meta.env.VITE_HOST;
 
@@ -55,6 +56,8 @@ const supplier = ref("")
 const link = ref("")
 
 const emit = defineEmits([ "done" ]);
+
+const notificationsStore = useNotificationsStore();
 
 const addItem = async () => {
   const res: ItemAddRequest = {
@@ -70,6 +73,34 @@ const addItem = async () => {
     method: "POST",
     body: JSON.stringify(res),
   })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Success",
+          message: "Produkten lades till",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
   emit('done')
 }
 
