@@ -1,20 +1,18 @@
-use std::env;
-
 use actix_cors::Cors;
+use actix_identity::{IdentityExt, IdentityMiddleware};
+use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
-    get,
-    web::{self, scope},
-    App, HttpResponse, HttpServer,
+    cookie::{time::Duration, Key},
+    dev::Service,
+    guard::Guard,
+    web::{self, scope, Data},
+    App, HttpServer,
 };
+use auth::{auth_callback, get_oidc};
 use dotenv::dotenv;
-use openidconnect::{
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
-    reqwest, AccessTokenHash, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
-    IssuerUrl, Nonce, OAuth2TokenResponse, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse,
-};
-use serde::Deserialize;
 use sqlx::SqlitePool;
 
+mod auth;
 mod item;
 mod log;
 mod serve;
@@ -27,14 +25,6 @@ use crate::serve::serve_frontend;
 use crate::shortage::{get_shortage, take_stock};
 use crate::supplier::{add_supplier, delete_supplier, get_supplier, update_supplier};
 
-#[derive(Deserialize)]
-#[serde(rename_all = "UPPERCASE")]
-struct Config {
-    database_url: String,
-    oidc_id: String,
-    oidc_secret: String,
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
@@ -45,79 +35,33 @@ async fn main() -> std::io::Result<()> {
             .expect("Expected sqlite database with name db.sqlite"),
     );
 
-    let http_client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .expect("Client should build");
+    let (oidc, auth_path) = get_oidc().await;
+    let oidc = Data::new(oidc);
+    let auth_url = Data::new(auth_path.clone());
 
-    let provider_metadata = CoreProviderMetadata::discover_async(
-        IssuerUrl::new(String::from("https://sso.datasektionen.se/op")).unwrap(),
-        &http_client,
-    )
-    .await
-    .unwrap();
-
-    let client = CoreClient::from_provider_metadata(
-        provider_metadata,
-        ClientId::new(env::var("OIDC_ID").unwrap()),
-        Some(ClientSecret::new(env::var("OIDC_SECRET").unwrap())),
-    )
-    .set_redirect_uri(
-        RedirectUrl::new(String::from("http://localhost:8080/oidc/callback")).unwrap(),
-    );
-
-    // let (pkce_challange, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-
-    let (auth_url, csrf_token, nonce) = client
-        .authorize_url(
-            CoreAuthenticationFlow::AuthorizationCode,
-            CsrfToken::new_random,
-            Nonce::new_random,
-        )
-        // .set_pkce_challenge(pkce_challange)
-        .url();
-
-    println!("Browse to: {}", auth_url);
-
-    let mut buf = String::new();
-
-    std::io::stdin().read_line(&mut buf);
-    let code = buf.trim();
-
-    let token_respones = client
-        .exchange_code(AuthorizationCode::new(code.to_string()))
-        .unwrap()
-        // .set_pkce_verifier(pkce_verifier)
-        .request_async(&http_client)
-        .await
-        .unwrap();
-
-    let id_token = token_respones.id_token().unwrap();
-
-    let id_token_verifier = client.id_token_verifier();
-    let claims = id_token.claims(&id_token_verifier, &nonce).unwrap();
-
-    if let Some(expected_access_token_hash) = claims.access_token_hash() {
-        let actual_access_token_hash = AccessTokenHash::from_token(
-            token_respones.access_token(),
-            id_token.signing_alg().unwrap(),
-            id_token.signing_key(&id_token_verifier).unwrap(),
-        ).unwrap();
-        if actual_access_token_hash != *expected_access_token_hash {
-            panic!()
-        }
-    }
-
-    println!("{:?}", claims);
+    let session_secret = Key::generate();
 
     HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
             .allow_any_method()
             .allow_any_header();
+
         App::new()
+            .wrap(IdentityMiddleware::default())
+            .wrap(
+                SessionMiddleware::builder(CookieSessionStore::default(), session_secret.clone())
+                    .cookie_name(String::from("session"))
+                    .cookie_secure(false)
+                    .session_lifecycle(
+                        PersistentSession::default().session_ttl(Duration::minutes(5)),
+                    )
+                    .build(),
+            )
             .wrap(cors)
             .app_data(pool.clone())
+            .app_data(oidc.clone())
+            .app_data(auth_url.clone())
             .service(
                 scope("/api")
                     .service(get_item)
@@ -132,10 +76,24 @@ async fn main() -> std::io::Result<()> {
                     .service(take_stock)
                     .service(get_log),
             )
+            .service(auth_callback)
             .service(serve_frontend)
-            .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
+            .service(
+                actix_files::Files::new("/", "../dist/")
+                    .index_file("index.html")
+                    .guard(LoginGuard),
+            )
+            .service(web::redirect("/", auth_path.to_string()))
     })
     .bind(("localhost", 8080))?
     .run()
     .await
+}
+
+struct LoginGuard;
+
+impl Guard for LoginGuard {
+    fn check(&self, ctx: &actix_web::guard::GuardContext<'_>) -> bool {
+        ctx.get_identity().is_ok()
+    }
 }

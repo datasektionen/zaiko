@@ -1,6 +1,9 @@
-use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
+use actix_identity::Identity;
+use actix_web::{delete, get, patch, post, web::{self, Redirect}, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
+
+use crate::auth::check_auth;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ItemGetResponse {
@@ -42,9 +45,15 @@ pub(crate) struct ItemUpdateRequest {
 pub(crate) async fn get_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
+    id: Option<Identity>
 ) -> impl Responder {
     log::info!("get items");
     let club = club.as_ref();
+
+    if !check_auth(id, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
     match sqlx::query_as!(
         ItemGetResponse,
         "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
