@@ -18,7 +18,7 @@
         </div>
       </div>
     </div>
-    <div class="left-panel" v-if="suppliers.length > 0 && selectedIndex">
+    <div class="left-panel" id="selectPanel" v-if="suppliers.length > 0 && selectedIndex">
       <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" @deleted="Refresh()"/>
     </div>
     <PopupModal :modal="openModal" @exit="openModal = false">
@@ -150,5 +150,38 @@ div {
 .filter-bar p {
   margin: 0;
   text-align: center;
+}
+
+@media (max-width: 1024px) {
+
+  .main {
+    grid-template-columns: 100%;
+  }
+
+  .left-panel {
+    width: 100%;
+    margin: 0;
+  }
+
+  #selectPanel {
+    order: -1;
+    min-height: 30rem;
+  }
+
+  .main {
+    padding: 3rem 1rem;
+  }
+
+  button {
+    padding: 0.5rem 1rem;
+  }
+
+  input {
+    max-width: 150px;
+  }
+
+  .filter-bar {
+    padding: 0.7rem 0.8rem;
+  }
 }
 </style>

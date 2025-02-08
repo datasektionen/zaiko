@@ -219,4 +219,17 @@ p {
   background-color: #eb4034;
   color: #fafafa;
 }
+
+@media (max-width: 700px) {
+
+  .main-content {
+    margin: 1rem 0;
+    gap: 1rem;
+  }
+
+  fieldset {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
 </style>
