@@ -50,7 +50,7 @@ const props = defineProps<{
   item: ItemGetResponse
 }>()
 
-const emit = defineEmits(["deleted"]);
+const emit = defineEmits(["deleted", "updated"]);
 
 const notificationsStore = useNotificationsStore();
 
@@ -107,6 +107,7 @@ const updateItem = async () => {
       }
       notificationsStore.add(noti);
     })
+  emit("updated")
 }
 
 const Delete = async () => {

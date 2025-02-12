@@ -13,14 +13,17 @@
         <p>Länk</p>
       </div>
       <div class="items">
-        <div :class="itemSelected(idx)" v-for="(item, idx) in suppliers" :key="item.name" @click="selected = idx">
+        <div :class="itemSelected(idx)" v-for="(item, idx) in suppliers" :key="item.name" @click="SelectItem(idx)">
           <SupplierItem :item="item" />
         </div>
       </div>
     </div>
-    <div class="left-panel" id="selectPanel" v-if="suppliers.length > 0 && selectedIndex">
-      <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" @deleted="Refresh()"/>
+    <div class="left-panel" id="selectPanel" v-if="suppliers.length > 0 && selectedIndex && !isMobile">
+      <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" @deleted="Refresh()" />
     </div>
+    <PopupModal :modal="openEdit" @exit="openEdit = false" v-else-if="suppliers.length > 0 && selectedIndex">
+      <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" @updated="DoneEdit()" />
+    </PopupModal>
     <PopupModal :modal="openModal" @exit="openModal = false">
       <SupplierForm @done="DoneModal()" />
     </PopupModal>
@@ -29,12 +32,13 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import SupplierItem from '../components/SupplierItem.vue';
+import SupplierItem from '@/components/SupplierItem.vue';
 import SupplierPanel from '@/components/SupplierPanel.vue';
 import PopupModal from '@/components/PopupModal.vue';
 import SupplierForm from '@/components/SupplierForm.vue';
 import type { SupplierGetResponse, Notification } from '@/types';
 import { useNotificationsStore } from '@/stores/notifications';
+import { useMediaQuery } from '@vueuse/core/index.cjs';
 
 const HOST = import.meta.env.VITE_HOST;
 
@@ -65,13 +69,28 @@ const DoneModal = () => {
   GetData()
 }
 
+const DoneEdit = () => {
+  openEdit.value = false;
+  GetData()
+}
+
 const Refresh = () => {
   selected.value = -1;
   GetData()
 }
 
 const openModal = ref<boolean>(false)
+const openEdit = ref<boolean>(false)
 const selected = ref<number>(-1);
+
+const SelectItem = (id: number) => {
+  if (!isMobile) {
+    selected.value = id;
+  } else {
+    openEdit.value = true;
+    selected.value = id;
+  }
+}
 
 const itemSelected = (id: number) => {
   if (id == selected.value) {
@@ -84,6 +103,8 @@ const itemSelected = (id: number) => {
 const selectedIndex = computed<SupplierGetResponse>(() => {
   return suppliers.value[selected.value];
 })
+
+const isMobile = useMediaQuery('(max-width: 1024px)');
 
 </script>
 
