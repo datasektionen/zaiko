@@ -183,5 +183,9 @@ p {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
+
+  h1 {
+    font-size: 2.55rem;
+  }
 }
 </style>

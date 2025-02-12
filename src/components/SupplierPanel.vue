@@ -1,5 +1,6 @@
 <template>
   <div class="main-content">
+    <h1>Redigera</h1>
     <form v-on:submit.prevent="updateItem">
       <div class="item">
         <p>Namn</p>
@@ -160,14 +161,14 @@ form {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2rem;
+  gap: 1.5rem;
   width: 100%;
 }
 
 fieldset {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3rem;
+  gap: 2.25rem;
   width: 100%;
 }
 
@@ -225,12 +226,16 @@ p {
 
   .main-content {
     margin: 1rem 0;
-    gap: 1rem;
+    gap: 0.7rem;
   }
 
   fieldset {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 0.5rem;
+  }
+
+  h1 {
+    font-size: 2.55rem;
   }
 }
 </style>

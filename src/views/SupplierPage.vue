@@ -21,10 +21,10 @@
     <div class="left-panel" id="selectPanel" v-if="suppliers.length > 0 && selectedIndex && !isMobile">
       <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" @deleted="Refresh()" />
     </div>
-    <PopupModal :modal="openEdit" @exit="openEdit = false" v-else-if="suppliers.length > 0 && selectedIndex">
+    <PopupModal :modal="openEdit" @exit="DoneEdit()" v-else-if="suppliers.length > 0 && selectedIndex">
       <SupplierPanel :item="selectedIndex" :key="selectedIndex.name" @updated="DoneEdit()" />
     </PopupModal>
-    <PopupModal :modal="openModal" @exit="openModal = false">
+    <PopupModal :modal="openModal" @exit="DoneModal()">
       <SupplierForm @done="DoneModal()" />
     </PopupModal>
   </div>
@@ -71,6 +71,7 @@ const DoneModal = () => {
 
 const DoneEdit = () => {
   openEdit.value = false;
+  selected.value = -1;
   GetData()
 }
 

@@ -173,12 +173,16 @@ fieldset .item input {
 
   .main-content {
     margin: 0;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 
   fieldset {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 0.7rem;
+  }
+
+  h1 {
+    font-size: 2.55rem;
   }
 }
 </style>
