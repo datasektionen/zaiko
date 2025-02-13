@@ -7,7 +7,7 @@ use actix_web::{
     web::{self, scope, Data},
     App, HttpServer,
 };
-use auth::{auth_callback, get_oidc};
+use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
 use sqlx::SqlitePool;
 use supplier::get_suppliers;
@@ -77,7 +77,8 @@ async fn main() -> std::io::Result<()> {
                     .service(delete_supplier)
                     .service(get_shortage)
                     .service(take_stock)
-                    .service(get_log),
+                    .service(get_log)
+                    .service(get_clubs)
             )
             .service(auth_callback)
             .service(serve_frontend)
