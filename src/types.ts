@@ -83,3 +83,9 @@ export interface Notification {
   message: string,
   severity: string,
 }
+
+export interface ClubStorage {
+  club: string,
+  clubs: Array<string>,
+  timestamp: number,
+}

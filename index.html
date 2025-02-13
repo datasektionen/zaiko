@@ -14,13 +14,21 @@
   </body>
   <div id="modal"></div>
   <div id="noti"></div>
+  <div id="club"></div>
 </html>
 
 <script>
     const HOST = "%VITE_HOST_FRONTEND%"
+    const clubs = JSON.parse(localStorage.getItem("clubs"));
+    let club = clubs.club ? clubs.club : "Nämnd";
+    if (club.length > 10) {
+      club = club.substring(0, 9) + "...";
+    }
     window.methone_conf = {
         system_name: "zaiko",
         color_scheme: "teal",
+        login_text: club,
+        login_href: "/?club",
         links: [
             {
                 str: "Produkter",
@@ -38,4 +46,4 @@
     }
 </script>
 
-<script async src="//methone.datasektionen.se/bar.js"></script>
+<script async src="https://methone.datasektionen.se/bar.js"></script>
