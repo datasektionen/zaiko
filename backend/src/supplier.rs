@@ -131,6 +131,10 @@ pub(crate) async fn add_supplier(
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
 
+    if supplier.name.is_empty() {
+        return HttpResponse::BadRequest().finish();
+    }
+
     match sqlx::query!(
         "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, strftime('%s', 'now'), $6)",
         supplier.name,
@@ -169,6 +173,10 @@ pub(crate) async fn update_supplier(
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
+
+    if supplier.name.is_empty() {
+        return HttpResponse::BadRequest().finish();
+    }
 
     match sqlx::query!(
         "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = strftime('%s', 'now') WHERE id = $6 AND club = $7",
