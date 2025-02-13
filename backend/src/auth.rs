@@ -1,57 +1,56 @@
-use std::env;
-
 use actix_identity::Identity;
-use actix_web::{
-    get,
-    web::{self, Data},
-    HttpMessage, HttpRequest, HttpResponse,
-};
+use actix_session::Session;
+use actix_web::{get, web, HttpMessage, HttpRequest, HttpResponse};
 use openidconnect::{
     core::{
-        CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreClient, CoreErrorResponseType,
+        CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
         CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm,
         CoreJwsSigningAlgorithm, CoreProviderMetadata, CoreRevocableToken, CoreTokenType,
     },
-    reqwest, AccessTokenHash, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
+    reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
     EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
     IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, RevocationErrorResponseType,
     StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
     TokenResponse,
 };
 use serde::Deserialize;
+use std::env;
+
+type OIDCClient = openidconnect::Client<
+    EmptyAdditionalClaims,
+    CoreAuthDisplay,
+    CoreGenderClaim,
+    CoreJweContentEncryptionAlgorithm,
+    CoreJsonWebKey,
+    CoreAuthPrompt,
+    StandardErrorResponse<CoreErrorResponseType>,
+    StandardTokenResponse<
+        IdTokenFields<
+            EmptyAdditionalClaims,
+            EmptyExtraTokenFields,
+            CoreGenderClaim,
+            CoreJweContentEncryptionAlgorithm,
+            CoreJwsSigningAlgorithm,
+        >,
+        CoreTokenType,
+    >,
+    StandardTokenIntrospectionResponse<EmptyExtraTokenFields, CoreTokenType>,
+    CoreRevocableToken,
+    StandardErrorResponse<RevocationErrorResponseType>,
+    EndpointSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointMaybeSet,
+    EndpointMaybeSet,
+>;
 
 #[derive(Clone)]
 pub struct OIDCData {
-    client: openidconnect::Client<
-        EmptyAdditionalClaims,
-        CoreAuthDisplay,
-        CoreGenderClaim,
-        CoreJweContentEncryptionAlgorithm,
-        CoreJsonWebKey,
-        CoreAuthPrompt,
-        StandardErrorResponse<CoreErrorResponseType>,
-        StandardTokenResponse<
-            IdTokenFields<
-                EmptyAdditionalClaims,
-                EmptyExtraTokenFields,
-                CoreGenderClaim,
-                CoreJweContentEncryptionAlgorithm,
-                CoreJwsSigningAlgorithm,
-            >,
-            CoreTokenType,
-        >,
-        StandardTokenIntrospectionResponse<EmptyExtraTokenFields, CoreTokenType>,
-        CoreRevocableToken,
-        StandardErrorResponse<RevocationErrorResponseType>,
-        EndpointSet,
-        EndpointNotSet,
-        EndpointNotSet,
-        EndpointNotSet,
-        EndpointMaybeSet,
-        EndpointMaybeSet,
-    >,
+    client: OIDCClient,
     http_client: reqwest::Client,
     nonce: Nonce,
+    csrf_token: CsrfToken,
 }
 
 #[derive(Deserialize)]
@@ -60,12 +59,14 @@ struct Query {
     state: String,
 }
 
-pub async fn check_auth(id: Option<Identity>, club: &String) -> bool {
-    if let Some(id) = id {
-        true
-    } else {
-        false
+pub async fn check_auth(id: Option<Identity>, session: Session, club: &String) -> bool {
+    if id.is_some() {
+        if let Ok(Some(privlages)) = session.get::<Vec<String>>("privlages") {
+            return privlages.contains(club);
+        }
     }
+
+    false
 }
 
 pub async fn get_oidc() -> (OIDCData, String) {
@@ -81,7 +82,7 @@ pub async fn get_oidc() -> (OIDCData, String) {
     .await
     .unwrap();
 
-    let client = CoreClient::from_provider_metadata(
+    let client = Client::from_provider_metadata(
         provider_metadata,
         ClientId::new(env::var("OIDC_ID").unwrap()),
         Some(ClientSecret::new(env::var("OIDC_SECRET").unwrap())),
@@ -98,6 +99,7 @@ pub async fn get_oidc() -> (OIDCData, String) {
             CsrfToken::new_random,
             Nonce::new_random,
         )
+        // .add_scope(Scope::new(String::from("pls_zaiko")))
         // .set_pkce_challenge(pkce_challange)
         .url();
 
@@ -105,6 +107,7 @@ pub async fn get_oidc() -> (OIDCData, String) {
         client,
         http_client,
         nonce,
+        csrf_token,
     };
 
     (oidc, auth_url.to_string())
@@ -113,17 +116,23 @@ pub async fn get_oidc() -> (OIDCData, String) {
 #[get("oidc/callback")]
 pub async fn auth_callback(
     req: HttpRequest,
+    session: Session,
     query: web::Query<Query>,
     oidc: web::Data<OIDCData>,
 ) -> HttpResponse {
+    if *oidc.csrf_token.secret() != query.state {
+        return HttpResponse::BadRequest().finish();
+    }
+
     let token_respones = oidc
         .client
         .exchange_code(AuthorizationCode::new(query.code.to_string()))
         .unwrap()
         // .set_pkce_verifier(oidc.pkce_verifier)
         .request_async(&oidc.http_client)
-        .await
-        .unwrap();
+        .await;
+
+    let token_respones = token_respones.unwrap();
 
     let id_token = token_respones.id_token().unwrap();
 
@@ -144,7 +153,19 @@ pub async fn auth_callback(
 
     Identity::login(&req.extensions(), claims.subject().to_string()).unwrap();
 
-    println!("{:?}", claims);
+    let res = reqwest::get(format!(
+        "https://pls.datasektionen.se/api/user/{}/zaiko",
+        claims.subject().as_str()
+    ))
+    .await
+    .unwrap()
+    .text()
+    .await
+    .unwrap();
+    let privlages: Vec<String> = serde_json::from_str(&res).unwrap();
+
+    session.insert("privlages", privlages).unwrap();
+
     HttpResponse::TemporaryRedirect()
         .insert_header(("location", "/"))
         .finish()

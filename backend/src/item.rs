@@ -1,5 +1,6 @@
 use actix_identity::Identity;
-use actix_web::{delete, get, patch, post, web::{self, Redirect}, HttpResponse, Responder};
+use actix_session::Session;
+use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
@@ -45,12 +46,13 @@ pub(crate) struct ItemUpdateRequest {
 pub(crate) async fn get_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
-    id: Option<Identity>
+    id: Option<Identity>,
+    session: Session
 ) -> impl Responder {
     log::info!("get items");
     let club = club.as_ref();
 
-    if !check_auth(id, club).await {
+    if !check_auth(id, session, club).await {
         return HttpResponse::Unauthorized().finish()
     } 
 
@@ -70,16 +72,23 @@ pub(crate) async fn get_item(
 pub(crate) async fn add_item(
     body: String,
     club: web::Path<String>,
+    id: Option<Identity>,
+    session: Session,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
     log::info!("add item");
     log::debug!("{}", body);
+
+    let club = club.as_ref();
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
     let item: ItemAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-
-    let club = club.as_ref();
 
     let res = match sqlx::query!(
         "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
@@ -131,15 +140,23 @@ pub(crate) async fn add_item(
 pub(crate) async fn update_item(
     club: web::Path<String>,
     body: String,
+    id: Option<Identity>,
+    session: Session,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
     log::info!("update item");
     log::debug!("{}", body);
+
+    let club = club.as_ref();
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
     let item: ItemUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-    let club = club.as_ref();
 
     let current = match sqlx::query!(
         "SELECT current FROM items WHERE name = $1 AND club = $2",
@@ -190,11 +207,18 @@ pub(crate) async fn update_item(
 #[delete("/{club}/item")]
 pub(crate) async fn delete_item(
     club: web::Path<String>,
-    id: web::Query<i64>,
+    item_id: web::Query<i64>,
+    id: Option<Identity>,
+    session: Session,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
     let club = club.as_ref();
-    match sqlx::query!("DELETE FROM items WHERE id = $1 AND club = $2", id.0, club)
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
+    match sqlx::query!("DELETE FROM items WHERE id = $1 AND club = $2", item_id.0, club)
         .execute(pool.get_ref())
         .await
     {
@@ -202,7 +226,7 @@ pub(crate) async fn delete_item(
         Err(_) => return HttpResponse::BadRequest().finish(),
     }
 
-    match sqlx::query!("DELETE FROM log WHERE item_id = $1 AND club = $2", id.0, club)
+    match sqlx::query!("DELETE FROM log WHERE item_id = $1 AND club = $2", item_id.0, club)
         .execute(pool.get_ref())
         .await
     {

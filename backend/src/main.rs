@@ -3,7 +3,6 @@ use actix_identity::{IdentityExt, IdentityMiddleware};
 use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::{time::Duration, Key},
-    dev::Service,
     guard::Guard,
     web::{self, scope, Data},
     App, HttpServer,
@@ -29,6 +28,7 @@ use crate::supplier::{add_supplier, delete_supplier, get_supplier, update_suppli
 async fn main() -> std::io::Result<()> {
     env_logger::init();
     dotenv().unwrap();
+
     let pool = web::Data::new(
         SqlitePool::connect("db.sqlite")
             .await
