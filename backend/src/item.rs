@@ -47,14 +47,14 @@ pub(crate) async fn get_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Sqlite>>,
     id: Option<Identity>,
-    session: Session
+    session: Session,
 ) -> impl Responder {
     log::info!("get items");
     let club = club.as_ref();
 
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
     match sqlx::query_as!(
         ItemGetResponse,
@@ -82,13 +82,17 @@ pub(crate) async fn add_item(
     let club = club.as_ref();
 
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
     let item: ItemAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
+
+    if item.name.is_empty() && item.location.is_empty() {
+        return HttpResponse::BadRequest().finish();
+    }
 
     let res = match sqlx::query!(
         "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
@@ -150,13 +154,17 @@ pub(crate) async fn update_item(
     let club = club.as_ref();
 
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
     let item: ItemUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
+
+    if item.name.is_empty() && item.location.is_empty() {
+        return HttpResponse::BadRequest().finish();
+    }
 
     let current = match sqlx::query!(
         "SELECT current FROM items WHERE name = $1 AND club = $2",
@@ -215,20 +223,28 @@ pub(crate) async fn delete_item(
     let club = club.as_ref();
 
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
-    match sqlx::query!("DELETE FROM items WHERE id = $1 AND club = $2", item_id.0, club)
-        .execute(pool.get_ref())
-        .await
+    match sqlx::query!(
+        "DELETE FROM items WHERE id = $1 AND club = $2",
+        item_id.0,
+        club
+    )
+    .execute(pool.get_ref())
+    .await
     {
         Ok(_) => {}
         Err(_) => return HttpResponse::BadRequest().finish(),
     }
 
-    match sqlx::query!("DELETE FROM log WHERE item_id = $1 AND club = $2", item_id.0, club)
-        .execute(pool.get_ref())
-        .await
+    match sqlx::query!(
+        "DELETE FROM log WHERE item_id = $1 AND club = $2",
+        item_id.0,
+        club
+    )
+    .execute(pool.get_ref())
+    .await
     {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(_) => HttpResponse::BadRequest().finish(),

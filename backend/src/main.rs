@@ -10,6 +10,7 @@ use actix_web::{
 use auth::{auth_callback, get_oidc};
 use dotenv::dotenv;
 use sqlx::SqlitePool;
+use supplier::get_suppliers;
 
 mod auth;
 mod item;
@@ -70,6 +71,7 @@ async fn main() -> std::io::Result<()> {
                     .service(update_item)
                     .service(delete_item)
                     .service(get_supplier)
+                    .service(get_suppliers)
                     .service(add_supplier)
                     .service(update_supplier)
                     .service(delete_supplier)
