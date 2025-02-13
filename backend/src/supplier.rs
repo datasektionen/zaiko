@@ -18,6 +18,12 @@ struct SupplierGetResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct SupplierListGetResponse {
+    id: i64,
+    name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct SupplierAddRequest {
     name: String,
     link: Option<String>,
@@ -77,6 +83,29 @@ pub(crate) async fn get_supplier(
             Ok(supplier) => HttpResponse::Ok().json(supplier),
             Err(_) => HttpResponse::InternalServerError().finish(),
         }
+    }
+}
+
+#[get("/{club}/suppliers")]
+pub(crate) async fn get_suppliers(club: web::Path<String>, id: Option<Identity>, session: Session, pool: web::Data<Pool<Sqlite>>) -> HttpResponse {
+    log::info!("get suppliers");
+
+    let club = club.as_ref();
+    
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
+    match sqlx::query_as!(
+        SupplierListGetResponse,
+        "SELECT id, name FROM suppliers WHERE club = $1",
+        club
+    )
+    .fetch_all(pool.get_ref())
+    .await
+    {
+        Ok(supplier) => HttpResponse::Ok().json(supplier),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
