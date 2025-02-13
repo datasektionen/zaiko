@@ -1,8 +1,10 @@
+use actix_identity::Identity;
+use actix_session::Session;
 use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
-use crate::item::ItemGetResponse;
+use crate::{auth::check_auth, item::ItemGetResponse};
 
 #[derive(Serialize)]
 struct ShortageItem {
@@ -22,10 +24,17 @@ struct StockUpdateRequest {
 #[get("/{club}/stock")]
 pub(crate) async fn get_shortage(
     club: web::Path<String>,
+    id: Option<Identity>,
+    session: Session,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
     log::info!("get shortage");
     let club = club.as_ref();
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
     let items = match sqlx::query_as!(ItemGetResponse, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),
@@ -51,17 +60,24 @@ pub(crate) async fn get_shortage(
 #[post("/{club}/stock")]
 pub(crate) async fn take_stock(
     club: web::Path<String>,
+    id: Option<Identity>,
+    session: Session,
     pool: web::Data<Pool<Sqlite>>,
     body: String,
 ) -> impl Responder {
     log::info!("update inventory");
     log::debug!("{}", body);
+
+    let club = club.as_ref();
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
     let items: StockUpdateRequest = match serde_json::from_str(&body) {
         Ok(items) => items,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-
-    let club = club.as_ref();
 
     for (id, amount) in items.items {
         if sqlx::query!(
