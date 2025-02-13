@@ -28,7 +28,7 @@ use crate::supplier::{add_supplier, delete_supplier, get_supplier, update_suppli
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
-    dotenv().unwrap();
+    dotenv().expect(".env to exist");
 
     let pool = web::Data::new(
         SqlitePool::connect("db.sqlite")
