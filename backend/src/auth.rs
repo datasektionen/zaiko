@@ -9,9 +9,9 @@ use openidconnect::{
     },
     reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
     EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
-    IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, RevocationErrorResponseType,
-    StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
-    TokenResponse,
+    IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl,
+    RevocationErrorResponseType, StandardErrorResponse, StandardTokenIntrospectionResponse,
+    StandardTokenResponse, TokenResponse,
 };
 use serde::Deserialize;
 use std::env;
@@ -49,6 +49,7 @@ type OIDCClient = openidconnect::Client<
 pub struct OIDCData {
     client: OIDCClient,
     http_client: reqwest::Client,
+    // pkce_verifier: PkceCodeVerifier,
     nonce: Nonce,
     csrf_token: CsrfToken,
 }
@@ -76,19 +77,23 @@ pub async fn get_oidc() -> (OIDCData, String) {
         .expect("Client should build");
 
     let provider_metadata = CoreProviderMetadata::discover_async(
-        IssuerUrl::new(String::from("https://sso.datasektionen.se/op")).unwrap(),
+        IssuerUrl::new(env::var("OIDC_PROVIDER").expect("OIDC_PROVIDER in .env"))
+            .expect("OIDC_PROVIDER to be correctly formated"),
         &http_client,
     )
     .await
-    .unwrap();
+    .expect("to get metadata from oidc provider");
 
     let client = Client::from_provider_metadata(
         provider_metadata,
-        ClientId::new(env::var("OIDC_ID").unwrap()),
-        Some(ClientSecret::new(env::var("OIDC_SECRET").unwrap())),
+        ClientId::new(env::var("OIDC_ID").expect("OIDC_ID in .env")),
+        Some(ClientSecret::new(
+            env::var("OIDC_SECRET").expect("OIDC_SECRET in .env"),
+        )),
     )
     .set_redirect_uri(
-        RedirectUrl::new(String::from("http://localhost:8080/oidc/callback")).unwrap(),
+        RedirectUrl::new(env::var("REDIRECT_URL").expect("REDIRECT_URL in .env"))
+            .expect("REDIRECT_URL to be correctly formated"),
     );
 
     // let (pkce_challange, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -107,6 +112,7 @@ pub async fn get_oidc() -> (OIDCData, String) {
         client,
         http_client,
         nonce,
+        // pkce_verifier,
         csrf_token,
     };
 
@@ -121,50 +127,114 @@ pub async fn auth_callback(
     oidc: web::Data<OIDCData>,
 ) -> HttpResponse {
     if *oidc.csrf_token.secret() != query.state {
+        log::error!("Invalid CSRF token on oidc callback");
         return HttpResponse::BadRequest().finish();
     }
 
-    let token_respones = oidc
+    let token_respones = match oidc
         .client
         .exchange_code(AuthorizationCode::new(query.code.to_string()))
-        .unwrap()
-        // .set_pkce_verifier(oidc.pkce_verifier)
-        .request_async(&oidc.http_client)
-        .await;
+    {
+        Ok(request) => match request.request_async(&oidc.http_client).await {
+            Ok(token) => token,
+            Err(err) => {
+                log::error!("{}", err);
+                return HttpResponse::InternalServerError().finish();
+            }
+        },
+        Err(err) => {
+            log::error!("{}", err);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
 
-    let token_respones = token_respones.unwrap();
-
-    let id_token = token_respones.id_token().unwrap();
+    let id_token = match token_respones.id_token() {
+        Some(token) => token,
+        None => {
+            log::error!("oidc server returned no id");
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
 
     let id_token_verifier = oidc.client.id_token_verifier();
-    let claims = id_token.claims(&id_token_verifier, &oidc.nonce).unwrap();
+
+    let claims = match id_token.claims(&id_token_verifier, &oidc.nonce) {
+        Ok(claims) => claims,
+        Err(err) => {
+            log::error!("{}", err);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
 
     if let Some(expected_access_token_hash) = claims.access_token_hash() {
-        let actual_access_token_hash = AccessTokenHash::from_token(
+        let actual_access_token_hash = match AccessTokenHash::from_token(
             token_respones.access_token(),
-            id_token.signing_alg().unwrap(),
-            id_token.signing_key(&id_token_verifier).unwrap(),
-        )
-        .unwrap();
+            match id_token.signing_alg() {
+                Ok(alg) => alg,
+                Err(err) => {
+                    log::error!("{}", err);
+                    return HttpResponse::InternalServerError().finish();
+                }
+            },
+            match id_token.signing_key(&id_token_verifier) {
+                Ok(key) => key,
+                Err(err) => {
+                    log::error!("{}", err);
+                    return HttpResponse::InternalServerError().finish();
+                }
+            },
+        ) {
+            Ok(hash) => hash,
+            Err(err) => {
+                log::error!("{}", err);
+                return HttpResponse::InternalServerError().finish();
+            }
+        };
         if actual_access_token_hash != *expected_access_token_hash {
-            panic!()
+            log::error!(
+                "Hashes did not mach for subject {}",
+                claims.subject().to_string()
+            );
+            return HttpResponse::InternalServerError().finish();
         }
     }
 
-    Identity::login(&req.extensions(), claims.subject().to_string()).unwrap();
+    if let Err(err) = Identity::login(&req.extensions(), claims.subject().to_string()) {
+        log::error!("{}", err);
+        return HttpResponse::InternalServerError().finish();
+    }
 
-    let res = reqwest::get(format!(
+    let res = match reqwest::get(format!(
         "https://pls.datasektionen.se/api/user/{}/zaiko",
         claims.subject().as_str()
     ))
     .await
-    .unwrap()
-    .text()
-    .await
-    .unwrap();
-    let privlages: Vec<String> = serde_json::from_str(&res).unwrap();
+    {
+        Ok(res) => match res.text().await {
+            Ok(res) => res,
+            Err(err) => {
+                log::error!("{}", err);
+                return HttpResponse::InternalServerError().finish();
+            }
+        },
+        Err(err) => {
+            log::error!("{}", err);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
 
-    session.insert("privlages", privlages).unwrap();
+    let privlages: Vec<String> = match serde_json::from_str(&res) {
+        Ok(privlages) => privlages,
+        Err(err) => {
+            log::error!("{}", err);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
+
+    if let Err(err) = session.insert("privlages", privlages) {
+        log::error!("{}", err);
+        return HttpResponse::InternalServerError().finish();
+    }
 
     HttpResponse::TemporaryRedirect()
         .insert_header(("location", "/"))

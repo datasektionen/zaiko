@@ -17,6 +17,7 @@ mod log;
 mod serve;
 mod shortage;
 mod supplier;
+mod error;
 
 use crate::item::{add_item, delete_item, get_item, update_item};
 use crate::log::get_log;
