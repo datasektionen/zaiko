@@ -22,7 +22,7 @@ sqlite3 db.sqlite 'CREATE TABLE IF NOT EXISTS items(
     club TEXT NOT NULL
     );' \
     'CREATE TABLE IF NOT EXISTS log(
-    id PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY NOT NULL,
     item_id INTEGER NOT NULL,
     amount REAL NOT NULL,
     time INTEGER NOT NULL,
