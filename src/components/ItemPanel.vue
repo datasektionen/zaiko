@@ -1,7 +1,7 @@
 <template>
   <div class="main-content">
-    <h1>Lägg till</h1>
-    <form v-on:submit.prevent="addItem">
+    <h1>Redigera</h1>
+    <form v-on:submit.prevent="updateItem">
       <div class="item">
         <p>Produkt</p>
         <input v-model="name" placeholder="Produkt">
@@ -26,7 +26,7 @@
       </fieldset>
       <div class="item">
         <p>Leverantör</p>
-        <input v-model="supplier" placeholder="Leverantör">
+        <input type="number" v-model="supplier" placeholder="Leverantör">
       </div>
       <div class="item">
         <p>Länk</p>
@@ -34,7 +34,8 @@
       </div>
       <input v-model="club" placeholder="Nämnd">
       <div class="submit">
-        <input class="button" type="submit" value="Lägg till">
+        <button @click="Delete()" class="delete">Ta bort</button>
+        <input class="button" type="submit" value="Spara">
       </div>
     </form>
   </div>
@@ -42,43 +43,49 @@
 
 <script setup lang="ts">
 import { useNotificationsStore } from '@/stores/notifications';
-import type { ItemAddRequest, Notification } from '@/types';
+import type { ItemGetResponse, ItemUpdateRequest, Notification } from '@/types';
 import { ref } from 'vue'
 const HOST = import.meta.env.VITE_HOST;
 
-const club = ref("metadorerna")
-const name = ref("")
-const location = ref("")
-const min = ref(0)
-const max = ref(0)
-const current = ref(0)
-const supplier = ref("")
-const link = ref("")
+const props = defineProps<{
+  item: ItemGetResponse
+}>()
 
-const emit = defineEmits([ "done" ]);
+const emit = defineEmits(["deleted", "updated"]);
 
 const notificationsStore = useNotificationsStore();
 
-const addItem = async () => {
-  const res: ItemAddRequest = {
+const club = ref("metadorerna")
+const name = ref(props.item.name)
+const location = ref(props.item.location)
+const min = ref(props.item.min)
+const max = ref(props.item.max)
+const current = ref(props.item.current)
+const supplier = ref(props.item.supplier)
+const link = ref(props.item.link)
+
+
+const updateItem = async () => {
+  const res: ItemUpdateRequest = {
+    id: props.item.id,
     name: name.value,
     location: location.value,
     min: min.value,
     max: max.value,
     current: current.value,
-    supplier: Number.parseInt(supplier.value),
+    supplier: supplier.value,
     link: link.value,
   }
   await fetch(HOST + "/api/" + club.value + "/item", {
-    method: "POST",
+    method: "PATCH",
     body: JSON.stringify(res),
   })
     .then((res) => {
       if (res.ok) {
         const noti: Notification = {
           id: Date.now(),
-          title: "Success",
-          message: "Produkten lades till",
+          title: "Updaterad",
+          message: "Produkten har uppdaterats",
           severity: "info",
         }
         notificationsStore.add(noti);
@@ -101,7 +108,43 @@ const addItem = async () => {
       }
       notificationsStore.add(noti);
     })
-  emit('done')
+  emit("updated")
+}
+
+const Delete = async () => {
+  await fetch(HOST + "/api/" + club.value + "/item", {
+    method: "DELETE",
+    body: JSON.stringify({ name: name.value })
+  })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Borttagen",
+          message: "Produkten har tagits bort",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+  emit("deleted")
 }
 
 </script>
@@ -131,14 +174,14 @@ form {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2rem;
+  gap: 1.75rem;
   width: 100%;
 }
 
 fieldset {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 3rem;
+  gap: 2rem;
   width: 100%;
 }
 
@@ -165,20 +208,26 @@ fieldset .item input {
 
 .submit {
   display: flex;
-  align-items: flex-end;
-  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2rem;
+  flex-direction: row;
+}
+
+.delete {
+  background-color: #eb4034;
+  color: #fafafa;
 }
 
 @media (max-width: 700px) {
 
   .main-content {
     margin: 0;
-    gap: 0.5rem;
+    gap: 1rem;
   }
 
   fieldset {
     grid-template-columns: 1fr;
-    gap: 0.7rem;
+    gap: 0.66rem;
   }
 
   h1 {

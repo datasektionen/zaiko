@@ -1,6 +1,23 @@
 # zaiko
 
-prototype of an inventory management system for the computer sciense chapter at KTH university
+prototype of an inventory management system for the computer science chapter at KTH university
+
+# API
+
+| Endpoint      | Method       | Input                                       | Output                                                   |
+|---------------|--------------|---------------------------------------------|----------------------------------------------------------|
+| item          | get          | -                                           | id name location min max current supplier link updated   |
+|               | post         | name location min max current supplier link | -                                                        |
+|               | patch        | name location min max current supplier link | -                                                        |
+|               | delete       | query(id)                                   | -                                                        |
+| supplier      | get          | -                                           | id name link notes username password                     |
+|               | get          | query(id)                                   | name                                                     |
+|               | post         | name link notes username password           | -                                                        |
+|               | patch        | name link notes username password           | -                                                        |
+|               | delete       | query(id)                                   | -                                                        |
+| stock         | get          | -                                           | List(id name location current min order)                 |
+|               | post         | List(id amount)                             | -                                                        |
+| log           | get          | query(id)                                   | List(amount time)                                        |
 
 ## Type Support for `.vue` Imports in TS
 

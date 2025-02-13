@@ -3,34 +3,26 @@
     <h1>Lägg till</h1>
     <form v-on:submit.prevent="addItem">
       <div class="item">
-        <p>Produkt</p>
-        <input v-model="name" placeholder="Produkt">
-      </div>
-      <div class="item">
-        <p>Plats</p>
-        <input v-model="location" placeholder="Plats">
-      </div>
-      <fieldset>
-        <div class="item">
-          <p>Min</p>
-          <input type="number" v-model="min" placeholder="Min">
-        </div>
-        <div class="item">
-          <p>Max</p>
-          <input type="number" v-model="max" placeholder="Max">
-        </div>
-        <div class="item">
-          <p>Nuvarande</p>
-          <input type="number" v-model="current" placeholder="Nuvarande">
-        </div>
-      </fieldset>
-      <div class="item">
-        <p>Leverantör</p>
-        <input v-model="supplier" placeholder="Leverantör">
+        <p>Namn</p>
+        <input v-model="name" placeholder="Namn">
       </div>
       <div class="item">
         <p>Länk</p>
         <input v-model="link" placeholder="Länk">
+      </div>
+      <fieldset>
+        <div class="item">
+          <p>Användarnamn</p>
+          <input v-model="username" placeholder="Användarnamn">
+        </div>
+        <div class="item">
+          <p>Lösenord</p>
+          <input v-model="password" placeholder="Lösenord">
+        </div>
+      </fieldset>
+      <div class="item area">
+        <p>Antäckningar</p>
+        <textarea v-model="note" placeholder="Antäckningar"></textarea>
       </div>
       <input v-model="club" placeholder="Nämnd">
       <div class="submit">
@@ -42,43 +34,39 @@
 
 <script setup lang="ts">
 import { useNotificationsStore } from '@/stores/notifications';
-import type { ItemAddRequest, Notification } from '@/types';
-import { ref } from 'vue'
+import type { SupplierAddRequest, Notification } from '@/types';
+import { ref } from 'vue';
 const HOST = import.meta.env.VITE_HOST;
 
-const club = ref("metadorerna")
-const name = ref("")
-const location = ref("")
-const min = ref(0)
-const max = ref(0)
-const current = ref(0)
-const supplier = ref("")
-const link = ref("")
+const emit = defineEmits(["done"]);
 
-const emit = defineEmits([ "done" ]);
+const name = ref("")
+const username = ref("")
+const password = ref("")
+const link = ref("")
+const note = ref("")
+const club = ref("metadorerna")
 
 const notificationsStore = useNotificationsStore();
 
 const addItem = async () => {
-  const res: ItemAddRequest = {
+  const supplier: SupplierAddRequest = {
     name: name.value,
-    location: location.value,
-    min: min.value,
-    max: max.value,
-    current: current.value,
-    supplier: Number.parseInt(supplier.value),
+    username: username.value,
+    password: password.value,
     link: link.value,
+    notes: note.value,
   }
-  await fetch(HOST + "/api/" + club.value + "/item", {
+  await fetch(HOST + "/api/" + club.value + "/supplier", {
     method: "POST",
-    body: JSON.stringify(res),
+    body: JSON.stringify(supplier),
   })
     .then((res) => {
       if (res.ok) {
         const noti: Notification = {
           id: Date.now(),
-          title: "Success",
-          message: "Produkten lades till",
+          title: "Sparad",
+          message: "Leverantören lades till",
           severity: "info",
         }
         notificationsStore.add(noti);
@@ -101,9 +89,9 @@ const addItem = async () => {
       }
       notificationsStore.add(noti);
     })
+
   emit('done')
 }
-
 </script>
 
 <style scoped>
@@ -113,11 +101,8 @@ const addItem = async () => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 2rem;
+  max-width: 700px;
   margin: 2rem auto;
-}
-
-p {
-  margin: 0;
 }
 
 h1 {
@@ -137,13 +122,13 @@ form {
 
 fieldset {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 3rem;
   width: 100%;
 }
 
-fieldset .item input {
-  max-width: 100px;
+p {
+  margin: 0;
 }
 
 .item {
@@ -152,8 +137,6 @@ fieldset .item input {
   align-items: center;
   border-bottom: 2px solid rgba(0, 105, 92, 0.25);
   padding: 8px 0;
-  margin-bottom: 8px;
-  max-width: 100%;
 }
 
 .item input {
@@ -161,6 +144,26 @@ fieldset .item input {
   background-color: inherit;
   text-align: right;
   width: 100%;
+}
+
+.area {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.area p {
+  padding-bottom: 8px;
+  margin: 0;
+  margin-bottom: 8px;
+  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
+  width: auto;
+}
+
+.area textarea {
+  border: none;
+  background-color: inherit;
+  min-height: 10rem;
+  min-width: 100%;
 }
 
 .submit {
@@ -173,12 +176,12 @@ fieldset .item input {
 
   .main-content {
     margin: 0;
-    gap: 0.5rem;
+    gap: 1rem;
   }
 
   fieldset {
     grid-template-columns: 1fr;
-    gap: 0.7rem;
+    gap: 1rem;
   }
 
   h1 {

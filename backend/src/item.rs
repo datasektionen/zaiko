@@ -1,9 +1,13 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
-use serde::{Serialize, Deserialize};
+use actix_identity::Identity;
+use actix_session::Session;
+use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
+use crate::auth::check_auth;
+
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct Item {
+pub(crate) struct ItemGetResponse {
     pub(crate) id: i64,
     pub(crate) name: String,
     pub(crate) location: String,
@@ -16,40 +20,75 @@ pub(crate) struct Item {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct AddItem {
+pub(crate) struct ItemAddRequest {
     pub(crate) name: String,
     pub(crate) location: String,
     pub(crate) min: Option<f64>,
     pub(crate) max: Option<f64>,
     pub(crate) current: f64,
-    pub(crate) supplier: Option<String>,
+    pub(crate) supplier: Option<i64>,
     pub(crate) link: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct UpdateItem {
+pub(crate) struct ItemUpdateRequest {
     pub(crate) id: i64,
     pub(crate) name: String,
     pub(crate) location: String,
     pub(crate) min: Option<f64>,
     pub(crate) max: Option<f64>,
     pub(crate) current: f64,
-    pub(crate) supplier: Option<String>,
+    pub(crate) supplier: Option<i64>,
     pub(crate) link: Option<String>,
+}
+
+#[get("/{club}/item")]
+pub(crate) async fn get_item(
+    club: web::Path<String>,
+    pool: web::Data<Pool<Sqlite>>,
+    id: Option<Identity>,
+    session: Session
+) -> impl Responder {
+    log::info!("get items");
+    let club = club.as_ref();
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
+    match sqlx::query_as!(
+        ItemGetResponse,
+        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
+        club
+    )
+    .fetch_all(pool.get_ref())
+    .await {
+        Ok(items) => HttpResponse::Ok().json(items),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
 }
 
 #[post("/{club}/item")]
 pub(crate) async fn add_item(
     body: String,
     club: web::Path<String>,
+    id: Option<Identity>,
+    session: Session,
     pool: web::Data<Pool<Sqlite>>,
 ) -> HttpResponse {
-    let item: AddItem = match serde_json::from_str(&body) {
+    log::info!("add item");
+    log::debug!("{}", body);
+
+    let club = club.as_ref();
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
+    let item: ItemAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-
-    let club = club.as_ref();
 
     let res = match sqlx::query!(
         "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
@@ -65,8 +104,8 @@ pub(crate) async fn add_item(
     .execute(pool.get_ref())
     .await
     {
-        Ok(_) => HttpResponse::Ok().body(format!("{:?}", item)),
-        Err(_) => HttpResponse::BadRequest().body(format!("{:?}", item)),
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
     };
 
     let id = match sqlx::query!(
@@ -75,13 +114,14 @@ pub(crate) async fn add_item(
         club
     )
     .fetch_one(pool.get_ref())
-    .await {
+    .await
+    {
         Ok(id) => id.id,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
 
     match sqlx::query!(
-        "INSERT INTO log (item, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+        "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
         id,
         item.current,
         club
@@ -96,17 +136,27 @@ pub(crate) async fn add_item(
     res
 }
 
-#[post("/{club}/update")]
+#[patch("/{club}/item")]
 pub(crate) async fn update_item(
     club: web::Path<String>,
     body: String,
+    id: Option<Identity>,
+    session: Session,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
-    let item: UpdateItem = match serde_json::from_str(&body) {
+    log::info!("update item");
+    log::debug!("{}", body);
+
+    let club = club.as_ref();
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
+    let item: ItemUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-    let club = club.as_ref();
 
     let current = match sqlx::query!(
         "SELECT current FROM items WHERE name = $1 AND club = $2",
@@ -122,7 +172,7 @@ pub(crate) async fn update_item(
 
     if current != item.current {
         match sqlx::query!(
-            "INSERT INTO log (item, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
             item.id,
             item.current,
             club
@@ -149,26 +199,39 @@ pub(crate) async fn update_item(
     .execute(pool.get_ref())
     .await
     {
-        Ok(_) => HttpResponse::Ok().body(format!("{:?}", item)),
-        Err(_) => HttpResponse::BadRequest().body(format!("{:?}", item)),
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
     }
 }
 
-#[get("/{club}/items")]
-pub(crate) async fn get_items(
+#[delete("/{club}/item")]
+pub(crate) async fn delete_item(
     club: web::Path<String>,
+    item_id: web::Query<i64>,
+    id: Option<Identity>,
+    session: Session,
     pool: web::Data<Pool<Sqlite>>,
 ) -> impl Responder {
     let club = club.as_ref();
-    match sqlx::query_as!(
-        Item,
-        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
-        club
-    )
-    .fetch_all(pool.get_ref())
-    .await {
-        Ok(items) => HttpResponse::Ok().json(items),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
+    match sqlx::query!("DELETE FROM items WHERE id = $1 AND club = $2", item_id.0, club)
+        .execute(pool.get_ref())
+        .await
+    {
+        Ok(_) => {}
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    }
+
+    match sqlx::query!("DELETE FROM log WHERE item_id = $1 AND club = $2", item_id.0, club)
+        .execute(pool.get_ref())
+        .await
+    {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::BadRequest().finish(),
     }
 }
 
@@ -177,7 +240,7 @@ mod tests {
     use actix_web::{test, web, App};
     use sqlx::SqlitePool;
 
-    use super::{add_item, get_items, update_item, AddItem};
+    use super::{add_item, get_item, update_item, ItemAddRequest};
 
     #[actix_web::test]
     async fn test_get_all_items() {
@@ -187,7 +250,7 @@ mod tests {
                 .expect("Expected sqlite database with name db.sqlite"),
         );
 
-        let app = test::init_service(App::new().app_data(pool).service(get_items)).await;
+        let app = test::init_service(App::new().app_data(pool).service(get_item)).await;
         let req = test::TestRequest::get()
             .uri("/metadorerna/items")
             .to_request();
@@ -203,7 +266,7 @@ mod tests {
                 .expect("Expected sqlite database with name db.sqlite"),
         );
 
-        let body = AddItem {
+        let body = ItemAddRequest {
             name: String::from("tejp"),
             min: Some(10.0),
             max: Some(20.0),
@@ -230,7 +293,7 @@ mod tests {
                 .expect("Expected sqlite database with name db.sqlite"),
         );
 
-        let mut body = AddItem {
+        let mut body = ItemAddRequest {
             name: String::from("tejp"),
             min: Some(10.0),
             max: Some(20.0),

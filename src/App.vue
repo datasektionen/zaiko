@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import NotificationList from '@/components/NotificationList.vue';
 </script>
 
 <template>
@@ -10,12 +10,21 @@ import { RouterLink, RouterView } from 'vue-router'
   <!--       <RouterLink to="/about">About</RouterLink> -->
   <!--     </nav> -->
   <!-- </header> -->
-
-  <RouterView />
+  <main>
+    <RouterView />
+    <NotificationList />
+  </main>
 </template>
 
 <style scoped>
 #methone-buffer {
   height: 50px;
+}
+
+main {
+  max-width: 1280px;
+  margin: auto;
+  position: relative;
+  overflow: scroll;
 }
 </style>

@@ -18,11 +18,12 @@ sqlite3 db.sqlite 'CREATE TABLE IF NOT EXISTS items(
     notes TEXT,
     username TEXT,
     password TEXT,
+    updated INTEGER NOT NULL,
     club TEXT NOT NULL
     );' \
     'CREATE TABLE IF NOT EXISTS log(
-    id INTEGER PRIMARY KEY NOT NULL,
-    item INTEGER NOT NULL,
+    id PRIMARY KEY NOT NULL,
+    item_id INTEGER NOT NULL,
     amount REAL NOT NULL,
     time INTEGER NOT NULL,
     club TEXT NOT NULL

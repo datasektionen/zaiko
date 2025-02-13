@@ -1,49 +1,52 @@
 <template>
   <div>
-    <p>{{item.name}}</p>
-    <p>{{item.location}}</p>
-    <p>{{item.club}}</p>
-    <p>{{item.min}}</p>
-    <p>{{item.max}}</p>
-    <p>{{item.current}}</p>
-    <p>{{item.supplier}}</p>
-    <a :href="item.link">Link</a>
-    <button>Edit</button>
+    <a target="_blank" :href="item.link" v-if="item.link">{{ item.name }}</a>
+    <p v-else>{{ item.name }}</p>
+    <p>{{ item.location }}</p>
+    <p>{{ item.current }}</p>
+    <p>{{ status }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-defineProps({
-  item: {
-    name: String,
-    location: String,
-    club: String,
-    min: Number,
-    max: Number,
-    current: Number,
-    supplier: String,
-    link: String,
-  },
+import type { ItemGetResponse } from '@/types';
+import { computed } from 'vue';
+
+const props = defineProps<{
+  item: ItemGetResponse
+}>()
+
+const status = computed<string>(() => {
+  const min = props.item.min ? props.item.min : 0
+  const diff = props.item.current - min
+
+  if (diff > 3) {
+    return '✅'
+  } if (diff > 0) {
+    return '⚠️'
+  } else {
+    return '🛑'
+  }
 });
 
 </script>
 
 <style scoped>
-  * {
-    font-family: Lato;
-  }
+* {
+  font-family: Lato;
+}
 
-  div {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
-  }
+div {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
+  padding: 10px 0;
+  background-color: rgba(0,0,0,0);
+}
 
-  p,a {
-    border-right: 1px solid lightgray;
-    padding: 1rem;
-  }
-
-  button {
-    padding: 1rem;
-  }
+p, a {
+  text-align: center;
+  text-overflow: ellipsis;
+  margin: 0;
+}
 </style>
