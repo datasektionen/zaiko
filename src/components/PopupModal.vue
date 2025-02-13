@@ -27,13 +27,13 @@ const emit = defineEmits([ "exit" ]);
   background-color: #f1f1f1;
   border-radius: 2px;
   padding: 15px 3rem;
-  min-height: 80vh;
+  min-height: 75vh;
 }
 
 .modal-bg {
   position: absolute;
   z-index: 10;
-  top: 0;
+  top: 48px;
   left: 0;
   width: 100%;
   height: 100%;
@@ -41,5 +41,11 @@ const emit = defineEmits([ "exit" ]);
   justify-content: center;
   align-items: center;
   background-color: rgba(0, 0, 0, 0.20);
+}
+
+@media (max-width: 768px) {
+  .modal {
+    padding: 15px 1rem;
+  }
 }
 </style>

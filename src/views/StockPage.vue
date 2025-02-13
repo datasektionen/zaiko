@@ -3,7 +3,7 @@
     <div class="panel">
       <div class="top-bar">
         <h2 class="brist">Inventera</h2>
-        <div class="top-bar filter-bar">
+        <div class="filter-bar">
           <p>Filter</p>
           <input type="text">
         </div>
@@ -159,6 +159,33 @@ div {
   padding-bottom: 1rem;
   margin: 0;
   border-bottom: 2px solid rgba(0, 105, 92, 0.25);
+}
 
+@media (max-width: 1024px) {
+  .panel {
+    grid-template-columns: 100%;
+    width: 100%;
+  }
+
+  .main {
+    margin: 1rem;
+  }
+
+  button {
+    padding: 0.5rem 1rem;
+  }
+
+  .top-bar {
+    padding: 0.7rem 0.8rem;
+    gap: 1rem;
+  }
+
+  .filter-bar {
+    padding: 0.7rem 0.8rem;
+  }
+
+  input {
+    max-width: 150px;
+  }
 }
 </style>

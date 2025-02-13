@@ -168,4 +168,21 @@ fieldset .item input {
   align-items: flex-end;
   flex-direction: column;
 }
+
+@media (max-width: 700px) {
+
+  .main-content {
+    margin: 0;
+    gap: 0.5rem;
+  }
+
+  fieldset {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
+  h1 {
+    font-size: 2.55rem;
+  }
+}
 </style>

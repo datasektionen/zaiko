@@ -7,7 +7,6 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   function add(notification: Notification) {
     notifications.value.push(notification)
-    console.log('notifications', notifications.value)
   }
 
   function pop() {

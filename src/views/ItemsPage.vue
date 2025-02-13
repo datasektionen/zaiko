@@ -15,15 +15,18 @@
         <p>Status</p>
       </div>
       <div class="items">
-        <div :class="itemSelected(idx)" v-for="(item, idx) in items" :key="item.id" @click="selected = idx">
+        <div :class="itemSelected(idx)" v-for="(item, idx) in items" :key="item.id" @click="SelectItem(idx)">
           <FrontPageItem :item="item" />
         </div>
       </div>
     </div>
-    <div class="left-panel" v-if="items.length > 0 && selectedIndex">
+    <div class="left-panel" id="selectPanel" v-if="items.length > 0 && selectedIndex && !isMobile">
       <ItemPanel :item="selectedIndex" :key="selectedIndex.id" />
     </div>
-    <PopupModal :modal="openModal" @exit="openModal = false">
+    <PopupModal :modal="openEdit" @exit="DoneEdit()" v-else-if="items.length > 0 && selectedIndex">
+      <ItemPanel :item="selectedIndex" :key="selectedIndex.id" @updated="DoneEdit()"/>
+    </PopupModal>
+    <PopupModal :modal="openModal" @exit="DoneModal()">
       <AddForm @done="DoneModal()" />
     </PopupModal>
   </div>
@@ -37,6 +40,7 @@ import AddForm from '@/components/AddForm.vue';
 import ItemPanel from '@/components/ItemPanel.vue';
 import type { ItemGetResponse, Notification } from '@/types';
 import { useNotificationsStore } from '@/stores/notifications';
+import { useMediaQuery } from '@vueuse/core/index.cjs';
 const HOST = import.meta.env.VITE_HOST;
 
 const items = ref<Array<ItemGetResponse>>([]);
@@ -63,8 +67,14 @@ const DoneModal = () => {
   openModal.value = false;
   GetData()
 }
+const DoneEdit = () => {
+  openEdit.value = false;
+  selected.value = -1;
+  GetData()
+}
 
 const openModal = ref<boolean>(false)
+const openEdit = ref<boolean>(false)
 const selected = ref<number>(-1);
 
 const itemSelected = (id: number) => {
@@ -75,10 +85,20 @@ const itemSelected = (id: number) => {
   }
 }
 
+const SelectItem = (id: number) => {
+  if (!isMobile) {
+    selected.value = id;
+  } else {
+    openEdit.value = true;
+    selected.value = id;
+  }
+}
+
 const selectedIndex = computed<ItemGetResponse>(() => {
   return items.value[selected.value];
 })
 
+const isMobile = useMediaQuery('(max-width: 1024px)');
 
 </script>
 
@@ -145,5 +165,38 @@ div {
 .filter-bar p {
   margin: 0;
   text-align: center;
+}
+
+@media (max-width: 1024px) {
+
+  .main {
+    grid-template-columns: 100%;
+  }
+
+  .left-panel {
+    width: 100%;
+    margin: 0;
+  }
+
+  #selectPanel {
+    order: -1;
+    min-height: 30rem;
+  }
+
+  .main {
+    padding: 3rem 1rem;
+  }
+
+  button {
+    padding: 0.5rem 1rem;
+  }
+
+  input {
+    max-width: 150px;
+  }
+
+  .filter-bar {
+    padding: 0.7rem 0.8rem;
+  }
 }
 </style>

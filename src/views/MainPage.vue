@@ -18,7 +18,7 @@
         <FrontPageItem :item="item" v-for="item in items" :key="item.id" />
       </div>
     </div>
-    <div class="left-panel">
+    <div class="left-panel" id="bristPanel">
       <div class="top-bar">
         <h2 class="brist">Brist</h2>
         <div class="top-bar filter-bar">
@@ -160,4 +160,38 @@ div {
   border-bottom: 2px solid rgba(0, 105, 92, 0.25);
 
 }
+
+@media (max-width: 1024px) {
+
+  .main {
+    grid-template-columns: 100%;
+  }
+
+  .left-panel {
+    width: 100%;
+    margin: 0;
+  }
+
+  #bristPanel {
+    order: -1;
+    min-height: 30rem;
+  }
+
+  .main {
+    padding: 3rem 1rem;
+  }
+
+  button {
+    padding: 0.5rem 1rem;
+  }
+
+  input {
+    max-width: 150px;
+  }
+
+  .filter-bar {
+    padding: 0.7rem 0.8rem;
+  }
+}
+
 </style>

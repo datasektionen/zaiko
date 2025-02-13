@@ -1,5 +1,6 @@
 <template>
   <div class="main-content">
+    <h1>Redigera</h1>
     <form v-on:submit.prevent="updateItem">
       <div class="item">
         <p>Produkt</p>
@@ -50,7 +51,7 @@ const props = defineProps<{
   item: ItemGetResponse
 }>()
 
-const emit = defineEmits(["deleted"]);
+const emit = defineEmits(["deleted", "updated"]);
 
 const notificationsStore = useNotificationsStore();
 
@@ -107,6 +108,7 @@ const updateItem = async () => {
       }
       notificationsStore.add(noti);
     })
+  emit("updated")
 }
 
 const Delete = async () => {
@@ -172,14 +174,14 @@ form {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2rem;
+  gap: 1.75rem;
   width: 100%;
 }
 
 fieldset {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 3rem;
+  gap: 2rem;
   width: 100%;
 }
 
@@ -214,5 +216,22 @@ fieldset .item input {
 .delete {
   background-color: #eb4034;
   color: #fafafa;
+}
+
+@media (max-width: 700px) {
+
+  .main-content {
+    margin: 0;
+    gap: 1rem;
+  }
+
+  fieldset {
+    grid-template-columns: 1fr;
+    gap: 0.66rem;
+  }
+
+  h1 {
+    font-size: 2.55rem;
+  }
 }
 </style>

@@ -171,4 +171,21 @@ p {
   align-items: flex-end;
   flex-direction: column;
 }
+
+@media (max-width: 700px) {
+
+  .main-content {
+    margin: 0;
+    gap: 1rem;
+  }
+
+  fieldset {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  h1 {
+    font-size: 2.55rem;
+  }
+}
 </style>
