@@ -1,9 +1,12 @@
+use std::env;
+
 use actix_cors::Cors;
 use actix_identity::{IdentityExt, IdentityMiddleware};
 use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::{time::Duration, Key},
     guard::Guard,
+    http::Method,
     web::{self, scope, Data},
     App, HttpServer,
 };
@@ -12,12 +15,12 @@ use dotenv::dotenv;
 use sqlx::SqlitePool;
 
 mod auth;
+mod error;
 mod item;
 mod log;
 mod serve;
 mod shortage;
 mod supplier;
-mod error;
 
 use crate::item::{add_item, delete_item, get_item, update_item};
 use crate::log::get_log;
@@ -31,7 +34,7 @@ async fn main() -> std::io::Result<()> {
     dotenv().expect(".env to exist");
 
     let pool = web::Data::new(
-        SqlitePool::connect("/bin/db.sqlite")
+        SqlitePool::connect(&env::var("DATABASE_PATH").expect("DATABASE_PATH in .env"))
             .await
             .expect("Expected sqlite database with name db.sqlite"),
     );
@@ -40,12 +43,20 @@ async fn main() -> std::io::Result<()> {
     let oidc = Data::new(oidc);
     let auth_url = Data::new(auth_path.clone());
 
-    let session_secret = Key::generate();
+    let session_secret = Key::from(
+        env::var("APP_SECRET")
+            .expect("APP_SECRET in .env")
+            .as_bytes(),
+    );
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allow_any_origin()
-            .allow_any_method()
+            .allowed_methods(vec![
+                Method::GET,
+                Method::POST,
+                Method::PATCH,
+                Method::DELETE,
+            ])
             .allow_any_header();
 
         App::new()
@@ -53,9 +64,9 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 SessionMiddleware::builder(CookieSessionStore::default(), session_secret.clone())
                     .cookie_name(String::from("session"))
-                    .cookie_secure(false)
+                    .cookie_secure(true)
                     .session_lifecycle(
-                        PersistentSession::default().session_ttl(Duration::minutes(5)),
+                        PersistentSession::default().session_ttl(Duration::minutes(15)),
                     )
                     .build(),
             )
@@ -75,9 +86,9 @@ async fn main() -> std::io::Result<()> {
                     .service(delete_supplier)
                     .service(get_shortage)
                     .service(take_stock)
-                    .service(get_log),
+                    .service(get_log)
+                    .service(auth_callback),
             )
-            .service(auth_callback)
             .service(serve_frontend)
             .service(
                 actix_files::Files::new("/", "../dist/")
@@ -86,7 +97,13 @@ async fn main() -> std::io::Result<()> {
             )
             .service(web::redirect("/", auth_path.to_string()))
     })
-    .bind(("0.0.0.0", 8080))?
+    .bind((
+        env::var("APP_URL").expect("APP_URL in .env"),
+        env::var("PORT")
+            .expect("PORT in .env")
+            .parse()
+            .expect("PORT to be a number"),
+    ))?
     .run()
     .await
 }

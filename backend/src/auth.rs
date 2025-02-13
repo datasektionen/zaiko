@@ -9,7 +9,7 @@ use openidconnect::{
     },
     reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
     EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
-    IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl,
+    HttpResponse, IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl,
     RevocationErrorResponseType, StandardErrorResponse, StandardTokenIntrospectionResponse,
     StandardTokenResponse, TokenResponse,
 };
@@ -119,7 +119,7 @@ pub async fn get_oidc() -> (OIDCData, String) {
     (oidc, auth_url.to_string())
 }
 
-#[get("oidc/callback")]
+#[get("/oidc/callback")]
 pub async fn auth_callback(
     req: HttpRequest,
     session: Session,
@@ -204,8 +204,17 @@ pub async fn auth_callback(
         return HttpResponse::InternalServerError().finish();
     }
 
+    let pls_url = match env::var("PLS_URL") {
+        Ok(url) => url,
+        Err(err) => {
+            log::error!("{}", err);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
+
     let res = match reqwest::get(format!(
-        "https://pls.datasektionen.se/api/user/{}/zaiko",
+        "{}user/{}/zaiko",
+        pls_url,
         claims.subject().as_str()
     ))
     .await
