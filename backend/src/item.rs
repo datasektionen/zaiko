@@ -1,7 +1,6 @@
 use actix_identity::Identity;
 use actix_session::Session;
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
-use openidconnect::HttpResponse;
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
