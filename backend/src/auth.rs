@@ -9,9 +9,9 @@ use openidconnect::{
     },
     reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
     EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
-    HttpResponse, IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl,
-    RevocationErrorResponseType, StandardErrorResponse, StandardTokenIntrospectionResponse,
-    StandardTokenResponse, TokenResponse,
+    IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, RevocationErrorResponseType,
+    StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
+    TokenResponse,
 };
 use serde::Deserialize;
 use std::env;

@@ -35,9 +35,6 @@ FROM rust:1.77.2-alpine AS build
 ARG APP_NAME
 WORKDIR /build
 
-ARG DATABASE_URL="sqlite:/db.sqlite"
-ENV DATABASE_URL=$DATABASE_URL
-
 ENV SQLX_OFFLINE=true
 
 RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash sqlite
@@ -52,7 +49,7 @@ RUN ./dev_setup.sh
 COPY backend/src src
 RUN cargo build --locked --release
 RUN cp ./target/release/backend /bin/server
-RUN cp ./db.sqlite /bin/db.sqlite
+RUN cp ./db.sqlite /var/zaiko/db.sqlite
 
 ##
 ## -------------deploy-----------------------------
@@ -63,7 +60,7 @@ FROM alpine:3.18 AS final
 COPY --from=prerelease /usr/src/app/dist dist
 
 COPY --from=build /bin/server /bin/
-COPY --from=build /bin/db.sqlite /bin/db.sqlite
+COPY --from=build /var/zaiko/db.sqlite /var/zaiko/db.sqlite
 
 EXPOSE 8000
 

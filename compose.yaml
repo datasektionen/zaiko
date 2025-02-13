@@ -4,4 +4,4 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - ./backend/db.sqlite:/bin/db.sqlite
+      - ./backend/db.sqlite:/var/zaiko/db.sqlite
