@@ -38,7 +38,7 @@ REDIRECT_URL=https://zaiko.datasektionen.se/api/oidc/callback
 PLS_URL=https://pls.datasektionen.se/api
 DATABASE_URL=sqlite://db.sqlite
 DATABASE_PATH=/var/zaiko/db.sqlite
-APP_URL=https://zaiko.datasektionen.se
+APP_URL=0.0.0.0
 APP_ENV=production
 APP_DEBUG=false
 ENV

@@ -56,17 +56,6 @@ RUN cp ./db.sqlite /var/zaiko/db.sqlite
 
 FROM alpine:3.18 AS final
 
-ENV DATABASE_URL=sqlite://db.sqlite
-ENV DATABASE_PATH=/var/zaiko/db.sqlite
-ENV OIDC_PROVIDER=https://sso.datasektionen.se/op
-ENV OIDC_ID=zaiko
-ENV OIDC_SECRET=bccmIyRN3JfZWHog1AuujNEautrmi5Z_hV9qfgEG0pg=
-ENV REDIRECT_URL=http://localhost:8080/api/oidc/callback
-ENV PLS_URL=https://pls.datasektionen.se/api
-ENV APP_URL=0.0.0.0
-ENV PORT=8080
-
-ENV APP_SECRET=s70wSM9Qz5oX3EHQdHzihIKe7vYBXW3G8f9JPZC2A0tx7qBuRztOCAKwjGbKTGVW
 RUN mkdir /var/zaiko
 
 COPY --from=prerelease /usr/src/app/dist dist
