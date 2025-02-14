@@ -19,6 +19,13 @@ export const useClubsStore = defineStore('clubs', () => {
     })
       .then((res) => res.json())
       .then((json) => clubs.value.clubs = json)
+      .then(() => {
+        if (clubs.value.clubs.length > 0) {
+          clubs.value.timestamp = Date.now();
+          clubs.value.club = clubs.value.clubs[0];
+          localStorage.setItem('clubs', JSON.stringify(clubs.value));
+        }
+      })
       .catch((error) => {
         const noti: Notification = {
           id: Date.now(),
@@ -28,9 +35,6 @@ export const useClubsStore = defineStore('clubs', () => {
         }
         notificationsStore.add(noti);
       })
-    clubs.value.timestamp = Date.now();
-    clubs.value.club = clubs.value.clubs[0]; // FIX: Default to first club
-    localStorage.setItem('clubs', JSON.stringify(clubs.value));
   }
 
   function setClub(club: string) {

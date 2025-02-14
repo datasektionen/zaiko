@@ -19,10 +19,14 @@
 
 <script>
     const HOST = "%VITE_HOST_FRONTEND%"
-    const clubs = JSON.parse(localStorage.getItem("clubs"));
-    let club = clubs.club ? clubs.club : "Nämnd";
-    if (club.length > 10) {
-      club = club.substring(0, 9) + "...";
+    const store = localStorage.getItem("clubs");
+    const clubs = JSON.parse(store);
+    let club = "Nämnd";
+    if(store) {
+        club = clubs.club ? clubs.club : "Nämnd";
+        if (club.length > 10) {
+          club = club.substring(0, 9) + "...";
+        }
     }
     window.methone_conf = {
         system_name: "zaiko",
