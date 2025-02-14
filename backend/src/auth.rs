@@ -6,7 +6,12 @@ use openidconnect::{
         CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
         CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm,
         CoreJwsSigningAlgorithm, CoreProviderMetadata, CoreRevocableToken, CoreTokenType,
-    }, reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken, EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet, IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, RevocationErrorResponseType, StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse, TokenResponse
+    },
+    reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
+    EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
+    IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, RevocationErrorResponseType,
+    StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
+    TokenResponse,
 };
 use serde::Deserialize;
 use std::env;
@@ -114,7 +119,7 @@ pub async fn get_oidc() -> (OIDCData, String) {
     (oidc, auth_url.to_string())
 }
 
-#[get("oidc/callback")]
+#[get("/oidc/callback")]
 pub async fn auth_callback(
     req: HttpRequest,
     session: Session,
@@ -133,12 +138,12 @@ pub async fn auth_callback(
         Ok(request) => match request.request_async(&oidc.http_client).await {
             Ok(token) => token,
             Err(err) => {
-                log::error!("{}", err);
+                log::error!("token request error: {}", err);
                 return HttpResponse::InternalServerError().finish();
             }
         },
         Err(err) => {
-            log::error!("{}", err);
+            log::error!("token clinet request config error: {}", err);
             return HttpResponse::InternalServerError().finish();
         }
     };
@@ -156,7 +161,7 @@ pub async fn auth_callback(
     let claims = match id_token.claims(&id_token_verifier, &oidc.nonce) {
         Ok(claims) => claims,
         Err(err) => {
-            log::error!("{}", err);
+            log::error!("aquireing claims error: {}", err);
             return HttpResponse::InternalServerError().finish();
         }
     };
@@ -167,21 +172,21 @@ pub async fn auth_callback(
             match id_token.signing_alg() {
                 Ok(alg) => alg,
                 Err(err) => {
-                    log::error!("{}", err);
+                    log::error!("aquireing signing algorithm: {}", err);
                     return HttpResponse::InternalServerError().finish();
                 }
             },
             match id_token.signing_key(&id_token_verifier) {
                 Ok(key) => key,
                 Err(err) => {
-                    log::error!("{}", err);
+                    log::error!("aquireing signing key: {}", err);
                     return HttpResponse::InternalServerError().finish();
                 }
             },
         ) {
             Ok(hash) => hash,
             Err(err) => {
-                log::error!("{}", err);
+                log::error!("checking hash error: {}", err);
                 return HttpResponse::InternalServerError().finish();
             }
         };
@@ -195,12 +200,24 @@ pub async fn auth_callback(
     }
 
     if let Err(err) = Identity::login(&req.extensions(), claims.subject().to_string()) {
-        log::error!("{}", err);
+        log::error!("fail to login error: {}", err);
         return HttpResponse::InternalServerError().finish();
     }
 
+    let pls_url = match env::var("PLS_URL") {
+        Ok(url) => url,
+        Err(err) => {
+            log::error!("getting pls url error: {}", err);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
+
+    log::debug!("{}", pls_url);
+    log::debug!("{}", claims.subject().as_str());
+
     let res = match reqwest::get(format!(
-        "https://pls.datasektionen.se/api/user/{}/zaiko",
+        "{}/user/{}/zaiko",
+        pls_url,
         claims.subject().as_str()
     ))
     .await
@@ -208,12 +225,12 @@ pub async fn auth_callback(
         Ok(res) => match res.text().await {
             Ok(res) => res,
             Err(err) => {
-                log::error!("{}", err);
+                log::error!("failed to get data from pls: {}", err);
                 return HttpResponse::InternalServerError().finish();
             }
         },
         Err(err) => {
-            log::error!("{}", err);
+            log::error!("failed to query pls: {}", err);
             return HttpResponse::InternalServerError().finish();
         }
     };
@@ -221,13 +238,13 @@ pub async fn auth_callback(
     let privlages: Vec<String> = match serde_json::from_str(&res) {
         Ok(privlages) => privlages,
         Err(err) => {
-            log::error!("{}", err);
+            log::error!("failed to parse data from pls: {}", err);
             return HttpResponse::InternalServerError().finish();
         }
     };
 
     if let Err(err) = session.insert("privlages", privlages) {
-        log::error!("{}", err);
+        log::error!("failed to add privlages to session: {}", err);
         return HttpResponse::InternalServerError().finish();
     }
 
@@ -240,8 +257,11 @@ pub async fn auth_callback(
 pub async fn get_clubs(id: Option<Identity>, session: Session) -> HttpResponse {
     if id.is_some() {
         let clubs = match session.get::<Vec<String>>("privlages") {
-            Ok(clubs) => {clubs},
-            Err(err) => {log::error!("{}", err); return HttpResponse::InternalServerError().finish();},
+            Ok(clubs) => clubs,
+            Err(err) => {
+                log::error!("{}", err);
+                return HttpResponse::InternalServerError().finish();
+            }
         };
         return HttpResponse::Ok().json(clubs);
     }
