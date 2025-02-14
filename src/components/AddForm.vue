@@ -32,7 +32,6 @@
         <p>Länk</p>
         <input v-model="link" placeholder="Länk">
       </div>
-      <input v-model="club" placeholder="Nämnd">
       <div class="submit">
         <input class="button" type="submit" value="Lägg till">
       </div>
@@ -41,12 +40,14 @@
 </template>
 
 <script setup lang="ts">
+import { useClubsStore } from '@/stores/clubs';
 import { useNotificationsStore } from '@/stores/notifications';
 import type { ItemAddRequest, Notification } from '@/types';
 import { ref } from 'vue'
 const HOST = import.meta.env.VITE_HOST;
 
-const club = ref("metadorerna")
+const clubStore = useClubsStore();
+
 const name = ref("")
 const location = ref("")
 const min = ref(0)
@@ -69,7 +70,8 @@ const addItem = async () => {
     supplier: Number.parseInt(supplier.value),
     link: link.value,
   }
-  await fetch(HOST + "/api/" + club.value + "/item", {
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/item";
+  await fetch(url, {
     method: "POST",
     body: JSON.stringify(res),
   })

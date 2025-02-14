@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import { useClubsStore } from '@/stores/clubs';
 import { useNotificationsStore } from '@/stores/notifications';
 import type { SupplierAddRequest, Notification } from '@/types';
 import { ref } from 'vue';
@@ -45,11 +46,13 @@ const username = ref("")
 const password = ref("")
 const link = ref("")
 const note = ref("")
-const club = ref("metadorerna")
 
 const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
 
 const addItem = async () => {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+
   const supplier: SupplierAddRequest = {
     name: name.value,
     username: username.value,
@@ -57,7 +60,7 @@ const addItem = async () => {
     link: link.value,
     notes: note.value,
   }
-  await fetch(HOST + "/api/" + club.value + "/supplier", {
+  await fetch(url + "/supplier", {
     method: "POST",
     body: JSON.stringify(supplier),
   })
