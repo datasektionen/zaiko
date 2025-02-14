@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "location",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "min",
+        "ordinal": 3,
+        "type_info": "Float"
+      },
+      {
+        "name": "max",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "current",
+        "ordinal": 5,
+        "type_info": "Float"
+      },
+      {
+        "name": "link",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "supplier",
+        "ordinal": 7,
+        "type_info": "Integer"
+      },
+      {
+        "name": "updated",
+        "ordinal": 8,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "bcbbf16943dd321056e61ca608d36f25478ade9d2cc555870a77e7a41fcaab4e"
+}

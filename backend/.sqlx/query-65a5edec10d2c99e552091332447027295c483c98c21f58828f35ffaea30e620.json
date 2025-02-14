@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM suppliers WHERE id = $1 AND club = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "65a5edec10d2c99e552091332447027295c483c98c21f58828f35ffaea30e620"
+}

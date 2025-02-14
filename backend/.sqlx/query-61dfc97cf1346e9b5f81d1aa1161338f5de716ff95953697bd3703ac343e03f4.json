@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT current FROM items WHERE name = $1 AND club = $2",
+  "describe": {
+    "columns": [
+      {
+        "name": "current",
+        "ordinal": 0,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "61dfc97cf1346e9b5f81d1aa1161338f5de716ff95953697bd3703ac343e03f4"
+}

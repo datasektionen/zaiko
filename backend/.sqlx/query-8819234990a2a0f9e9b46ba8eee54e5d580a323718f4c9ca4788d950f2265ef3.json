@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM items WHERE id = $1 AND club = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "8819234990a2a0f9e9b46ba8eee54e5d580a323718f4c9ca4788d950f2265ef3"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT amount, time FROM log WHERE item_id = $1 AND club = $2",
+  "describe": {
+    "columns": [
+      {
+        "name": "amount",
+        "ordinal": 0,
+        "type_info": "Float"
+      },
+      {
+        "name": "time",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "e21c21bf7ff3032c0cf457672a4ab67c1a2e120ed9f38bf86e802ee612bb76a9"
+}
