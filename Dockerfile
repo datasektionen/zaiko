@@ -28,14 +28,12 @@ RUN bun run build-only ## FIXME
 ## -------------build backend-------------------------
 ##
 
-ARG RUST_VERSION=1.77.2
 ENV APP_NAME=backend
+ENV SQLX_OFFLINE=true
 
-FROM rust:1.77.2-alpine AS build
-ARG APP_NAME
+FROM rust:1.84-alpine AS build
 WORKDIR /build
 
-ENV SQLX_OFFLINE=true
 
 RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash sqlite
 
@@ -45,6 +43,7 @@ COPY backend/.sqlx .sqlx
 COPY backend/dev_setup.sh dev_setup.sh
 
 RUN ./dev_setup.sh
+RUN mkdir /var/zaiko
 
 COPY backend/src src
 RUN cargo build --locked --release
@@ -56,6 +55,19 @@ RUN cp ./db.sqlite /var/zaiko/db.sqlite
 ##
 
 FROM alpine:3.18 AS final
+
+ENV DATABASE_URL=sqlite://db.sqlite
+ENV DATABASE_PATH=/var/zaiko/db.sqlite
+ENV OIDC_PROVIDER=https://sso.datasektionen.se/op
+ENV OIDC_ID=zaiko
+ENV OIDC_SECRET=bccmIyRN3JfZWHog1AuujNEautrmi5Z_hV9qfgEG0pg=
+ENV REDIRECT_URL=http://localhost:8080/api/oidc/callback
+ENV PLS_URL=https://pls.datasektionen.se/api
+ENV APP_URL=0.0.0.0
+ENV PORT=8080
+
+ENV APP_SECRET=s70wSM9Qz5oX3EHQdHzihIKe7vYBXW3G8f9JPZC2A0tx7qBuRztOCAKwjGbKTGVW
+RUN mkdir /var/zaiko
 
 COPY --from=prerelease /usr/src/app/dist dist
 
