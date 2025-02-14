@@ -91,8 +91,8 @@ async fn main() -> std::io::Result<()> {
                     .service(get_shortage)
                     .service(take_stock)
                     .service(get_log)
-                    .service(auth_callback),
-                    .service(get_clubs)
+                    .service(auth_callback)
+                    .service(get_clubs),
             )
             .service(serve_frontend)
             .service(
