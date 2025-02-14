@@ -24,7 +24,6 @@
         <p>Antäckningar</p>
         <textarea v-model="note" placeholder="Antäckningar"></textarea>
       </div>
-      <input v-model="club" placeholder="Nämnd">
       <div class="submit">
         <input class="button" type="submit" value="Lägg till">
       </div>
