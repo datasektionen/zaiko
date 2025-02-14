@@ -37,8 +37,7 @@ WORKDIR /build
 
 RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash sqlite
 
-COPY backend/Cargo.toml ./
-RUN cargo generate-lockfile
+COPY backend/Cargo.lock backend/Cargo.toml ./
 
 COPY backend/.sqlx .sqlx
 COPY backend/dev_setup.sh dev_setup.sh
