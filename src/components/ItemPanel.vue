@@ -32,7 +32,6 @@
         <p>Länk</p>
         <input v-model="link" placeholder="Länk">
       </div>
-      <input v-model="club" placeholder="Nämnd">
       <div class="submit">
         <button @click="Delete()" class="delete">Ta bort</button>
         <input class="button" type="submit" value="Spara">
@@ -42,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import { useClubsStore } from '@/stores/clubs';
 import { useNotificationsStore } from '@/stores/notifications';
 import type { ItemGetResponse, ItemUpdateRequest, Notification } from '@/types';
 import { ref } from 'vue'
@@ -55,7 +55,6 @@ const emit = defineEmits(["deleted", "updated"]);
 
 const notificationsStore = useNotificationsStore();
 
-const club = ref("metadorerna")
 const name = ref(props.item.name)
 const location = ref(props.item.location)
 const min = ref(props.item.min)
@@ -63,6 +62,8 @@ const max = ref(props.item.max)
 const current = ref(props.item.current)
 const supplier = ref(props.item.supplier)
 const link = ref(props.item.link)
+
+const clubStore = useClubsStore();
 
 
 const updateItem = async () => {
@@ -76,7 +77,8 @@ const updateItem = async () => {
     supplier: supplier.value,
     link: link.value,
   }
-  await fetch(HOST + "/api/" + club.value + "/item", {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  await fetch(url + "/item", {
     method: "PATCH",
     body: JSON.stringify(res),
   })
@@ -112,7 +114,8 @@ const updateItem = async () => {
 }
 
 const Delete = async () => {
-  await fetch(HOST + "/api/" + club.value + "/item", {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  await fetch(url + "/item", {
     method: "DELETE",
     body: JSON.stringify({ name: name.value })
   })
@@ -203,7 +206,7 @@ fieldset .item input {
   border: none;
   background-color: inherit;
   text-align: right;
-  width: 100%;
+  max-width: 150px;
 }
 
 .submit {

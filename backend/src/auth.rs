@@ -6,12 +6,7 @@ use openidconnect::{
         CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
         CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm,
         CoreJwsSigningAlgorithm, CoreProviderMetadata, CoreRevocableToken, CoreTokenType,
-    },
-    reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
-    EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
-    IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl,
-    RevocationErrorResponseType, StandardErrorResponse, StandardTokenIntrospectionResponse,
-    StandardTokenResponse, TokenResponse,
+    }, reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken, EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet, IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, RevocationErrorResponseType, StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse, TokenResponse
 };
 use serde::Deserialize;
 use std::env;
@@ -239,4 +234,17 @@ pub async fn auth_callback(
     HttpResponse::TemporaryRedirect()
         .insert_header(("location", "/"))
         .finish()
+}
+
+#[get("/clubs")]
+pub async fn get_clubs(id: Option<Identity>, session: Session) -> HttpResponse {
+    if id.is_some() {
+        let clubs = match session.get::<Vec<String>>("privlages") {
+            Ok(clubs) => {clubs},
+            Err(err) => {log::error!("{}", err); return HttpResponse::InternalServerError().finish();},
+        };
+        return HttpResponse::Ok().json(clubs);
+    }
+
+    HttpResponse::Unauthorized().finish()
 }

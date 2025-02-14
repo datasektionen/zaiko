@@ -18,6 +18,12 @@ struct SupplierGetResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct SupplierListGetResponse {
+    id: i64,
+    name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct SupplierAddRequest {
     name: String,
     link: Option<String>,
@@ -80,6 +86,29 @@ pub(crate) async fn get_supplier(
     }
 }
 
+#[get("/{club}/suppliers")]
+pub(crate) async fn get_suppliers(club: web::Path<String>, id: Option<Identity>, session: Session, pool: web::Data<Pool<Sqlite>>) -> HttpResponse {
+    log::info!("get suppliers");
+
+    let club = club.as_ref();
+    
+    if !check_auth(id, session, club).await {
+        return HttpResponse::Unauthorized().finish()
+    } 
+
+    match sqlx::query_as!(
+        SupplierListGetResponse,
+        "SELECT id, name FROM suppliers WHERE club = $1",
+        club
+    )
+    .fetch_all(pool.get_ref())
+    .await
+    {
+        Ok(supplier) => HttpResponse::Ok().json(supplier),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
 #[post("/{club}/supplier")]
 pub(crate) async fn add_supplier(
     body: String,
@@ -101,6 +130,10 @@ pub(crate) async fn add_supplier(
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
+
+    if supplier.name.is_empty() {
+        return HttpResponse::BadRequest().finish();
+    }
 
     match sqlx::query!(
         "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, strftime('%s', 'now'), $6)",
@@ -140,6 +173,10 @@ pub(crate) async fn update_supplier(
         Ok(item) => item,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
+
+    if supplier.name.is_empty() {
+        return HttpResponse::BadRequest().finish();
+    }
 
     match sqlx::query!(
         "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = strftime('%s', 'now') WHERE id = $6 AND club = $7",

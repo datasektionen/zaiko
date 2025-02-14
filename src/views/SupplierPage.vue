@@ -39,14 +39,27 @@ import SupplierForm from '@/components/SupplierForm.vue';
 import type { SupplierGetResponse, Notification } from '@/types';
 import { useNotificationsStore } from '@/stores/notifications';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
+import { useClubsStore } from '@/stores/clubs';
 
 const HOST = import.meta.env.VITE_HOST;
 
+const UpdateMethone = () => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  window.methone_conf.update({
+    login_href: "/suppliers?club",
+  });
+};
+window.onload = UpdateMethone;
+
 const suppliers = ref<Array<SupplierGetResponse>>([])
 const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
 
 const GetData = () => {
-  fetch(HOST + "/api/metadorerna/supplier", {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+
+  fetch(url + "/supplier", {
     method: "GET",
   })
     .then((res) => res.json())
@@ -131,11 +144,13 @@ div {
 
 .item {
   border-radius: 2px;
+  cursor: pointer;
 }
 
 .item-selected {
   border-radius: 2px;
   background-color: rgba(0, 105, 92, 0.25);
+  cursor: pointer;
 }
 
 .header {

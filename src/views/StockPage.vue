@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import StockItem from '@/components/StockItem.vue';
+import { useClubsStore } from '@/stores/clubs';
 import { useNotificationsStore } from '@/stores/notifications';
 import type { ItemGetResponse, StockUpdateRequest, Notification } from '@/types'
 import { ref } from 'vue'
@@ -35,9 +36,11 @@ const input = ref<StockUpdateRequest>({ items: [] });
 const HOST: string = import.meta.env.VITE_HOST;
 
 const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
 
 const GetData = async () => {
-  fetch(HOST + "/api/metadorerna/item")
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  fetch(url + "/item")
     .then((res) => res.json())
     .then((json) => {
       items.value = json
@@ -57,7 +60,8 @@ const GetData = async () => {
 GetData();
 
 const updateItems = async () => {
-  await fetch(HOST + "/api/metadorerna/stock", {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  await fetch(url + "/stock", {
     method: "POST",
     body: JSON.stringify(input.value),
   })

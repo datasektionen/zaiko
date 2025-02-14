@@ -27,6 +27,10 @@ div {
   background-color: rgba(0, 0, 0, 0);
 }
 
+a {
+  padding: 0 auto;
+}
+
 p,
 a {
   text-align: center;

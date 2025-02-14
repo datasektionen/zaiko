@@ -51,8 +51,22 @@ import FrontPageShortageItem from '@/components/FrontPageShortageItem.vue';
 import type { ItemGetResponse, StockGetResponse } from '@/types';
 import { useNotificationsStore } from '@/stores/notifications';
 import type { Notification } from '@/types';
+import { useClubsStore } from '@/stores/clubs';
 
 const HOST = import.meta.env.VITE_HOST;
+
+const clubStore = useClubsStore();
+
+const UpdateMethone = () => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  window.methone_conf.update({
+    login_href: "/?club",
+  })
+}
+
+window.onload = UpdateMethone;
+
 const items = ref<Array<ItemGetResponse>>();
 const shortage = ref<Array<StockGetResponse>>()
 
@@ -66,7 +80,8 @@ const DoneModal = () => {
 }
 
 const GetData = () => {
-  fetch(HOST + "/api/metadorerna/item", {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  fetch(url + "/item", {
     method: "GET",
   })
     .then((res) => res.json())
@@ -81,7 +96,7 @@ const GetData = () => {
         notificationsStore.add(noti);
     })
 
-  fetch(HOST + "/api/metadorerna/stock")
+  fetch(url + "/stock")
     .then((res) => res.json())
     .then((json: Array<StockGetResponse>) => shortage.value = json)
     .catch((error) => {

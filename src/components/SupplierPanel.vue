@@ -24,7 +24,6 @@
         <p>Antäckningar</p>
         <textarea v-model="note" placeholder="Antäckningar"></textarea>
       </div>
-      <input v-model="club" placeholder="Nämnd">
       <div class="submit">
         <button @click="Delete()" class="delete">Ta bort</button>
         <input class="button" type="submit" value="Spara">
@@ -34,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import { useClubsStore } from '@/stores/clubs';
 import { useNotificationsStore } from '@/stores/notifications';
 import type { SupplierGetResponse, SupplierUpdateRequest, Notification } from '@/types';
 import { ref } from 'vue';
@@ -46,16 +46,17 @@ const props = defineProps<{
 const emit = defineEmits(["deleted", "updated"]);
 
 const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
 
 const name = ref(props.item.name)
 const username = ref(props.item.username)
 const password = ref(props.item.password)
 const link = ref(props.item.link)
 const note = ref(props.item.notes)
-const club = ref("metadorerna")
 const id = ref(props.item.id)
 
 const updateItem = async () => {
+  const url: string = HOST + "/api/" + clubStore.getClub();
   const supplier: SupplierUpdateRequest = {
     id: id.value,
     name: name.value,
@@ -64,7 +65,7 @@ const updateItem = async () => {
     link: link.value,
     notes: note.value,
   }
-  await fetch(HOST + "/api/" + club.value + "/supplier", {
+  await fetch(url + "/supplier", {
     method: "PATCH",
     body: JSON.stringify(supplier),
   })
@@ -100,10 +101,10 @@ const updateItem = async () => {
 }
 
 const Delete = async () => {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+
   await fetch(
-    HOST + "/api/" +
-      club.value + "/supplier?"
-      + new URLSearchParams({ id: id.value.toString() }).toString(),
+    url + "/supplier?" + new URLSearchParams({ id: id.value.toString() }).toString(),
     {
       method: "DELETE",
     })
@@ -188,6 +189,7 @@ p {
   border: none;
   background-color: inherit;
   text-align: right;
+  max-width: 150px;
 }
 
 .area {
