@@ -1,31 +1,46 @@
 <template>
   <div class="main-content">
-    <h1>Lägg till</h1>
-    <form v-on:submit.prevent="addItem">
+    <form v-on:submit.prevent="addSupplier">
       <div class="item">
-        <p>Namn</p>
-        <input v-model="name" placeholder="Namn">
+        <div class="itemHeader">
+          <ShoppingCartIcon class="buttonIcon" />
+          <p>Namn</p>
+        </div>
+        <input v-model="name" placeholder="Namn" required minlength=1>
       </div>
       <div class="item">
-        <p>Länk</p>
-        <input v-model="link" placeholder="Länk">
-      </div>
-      <fieldset>
-        <div class="item">
+        <div class="itemHeader">
+          <UserCircleIcon class="buttonIcon" />
           <p>Användarnamn</p>
-          <input v-model="username" placeholder="Användarnamn">
         </div>
-        <div class="item">
+        <input v-model="username" placeholder="Användarnamn">
+      </div>
+      <div class="item">
+        <div class="itemHeader">
+          <LockClosedIcon class="buttonIcon" />
           <p>Lösenord</p>
-          <input v-model="password" placeholder="Lösenord">
         </div>
-      </fieldset>
-      <div class="item area">
-        <p>Antäckningar</p>
-        <textarea v-model="note" placeholder="Antäckningar"></textarea>
+        <input v-model="password" placeholder="Lösenord">
+      </div>
+      <div class="item">
+        <div class="itemHeader">
+          <LinkIcon class="buttonIcon" />
+          <p>Länk</p>
+        </div>
+        <input type="url" v-model="link" placeholder="Länk">
+      </div>
+      <div class="item itemArea">
+        <div class="itemHeader">
+          <DocumentTextIcon class="buttonIcon" />
+          <p>Anteckningar</p>
+        </div>
+        <textarea v-model="note" placeholder="Anteckningar"></textarea>
       </div>
       <div class="submit">
-        <input class="button" type="submit" value="Lägg till">
+        <button type="submit">
+          <DocumentCheckIcon class="buttonIcon" />
+          <p>Lägg till</p>
+        </button>
       </div>
     </form>
   </div>
@@ -35,21 +50,22 @@
 import { useClubsStore } from '@/stores/clubs';
 import { useNotificationsStore } from '@/stores/notifications';
 import type { SupplierAddRequest, Notification } from '@/types';
+import { ShoppingCartIcon, LinkIcon, UserCircleIcon, LockClosedIcon, DocumentTextIcon, DocumentCheckIcon } from '@heroicons/vue/16/solid'
 import { ref } from 'vue';
 const HOST = import.meta.env.VITE_HOST;
 
-const emit = defineEmits(["done"]);
+const emit = defineEmits(["submit"]);
 
 const name = ref("")
-const username = ref("")
-const password = ref("")
-const link = ref("")
-const note = ref("")
+const username = ref()
+const password = ref()
+const link = ref()
+const note = ref()
 
 const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
-const addItem = async () => {
+const addSupplier = async () => {
   const url: string = HOST + "/api/" + clubStore.getClub();
 
   const supplier: SupplierAddRequest = {
@@ -92,7 +108,7 @@ const addItem = async () => {
       notificationsStore.add(noti);
     })
 
-  emit('done')
+  emit('submit')
 }
 </script>
 
@@ -103,42 +119,99 @@ const addItem = async () => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 2rem;
-  max-width: 700px;
   margin: 2rem auto;
-}
-
-h1 {
-  padding-bottom: 10px;
-  margin: 0;
-  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
-  width: auto;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2rem;
-  width: 100%;
-}
-
-fieldset {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  width: 100%;
 }
 
 p {
   margin: 0;
 }
 
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.2rem;
+  width: 100%;
+}
+
+fieldset {
+  all: unset;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+fieldset .item input {
+  max-width: 100px;
+}
+
+.submit {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+button[type="submit"] {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  padding: 0.6rem;
+  background-color: #2EB563;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  -webkit-appearance: textfield;
+}
+
+input::placeholder {
+  font-size: 0.9rem;
+}
+
+.buttonIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.itemHeader svg {
+  color: rgba(0, 0, 0, 0.33);
+}
+
 .item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.33);
   padding: 8px 0;
+  margin-bottom: 8px;
+  max-width: 100%;
+}
+
+.itemArea {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.itemArea textarea {
+  border: none;
+  background-color: inherit;
+  width: 100%;
+  min-height: 120px;
 }
 
 .item input {
@@ -146,26 +219,6 @@ p {
   background-color: inherit;
   text-align: right;
   width: 100%;
-}
-
-.area {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.area p {
-  padding-bottom: 8px;
-  margin: 0;
-  margin-bottom: 8px;
-  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
-  width: auto;
-}
-
-.area textarea {
-  border: none;
-  background-color: inherit;
-  min-height: 10rem;
-  min-width: 100%;
 }
 
 .submit {
@@ -178,12 +231,12 @@ p {
 
   .main-content {
     margin: 0;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 
   fieldset {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 0.7rem;
   }
 
   h1 {

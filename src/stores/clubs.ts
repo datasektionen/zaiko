@@ -40,11 +40,6 @@ export const useClubsStore = defineStore('clubs', () => {
   function setClub(club: string) {
     clubs.value.club = club;
     localStorage.setItem('clubs', JSON.stringify(clubs.value));
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    window.methone_conf.update({
-      login_text: displayClub(),
-    })
   }
 
   function getClub() {

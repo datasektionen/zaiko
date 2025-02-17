@@ -71,10 +71,10 @@ const iconType = computed<number>(() => {
   gap: 1rem;
   min-width: 290px;
   padding: 10px 8px;
-  box-shadow: 0 4px 6px 1px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 4px 6px 1px rgba(0, 0, 0, 0.2);
   border-radius: 4px;
   cursor: pointer;
-  border-bottom: 4px solid;
+  border-bottom: 3px solid;
 }
 
 svg {
@@ -83,7 +83,7 @@ svg {
 }
 
 .notiText h6 {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   margin: 0;
 }
 
@@ -95,7 +95,7 @@ svg {
 }
 
 .green {
-  color: #20F83D;
+  color: #2EB563;
 }
 
 .yellow {
@@ -103,6 +103,6 @@ svg {
 }
 
 .red {
-  color: #F82020;
+  color: #B62E3D;
 }
 </style>

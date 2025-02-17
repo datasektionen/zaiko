@@ -1,26 +1,52 @@
 <template>
-  <div class="main-content">
-    <form v-on:submit.prevent="updateSupplier">
+  <div>
+    <form v-on:submit.prevent="addItem">
+      <div class="item">
+        <div class="itemHeader">
+          <ArchiveBoxIcon class="buttonIcon" />
+          <p>Produkt</p>
+        </div>
+        <input v-model="name" placeholder="Produkt" required minlength=1>
+      </div>
+      <div class="item">
+        <div class="itemHeader">
+          <HomeIcon class="buttonIcon" />
+          <p>Plats</p>
+        </div>
+        <input v-model="location" placeholder="Plats" required minlength=1>
+      </div>
+      <fieldset>
+        <div class="item">
+          <div class="itemHeader">
+            <Battery0Icon class="buttonIcon" />
+            <p>Min</p>
+          </div>
+          <input type="number" v-model="min" placeholder="Min">
+        </div>
+        <div class="item">
+          <div class="itemHeader">
+            <Battery100Icon class="buttonIcon" />
+            <p>Max</p>
+          </div>
+          <input type="number" v-model="max" placeholder="Max">
+        </div>
+        <div class="item">
+          <div class="itemHeader">
+            <Battery50Icon class="buttonIcon" />
+            <p>Nuvarande</p>
+          </div>
+          <input type="number" v-model="current" placeholder="Nuvarande" required>
+        </div>
+      </fieldset>
       <div class="item">
         <div class="itemHeader">
           <ShoppingCartIcon class="buttonIcon" />
-          <p>Namn</p>
+          <p>Leverantör</p>
         </div>
-        <input v-model="name" placeholder="Namn" required minlength=1>
-      </div>
-      <div class="item">
-        <div class="itemHeader">
-          <UserCircleIcon class="buttonIcon" />
-          <p>Användarnamn</p>
-        </div>
-        <input v-model="username" placeholder="Användarnamn">
-      </div>
-      <div class="item">
-        <div class="itemHeader">
-          <LockClosedIcon class="buttonIcon" />
-          <p>Lösenord</p>
-        </div>
-        <input v-model="password" placeholder="Lösenord">
+        <select class="input" v-model="supplier" placeholder="Leverantör">
+          <option value="-1" selected>Leverantör</option>
+          <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">{{ supplier.name }}</option>
+        </select>
       </div>
       <div class="item">
         <div class="itemHeader">
@@ -29,21 +55,10 @@
         </div>
         <input type="url" v-model="link" placeholder="Länk">
       </div>
-      <div class="item itemArea">
-        <div class="itemHeader">
-          <DocumentTextIcon class="buttonIcon" />
-          <p>Anteckningar</p>
-        </div>
-        <textarea v-model="note" placeholder="Anteckningar"></textarea>
-      </div>
-      <div class="submitEdit">
+      <div class="submit">
         <button type="submit">
           <DocumentCheckIcon class="buttonIcon" />
-          <p>Spara</p>
-        </button>
-        <button class="delete" @click.prevent="Delete" >
-          <BackspaceIcon class="buttonIcon" />
-          <p>Radera</p>
+          <p>Lägg till</p>
         </button>
       </div>
     </form>
@@ -51,47 +66,66 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import type { ItemAddRequest, SupplierListGetResponse, Notification } from '@/types';
+import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
 import { useClubsStore } from '@/stores/clubs';
 import { useNotificationsStore } from '@/stores/notifications';
-import type { SupplierGetResponse, SupplierUpdateRequest, Notification } from '@/types';
-import { BackspaceIcon, ShoppingCartIcon, LinkIcon, UserCircleIcon, LockClosedIcon, DocumentTextIcon, DocumentCheckIcon } from '@heroicons/vue/16/solid'
-import { ref, defineProps } from 'vue';
 const HOST = import.meta.env.VITE_HOST;
 
-const emit = defineEmits(["submit", "delete"]);
-const { item } = defineProps<{
-  item: SupplierGetResponse,
-}>()
-
-const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
-const name = ref(item.name)
-const username = ref(item.username)
-const password = ref(item.password)
-const link = ref(item.link)
-const note = ref(item.notes)
+const suppliers = ref<Array<SupplierListGetResponse>>([])
 
-const updateSupplier = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
-  const supplier: SupplierUpdateRequest = {
-    id: item.id,
+const GetSuppliers = async () => {
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
+  suppliers.value = await fetch(url, {
+    method: "GET",
+  }).then((r) => r.json())
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+}
+GetSuppliers();
+
+const name = ref<string>("")
+const location = ref<string>("")
+const min = ref<number>()
+const max = ref<number>()
+const current = ref<number>(0)
+const supplier = ref<number>(-1)
+const link = ref<string>()
+
+const emit = defineEmits(["submit"]);
+const notificationsStore = useNotificationsStore();
+
+const addItem = async () => {
+  const res: ItemAddRequest = {
     name: name.value,
-    username: username.value,
-    password: password.value,
+    location: location.value,
+    min: min.value,
+    max: max.value,
+    current: current.value,
+    supplier: supplier.value,
     link: link.value,
-    notes: note.value,
   }
-  await fetch(url + "/supplier", {
-    method: "PATCH",
-    body: JSON.stringify(supplier),
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/item";
+  await fetch(url, {
+    method: "POST",
+    body: JSON.stringify(res),
   })
     .then((res) => {
       if (res.ok) {
         const noti: Notification = {
           id: Date.now(),
-          title: "Updaterad",
-          message: "Leverantören har uppdaterats",
+          title: "Success",
+          message: "Produkten lades till",
           severity: "info",
         }
         notificationsStore.add(noti);
@@ -114,47 +148,9 @@ const updateSupplier = async () => {
       }
       notificationsStore.add(noti);
     })
-  emit("submit")
+  emit('submit')
 }
 
-const Delete = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
-
-  await fetch(
-    url + "/supplier?" + new URLSearchParams({ id: item.id.toString() }).toString(),
-    {
-      method: "DELETE",
-    })
-    .then((res) => {
-      if (res.ok) {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Borttagen",
-          message: "Leverantören har tagits bort",
-          severity: "info",
-        }
-        notificationsStore.add(noti);
-      } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
-      }
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-  emit("delete")
-}
 </script>
 
 <style scoped>
@@ -175,7 +171,7 @@ form {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 1.2rem;
+  gap: 2rem;
   width: 100%;
 }
 
@@ -191,25 +187,20 @@ fieldset .item input {
   max-width: 100px;
 }
 
-.submitEdit {
-  display: flex;
-  align-items: center;
-  flex-direction: row-reverse;
-  gap: 1rem;
+select {
+  all: unset;
+  padding: 0.5rem;
+  appearance: auto;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
 }
 
-.delete {
+.submit {
   display: flex;
   align-items: center;
   flex-direction: row;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  padding: 0.6rem;
-  background-color: #B62E3D;
-  color: #FAFAFA;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  gap: 1rem;
 }
 
 button[type="submit"] {
@@ -260,19 +251,6 @@ input::placeholder {
   max-width: 100%;
 }
 
-.itemArea {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-}
-
-.itemArea textarea {
-  border: none;
-  background-color: inherit;
-  width: 100%;
-  min-height: 120px;
-}
-
 .item input {
   border: none;
   background-color: inherit;
@@ -287,19 +265,15 @@ input::placeholder {
 }
 
 @media (max-width: 700px) {
-
   .main-content {
     margin: 0;
     gap: 0.5rem;
+    max-width: 90vw;
   }
 
   fieldset {
     grid-template-columns: 1fr;
     gap: 0.7rem;
-  }
-
-  h1 {
-    font-size: 2.55rem;
   }
 }
 </style>
