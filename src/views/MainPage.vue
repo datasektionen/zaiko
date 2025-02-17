@@ -27,210 +27,32 @@ import ShortageTable from '@/components/ShortageTable.vue'
 import StatsPanel from '@/components/StatsPanel.vue'
 import { BellAlertIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import { ref } from 'vue'
-import type { ItemGetResponse, StockGetResponse } from '@/types';
-// import type { Notification } from '@/types';
+import type { StockGetResponse } from '@/types';
+import type { Notification } from '@/types';
+import { useNotificationsStore } from '@/stores/notifications'
+import { useClubsStore } from '@/stores/clubs';
 
-// const HOST = import.meta.env.VITE_HOST;
-const items = ref<Array<ItemGetResponse>>([]);
+const HOST = import.meta.env.VITE_HOST;
 const shortage = ref<Array<StockGetResponse>>([]);
 
+const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
 
 const GetData = () => {
-  items.value = [ ];
-  shortage.value = [
-    {
-      id: 1,
-      name: 'Kaffe',
-      location: 'Koket',
-      current: 10,
-      min: 5,
-      order: 5
-    },
-    {
-      id: 2,
-      name: 'Mjolk',
-      location: 'Kylskap',
-      current: 2,
-      min: 1,
-      order: 3
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-    {
-      id: 3,
-      name: 'Socker',
-      location: 'Skafferiet',
-      current: 0,
-      min: 1,
-      order: 2
-    },
-  ];
+  const url: string = HOST + "/api/" + clubStore.getClub();
+
+  fetch(url + "/stock")
+    .then((res) => res.json())
+    .then((json: Array<StockGetResponse>) => shortage.value = json)
+    .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+    })
 
 }
 GetData();
@@ -243,5 +65,12 @@ GetData();
   gap: 1rem;
   padding: 4rem;
   padding-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .main {
+    grid-template-columns: 1fr;
+    padding: 0.4rem;
+  }
 }
 </style>

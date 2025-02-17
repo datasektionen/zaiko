@@ -69,6 +69,12 @@ button {
 @media (max-width: 768px) {
   .modal {
     padding: 15px 1rem;
+    max-width: 95vw;
+    min-width: unset;
+    top: 3rem;
+  }
+  .modalHeader {
+    gap: 1rem;
   }
 }
 </style>

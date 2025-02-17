@@ -55,4 +55,22 @@ const totalSuppliers = ref<number>(8);
 .skip {
   grid-column: 3;
 }
+
+@media (max-width: 768px) {
+  .boxStats {
+    grid-template-columns: 1fr 1fr;
+    max-width: 100%;
+    gap: 20px;
+  }
+  .skip {
+    grid-column: 2;
+  }
+  .box:nth-last-child(2) {
+    grid-column: 1;
+  }
+  .box:last-child {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
 </style>

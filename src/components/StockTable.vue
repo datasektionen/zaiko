@@ -6,37 +6,37 @@
           <th scope="col">
             <span>
               <ArchiveBoxIcon class="icon" />
-              <p>Produkt</p>
+              <p v-if="!isMobile">Produkt</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <HomeIcon class="icon" />
-              <p>Plats</p>
+              <p v-if="!isMobile">Plats</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <ShoppingCartIcon class="icon" />
-              <p>Leverantor</p>
+              <p v-if="!isMobile">Leverantor</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <WalletIcon class="icon" />
-              <p>Mangd</p>
+              <p v-if="!isMobile">Mangd</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <InboxArrowDownIcon class="icon" />
-              <p>Nya</p>
+              <p v-if="!isMobile">Nya</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <ArrowsUpDownIcon class="icon" />
-              <p>Differens</p>
+              <p v-if="!isMobile">Differens</p>
             </span>
           </th>
         </tr>
@@ -66,8 +66,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ItemGetResponse, StockUpdateRequest } from '@/types'
+import type { ItemGetResponse, StockUpdateRequest, Notification } from '@/types'
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, InboxArrowDownIcon, WalletIcon, ArrowsUpDownIcon, ClipboardDocumentListIcon } from '@heroicons/vue/16/solid'
+import { useNotificationsStore } from '@/stores/notifications'
+import { useClubsStore } from '@/stores/clubs'
+import { useMediaQuery } from '@vueuse/core/index.cjs'
+
+const isMobile = useMediaQuery('(max-width: 768px)');
 
 const diff = (newVal: number, current: number) => {
   return newVal - current
@@ -79,53 +84,67 @@ const diffColor = (newVal: number, current: number) => {
 
 const items = ref<Array<ItemGetResponse>>([]);
 const input = ref<StockUpdateRequest>({ items: [] });
+const HOST: string = import.meta.env.VITE_HOST;
+
+const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
 
 const GetData = async () => {
-  items.value = [
-    {
-      id: 1,
-      current: 10,
-      name: "Kaffe",
-      location: "Kök",
-      updated: 5,
-      link: "https://www.google.com",
-      max: 20,
-      min: 5,
-      supplier: 0,
-    },
-    {
-      id: 2,
-      current: 5,
-      name: "Te",
-      location: "Kök",
-      updated: 5,
-      link: "https://www.google.com",
-      max: 20,
-      min: 5,
-      supplier: 0,
-    },
-    {
-      id: 3,
-      current: 15,
-      name: "Kakor",
-      location: "Kök",
-      updated: 5,
-      link: "https://www.google.com",
-      max: 20,
-      min: 5,
-      supplier: 0,
-    },
-  ];
-  input.value.items = items.value.map((item) => [item.id, item.current]);
-  console.log(items.value, input.value)
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  fetch(url + "/item")
+    .then((res) => res.json())
+    .then((json) => {
+      items.value = json
+      items.value.forEach((e: ItemGetResponse, idx) => input.value.items[idx] = [e.id, e.current])
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
 }
-await GetData();
+GetData();
 
-const updateItems = () => {
-  console.log(input.value)
-  // GetData()
+const updateItems = async () => {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  await fetch(url + "/stock", {
+    method: "POST",
+    body: JSON.stringify(input.value),
+  })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Sparad",
+          message: "Inventeringen lyckades",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Inventeringen misslyckades",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+  GetData()
 }
-
 </script>
 
 <style scoped>
@@ -208,5 +227,18 @@ button p {
 button svg {
   width: 1.5rem;
   height: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  table {
+    width: 100%;
+    margin: 2rem 0;
+    overflow-x: scroll;
+  }
+
+  td {
+    white-space: nowrap;
+    max-width: 100px;
+  }
 }
 </style>

@@ -67,17 +67,30 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ItemAddRequest, SupplierListGetResponse } from '@/types';
+import type { ItemAddRequest, SupplierListGetResponse, Notification } from '@/types';
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
+import { useClubsStore } from '@/stores/clubs';
+import { useNotificationsStore } from '@/stores/notifications';
+const HOST = import.meta.env.VITE_HOST;
+
+const clubStore = useClubsStore();
 
 const suppliers = ref<Array<SupplierListGetResponse>>([])
 
 const GetSuppliers = async () => {
-  suppliers.value = [
-    { id: 0, name: "Supplier 1" },
-    { id: 2, name: "Supplier 2" },
-    { id: 3, name: "Supplier 3" },
-  ]
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
+  suppliers.value = await fetch(url, {
+    method: "GET",
+  }).then((r) => r.json())
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
 }
 GetSuppliers();
 
@@ -90,6 +103,7 @@ const supplier = ref<number>(-1)
 const link = ref<string>()
 
 const emit = defineEmits(["submit"]);
+const notificationsStore = useNotificationsStore();
 
 const addItem = async () => {
   const res: ItemAddRequest = {
@@ -101,7 +115,39 @@ const addItem = async () => {
     supplier: supplier.value,
     link: link.value,
   }
-  console.log(res)
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/item";
+  await fetch(url, {
+    method: "POST",
+    body: JSON.stringify(res),
+  })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Success",
+          message: "Produkten lades till",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
   emit('submit')
 }
 
@@ -219,19 +265,15 @@ input::placeholder {
 }
 
 @media (max-width: 700px) {
-
   .main-content {
     margin: 0;
     gap: 0.5rem;
+    max-width: 90vw;
   }
 
   fieldset {
     grid-template-columns: 1fr;
     gap: 0.7rem;
-  }
-
-  h1 {
-    font-size: 2.55rem;
   }
 }
 </style>

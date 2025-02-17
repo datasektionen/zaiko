@@ -6,25 +6,25 @@
           <th scope="col">
             <span>
               <ShoppingCartIcon class="icon" />
-              <p>Namn</p>
+              <p v-if="!isMobile">Namn</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <UserCircleIcon class="icon" />
-              <p>Användarnamn</p>
+              <p v-if="!isMobile">Användarnamn</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <LockClosedIcon class="icon" />
-              <p>Lösenord</p>
+              <p v-if="!isMobile">Lösenord</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <DocumentTextIcon class="icon" />
-              <p>Mangd</p>
+              <p v-if="!isMobile">Anteckningar</p>
             </span>
           </th>
         </tr>
@@ -48,12 +48,14 @@
 import { defineProps } from 'vue'
 import type { SupplierGetResponse } from '@/types'
 import { LockClosedIcon, ShoppingCartIcon, UserCircleIcon, DocumentTextIcon } from '@heroicons/vue/16/solid'
+import { useMediaQuery } from '@vueuse/core/index.cjs';
 
 defineProps<{
   items: Array<SupplierGetResponse>
 }>()
 
 const emit = defineEmits(['select'])
+const isMobile = useMediaQuery('(max-width: 768px)');
 
 </script>
 
@@ -101,5 +103,18 @@ tr {
 a {
   color: #2984BA;
   text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  table {
+    width: 96%;
+    margin: 2rem 0;
+    overflow-x: scroll;
+  }
+
+  td {
+    white-space: nowrap;
+    max-width: 100px;
+  }
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <form v-on:submit.prevent="editItem">
+    <form v-on:submit.prevent="updateItem">
       <div class="item">
         <div class="itemHeader">
           <ArchiveBoxIcon class="buttonIcon" />
@@ -71,21 +71,39 @@
 
 <script setup lang="ts">
 import { ref, defineProps } from 'vue'
-import type { ItemAddRequest, ItemGetResponse, SupplierListGetResponse } from '@/types';
+import type { ItemUpdateRequest, ItemGetResponse, SupplierListGetResponse, Notification } from '@/types';
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, BackspaceIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
+import { useClubsStore } from '@/stores/clubs';
+import { useNotificationsStore } from '@/stores/notifications';
+const HOST = import.meta.env.VITE_HOST;
 
 const { item } = defineProps<{
   item: ItemGetResponse,
 }>()
 
+
+const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
+
 const suppliers = ref<Array<SupplierListGetResponse>>([])
 
-const GetSuppliers = async () => {
-  suppliers.value = [
-    { id: 0, name: "Supplier 1" },
-    { id: 2, name: "Supplier 2" },
-    { id: 3, name: "Supplier 3" },
-  ]
+const GetSuppliers = () => {
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
+  fetch(url, {
+    method: "GET",
+  }).then((r) => r.json())
+    .then((json) => {
+      suppliers.value = json
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
 }
 GetSuppliers();
 
@@ -99,13 +117,9 @@ const link = ref<string | undefined>(item.link)
 
 const emit = defineEmits(["submit", "delete"]);
 
-const Delete = () => {
-  emit('delete')
-  console.log('Delete', item)
-}
-
-const editItem = async () => {
-  const res: ItemAddRequest = {
+const updateItem = async () => {
+  const res: ItemUpdateRequest = {
+    id: item.id,
     name: name.value,
     location: location.value,
     min: min.value,
@@ -114,8 +128,77 @@ const editItem = async () => {
     supplier: supplier.value,
     link: link.value,
   }
-  console.log("Edit", res)
-  emit('submit')
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  await fetch(url + "/item", {
+    method: "PATCH",
+    body: JSON.stringify(res),
+  })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Updaterad",
+          message: "Produkten har uppdaterats",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+  emit("submit")
+}
+
+const Delete = async () => {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+  await fetch(url + "/item", {
+    method: "DELETE",
+    body: JSON.stringify({ name: name.value })
+  })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Raderad",
+          message: "Produkten har tagits bort",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+  emit("delete")
 }
 
 </script>
@@ -241,7 +324,6 @@ input {
 }
 
 @media (max-width: 700px) {
-
   .main-content {
     margin: 0;
     gap: 0.5rem;

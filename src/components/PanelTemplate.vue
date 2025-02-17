@@ -49,4 +49,10 @@ svg {
   align-items: center;
   gap: 1rem;
 }
+
+@media (max-width: 768px) {
+  .panelContainer {
+    max-width: 100vw;
+  }
+}
 </style>

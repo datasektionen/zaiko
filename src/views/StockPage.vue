@@ -24,4 +24,10 @@ import { ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
   padding: 4rem;
   padding-bottom: 0;
 }
+
+@media (max-width: 768px) {
+  .main {
+    padding: 0.3rem;
+  }
+}
 </style>

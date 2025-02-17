@@ -20,9 +20,8 @@ const notificationsStore = useNotificationsStore();
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  top: 6rem;
+  bottom: 2rem;
   right: 2rem;
   z-index: 8;
-  border-radius: 2px;
 }
 </style>

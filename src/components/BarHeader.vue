@@ -39,13 +39,14 @@
           <h1>{{ $route.name }}</h1>
         </div>
         <div class="clubMenu">
-          <ArrowsUpDownIcon class="icon" />
+          <ArrowsUpDownIcon class="icon" v-if="!isMobile" />
           <ClubSelect />
         </div>
       </div>
       <div class="mainContent">
         <slot />
       </div>
+      <NotificationList />
     </div>
   </div>
 </template>
@@ -55,8 +56,11 @@ import NavLink from '@/components/NavLink.vue'
 import ClubSelect from '@/components/ClubSelect.vue'
 import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, MagnifyingGlassIcon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
 import { computed, ref } from 'vue';
+import NotificationList from '@/components/NotificationList.vue';
+import { useMediaQuery } from '@vueuse/core/index.cjs';
 
-const barOpen = ref<boolean>(true);
+const isMobile = useMediaQuery("(max-width: 768px)");
+const barOpen = ref<boolean>(!isMobile.value);
 
 const barSidePanel = computed<string>(() => {
   return barOpen.value ? "barSidePanel" : "barSidePanel closed";
@@ -105,7 +109,8 @@ const Main = computed<string>(() => {
   overflow: hidden;
 }
 
-.titleDiv h1, a {
+.titleDiv h1,
+a {
   font-size: 1.8rem;
   font-weight: bold;
   text-decoration: none;
@@ -162,5 +167,31 @@ const Main = computed<string>(() => {
 .icon {
   width: 34px;
   height: 34px;
+}
+
+@media (max-width: 768px) {
+  .Main {
+    grid-template-columns: 210px 1fr;
+  }
+
+  .closed {
+    width: 0;
+  }
+
+  .MainClosed {
+    grid-template-columns: 0 1fr;
+  }
+
+  .barHeader {
+    padding-right: 1rem;
+  }
+
+  .barHeader h1 {
+    font-size: 1.4rem;
+  }
+
+  .barPanel {
+    grid-template-rows: 56px 1fr;
+  }
 }
 </style>

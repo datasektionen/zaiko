@@ -1,21 +1,16 @@
 <template>
   <div class="ClubSelect">
-    <select class="dropdown" v-model="club">
-      <option v-for="club in clubs" :key="club" :value="club">{{ club }}</option>
+    <select class="dropdown" v-model="clubs.club">
+      <option v-for="club in clubs.clubs" :key="club" :value="club">{{ club }}</option>
     </select>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, } from 'vue'
+import { useClubsStore } from '@/stores/clubs'
 
-const club = ref<string>("")
-const clubs = ref<Array<string>>([])
-
-const GetClub = async () => {
-  clubs.value = ["metadorerna", "mornarna", "metadorna", "gelo"]
-}
-GetClub()
+const clubsStore = useClubsStore();
+const clubs = clubsStore.clubs;
 
 </script>
 

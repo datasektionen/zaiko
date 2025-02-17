@@ -13,7 +13,7 @@
           <UserCircleIcon class="buttonIcon" />
           <p>Användarnamn</p>
         </div>
-        <input v-model="username" placeholder="Användarnamn" required minlength=1>
+        <input v-model="username" placeholder="Användarnamn">
       </div>
       <div class="item">
         <div class="itemHeader">
@@ -47,19 +47,27 @@
 </template>
 
 <script setup lang="ts">
-import type { SupplierAddRequest } from '@/types';
+import { useClubsStore } from '@/stores/clubs';
+import { useNotificationsStore } from '@/stores/notifications';
+import type { SupplierAddRequest, Notification } from '@/types';
 import { ShoppingCartIcon, LinkIcon, UserCircleIcon, LockClosedIcon, DocumentTextIcon, DocumentCheckIcon } from '@heroicons/vue/16/solid'
 import { ref } from 'vue';
+const HOST = import.meta.env.VITE_HOST;
 
 const emit = defineEmits(["submit"]);
 
 const name = ref("")
-const username = ref("")
-const password = ref("")
-const link = ref("")
-const note = ref("")
+const username = ref()
+const password = ref()
+const link = ref()
+const note = ref()
+
+const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
 
 const addSupplier = async () => {
+  const url: string = HOST + "/api/" + clubStore.getClub();
+
   const supplier: SupplierAddRequest = {
     name: name.value,
     username: username.value,
@@ -67,7 +75,39 @@ const addSupplier = async () => {
     link: link.value,
     notes: note.value,
   }
-  console.log("Add", supplier)
+  await fetch(url + "/supplier", {
+    method: "POST",
+    body: JSON.stringify(supplier),
+  })
+    .then((res) => {
+      if (res.ok) {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Sparad",
+          message: "Leverantören lades till",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+      } else {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: "Något gick fel",
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      }
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+
   emit('submit')
 }
 </script>

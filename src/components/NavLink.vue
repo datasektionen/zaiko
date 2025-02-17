@@ -58,4 +58,10 @@ h3 {
   opacity: 1;
   transition: all 0.3s ease-in;
 }
+
+@media (max-width: 768px) {
+  h3 {
+    font-size: 1.2rem;
+  }
+}
 </style>
