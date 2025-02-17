@@ -1,46 +1,69 @@
 <template>
   <div v-if="modal">
-    <Teleport to="#modal">
-      <div class="modal-bg" @click="emit('exit')">
-        <div class="modal" @click.stop="">
-          <slot />
+    <Teleport to="#popup">
+      <div class="modal" @click.stop="">
+        <div class="modalHeader">
+          <TitleMedium :title="title">
+            <PencilSquareIcon />
+          </TitleMedium>
+          <button @click="emit('exit')">
+            <XMarkIcon />
+          </button>
         </div>
+        <slot />
       </div>
     </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
+import { defineProps, defineEmits } from 'vue';
+import TitleMedium from '@/components/TitleMedium.vue';
+import { PencilSquareIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+
+
 defineProps<{
   modal: boolean
+  title: string
 }>()
 
-const emit = defineEmits([ "exit" ]);
+const emit = defineEmits(["exit"]);
 </script>
 
 <style scoped>
 .modal {
-  position: relative;
-  display: block;
-  max-width: 660px;
-  z-index: 11;
-  background-color: #f1f1f1;
-  border-radius: 2px;
+  position: absolute;
+  top: 6rem;
+  right: 0;
+  width: 550px;
+  z-index: 3;
+  background-color: #FAFAFA;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
   padding: 15px 3rem;
-  min-height: 75vh;
+  min-height: 70vh;
+  min-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
 }
 
-.modal-bg {
-  position: absolute;
-  z-index: 10;
-  top: 48px;
-  left: 0;
-  width: 100%;
-  height: 100%;
+.modalHeader {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.20);
+  margin-bottom: 1rem;
+}
+
+button {
+  all: unset;
+  padding: 0.6rem;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.modalHeader button svg {
+  width: 26px;
+  height: 26px;
 }
 
 @media (max-width: 768px) {

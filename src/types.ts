@@ -77,6 +77,11 @@ export interface Log {
   time: number,
 }
 
+export interface SupplierListGetResponse {
+    id: number,
+    name: string,
+}
+
 export interface Notification {
   id: number,
   title: string,

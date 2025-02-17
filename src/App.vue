@@ -1,40 +1,25 @@
 <template>
-  <div id="methone-buffer"></div>
-  <main>
-    <RouterView />
-    <NotificationList />
-    <ClubModal :modal="OpenModal" @exit="CloseModal()" />
-  </main>
+  <BarHeader>
+    <main>
+      <div id="popup"></div>
+      <RouterView />
+    </main>
+  </BarHeader>
+  <NotificationList />
 </template>
 
 <script setup lang="ts">
 import NotificationList from '@/components/NotificationList.vue';
-import ClubModal from '@/components/ClubModal.vue';
-import { ref } from 'vue';
-
-const OpenModal = ref<boolean>(false);
-const params = new URLSearchParams(window.location.search);
-
-if (params.has('club')) {
-  OpenModal.value = true;
-}
-
-const CloseModal = () => {
-  OpenModal.value = false
-};
+import { RouterView } from 'vue-router';
+import BarHeader from '@/components/BarHeader.vue';
 
 </script>
 
 <style scoped>
-#methone-buffer {
-  height: 50px;
-}
-
 main {
-  max-width: 1280px;
+  max-width: 1440px;
   margin: auto;
   position: relative;
-  overflow: scroll;
-  overflow-x: hidden;
+  z-index: 0;
 }
 </style>

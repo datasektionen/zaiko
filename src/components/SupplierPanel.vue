@@ -1,142 +1,86 @@
 <template>
   <div class="main-content">
-    <h1>Redigera</h1>
-    <form v-on:submit.prevent="updateItem">
+    <form v-on:submit.prevent="editSupplier">
       <div class="item">
-        <p>Namn</p>
-        <input v-model="name" placeholder="Namn">
+        <div class="itemHeader">
+          <ShoppingCartIcon class="buttonIcon" />
+          <p>Namn</p>
+        </div>
+        <input v-model="name" placeholder="Namn" required minlength=1>
       </div>
       <div class="item">
-        <p>Länk</p>
-        <input v-model="link" placeholder="Länk">
-      </div>
-      <fieldset>
-        <div class="item">
+        <div class="itemHeader">
+          <UserCircleIcon class="buttonIcon" />
           <p>Användarnamn</p>
-          <input v-model="username" placeholder="Användarnamn">
         </div>
-        <div class="item">
-          <p>Lösenord</p>
-          <input v-model="password" placeholder="Lösenord">
-        </div>
-      </fieldset>
-      <div class="item area">
-        <p>Antäckningar</p>
-        <textarea v-model="note" placeholder="Antäckningar"></textarea>
+        <input v-model="username" placeholder="Användarnamn">
       </div>
-      <div class="submit">
-        <button @click="Delete()" class="delete">Ta bort</button>
-        <input class="button" type="submit" value="Spara">
+      <div class="item">
+        <div class="itemHeader">
+          <LockClosedIcon class="buttonIcon" />
+          <p>Lösenord</p>
+        </div>
+        <input v-model="password" placeholder="Lösenord">
+      </div>
+      <div class="item">
+        <div class="itemHeader">
+          <LinkIcon class="buttonIcon" />
+          <p>Länk</p>
+        </div>
+        <input type="url" v-model="link" placeholder="Länk">
+      </div>
+      <div class="item itemArea">
+        <div class="itemHeader">
+          <DocumentTextIcon class="buttonIcon" />
+          <p>Anteckningar</p>
+        </div>
+        <textarea v-model="note" placeholder="Anteckningar"></textarea>
+      </div>
+      <div class="submitEdit">
+        <button type="submit">
+          <DocumentCheckIcon class="buttonIcon" />
+          <p>Spara</p>
+        </button>
+        <button class="delete" @click.prevent="Delete" >
+          <BackspaceIcon class="buttonIcon" />
+          <p>Radera</p>
+        </button>
       </div>
     </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useClubsStore } from '@/stores/clubs';
-import { useNotificationsStore } from '@/stores/notifications';
-import type { SupplierGetResponse, SupplierUpdateRequest, Notification } from '@/types';
-import { ref } from 'vue';
-const HOST = import.meta.env.VITE_HOST;
+import type { SupplierGetResponse, SupplierUpdateRequest } from '@/types';
+import { BackspaceIcon, ShoppingCartIcon, LinkIcon, UserCircleIcon, LockClosedIcon, DocumentTextIcon, DocumentCheckIcon } from '@heroicons/vue/16/solid'
+import { ref, defineProps } from 'vue';
 
-const props = defineProps<{
-  item: SupplierGetResponse
+const emit = defineEmits(["submit", "delete"]);
+const { item } = defineProps<{
+  item: SupplierGetResponse,
 }>()
 
-const emit = defineEmits(["deleted", "updated"]);
+const name = ref(item.name)
+const username = ref(item.username)
+const password = ref(item.password)
+const link = ref(item.link)
+const note = ref(item.notes)
 
-const notificationsStore = useNotificationsStore();
-const clubStore = useClubsStore();
-
-const name = ref(props.item.name)
-const username = ref(props.item.username)
-const password = ref(props.item.password)
-const link = ref(props.item.link)
-const note = ref(props.item.notes)
-const id = ref(props.item.id)
-
-const updateItem = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
+const Delete = () => {
+  console.log("Delete", item)
+  emit('delete')
+}
+const editSupplier = () => {
   const supplier: SupplierUpdateRequest = {
-    id: id.value,
+    id: item.id,
     name: name.value,
     username: username.value,
     password: password.value,
     link: link.value,
     notes: note.value,
   }
-  await fetch(url + "/supplier", {
-    method: "PATCH",
-    body: JSON.stringify(supplier),
-  })
-    .then((res) => {
-      if (res.ok) {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Updaterad",
-          message: "Leverantören har uppdaterats",
-          severity: "info",
-        }
-        notificationsStore.add(noti);
-      } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
-      }
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-  emit("updated")
-}
-
-const Delete = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
-
-  await fetch(
-    url + "/supplier?" + new URLSearchParams({ id: id.value.toString() }).toString(),
-    {
-      method: "DELETE",
-    })
-    .then((res) => {
-      if (res.ok) {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Borttagen",
-          message: "Leverantören har tagits bort",
-          severity: "info",
-        }
-        notificationsStore.add(noti);
-      } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
-      }
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-  emit("deleted")
+  console.log("Edit", supplier)
+  emit('submit')
 }
 </script>
 
@@ -147,93 +91,138 @@ const Delete = async () => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 2rem;
-  max-width: 1024px;
   margin: 2rem auto;
-}
-
-h1 {
-  padding-bottom: 10px;
-  margin: 0;
-  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
-  width: auto;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 1.5rem;
-  width: 100%;
-}
-
-fieldset {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2.25rem;
-  width: 100%;
 }
 
 p {
   margin: 0;
 }
 
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.2rem;
+  width: 100%;
+}
+
+fieldset {
+  all: unset;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+fieldset .item input {
+  max-width: 100px;
+}
+
+.submitEdit {
+  display: flex;
+  align-items: center;
+  flex-direction: row-reverse;
+  gap: 1rem;
+}
+
+.delete {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  padding: 0.6rem;
+  background-color: #B62E3D;
+  color: #FAFAFA;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button[type="submit"] {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  padding: 0.6rem;
+  background-color: #2EB563;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  -webkit-appearance: textfield;
+}
+
+input::placeholder {
+  font-size: 0.9rem;
+}
+
+.buttonIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.itemHeader svg {
+  color: rgba(0, 0, 0, 0.33);
+}
+
 .item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.33);
   padding: 8px 0;
+  margin-bottom: 8px;
+  max-width: 100%;
+}
+
+.itemArea {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.itemArea textarea {
+  border: none;
+  background-color: inherit;
+  width: 100%;
+  min-height: 120px;
 }
 
 .item input {
   border: none;
   background-color: inherit;
   text-align: right;
-  max-width: 150px;
-}
-
-.area {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.area p {
-  padding-bottom: 8px;
-  margin: 0;
-  margin-bottom: 8px;
-  border-bottom: 2px solid rgba(0, 105, 92, 0.25);
-  width: auto;
-}
-
-.area textarea {
-  border: none;
-  background-color: inherit;
-  min-height: 10rem;
-  min-width: 100%;
+  width: 100%;
 }
 
 .submit {
   display: flex;
-  justify-content: flex-end;
-  gap: 2rem;
-  flex-direction: row;
-}
-
-.delete {
-  background-color: #eb4034;
-  color: #fafafa;
+  align-items: flex-end;
+  flex-direction: column;
 }
 
 @media (max-width: 700px) {
 
   .main-content {
-    margin: 1rem 0;
-    gap: 0.7rem;
+    margin: 0;
+    gap: 0.5rem;
   }
 
   fieldset {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
+    gap: 0.7rem;
   }
 
   h1 {

@@ -3,51 +3,16 @@
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.png">
-    <link rel="stylesheet" href="https://aurora.datasektionen.se/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="module" src="/src/main.ts"></script>
     <title>Zaiko</title>
   </head>
   <body>
-    <div id="methone-container-replace"></div>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <!-- <div id="popup"></div> -->
+    <!-- <div id="noti"></div> -->
   </body>
-  <div id="modal"></div>
-  <div id="noti"></div>
-  <div id="club"></div>
 </html>
 
 <script>
-    const HOST = "%VITE_HOST_FRONTEND%"
-    const store = localStorage.getItem("clubs");
-    const clubs = JSON.parse(store);
-    let club = "Nämnd";
-    if(store) {
-        club = clubs.club ? clubs.club : "Nämnd";
-        if (club.length > 10) {
-          club = club.substring(0, 9) + "...";
-        }
-    }
-    window.methone_conf = {
-        system_name: "zaiko",
-        color_scheme: "teal",
-        login_text: club,
-        login_href: "/?club",
-        links: [
-            {
-                str: "Produkter",
-                href: HOST + "/items"
-            },
-            {
-                str: "Leverantörer",
-                href: HOST + "/suppliers"
-            },
-            {
-                str: "Inventera",
-                href: HOST + "/stock"
-            },
-        ]
-    }
 </script>
-
-<script async src="https://methone.datasektionen.se/bar.js"></script>

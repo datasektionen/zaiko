@@ -1,6 +1,6 @@
 <template>
   <div>
-    <form v-on:submit.prevent="editItem">
+    <form v-on:submit.prevent="addItem">
       <div class="item">
         <div class="itemHeader">
           <ArchiveBoxIcon class="buttonIcon" />
@@ -35,7 +35,7 @@
             <Battery50Icon class="buttonIcon" />
             <p>Nuvarande</p>
           </div>
-          <input v-model="current" placeholder="Nuvarande">
+          <input type="number" v-model="current" placeholder="Nuvarande" required>
         </div>
       </fieldset>
       <div class="item">
@@ -44,8 +44,8 @@
           <p>Leverantör</p>
         </div>
         <select class="input" v-model="supplier" placeholder="Leverantör">
-          <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id"
-            :selected="item.supplier == supplier.id">{{ supplier.name }}</option>
+          <option value="-1" selected>Leverantör</option>
+          <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">{{ supplier.name }}</option>
         </select>
       </div>
       <div class="item">
@@ -55,14 +55,10 @@
         </div>
         <input type="url" v-model="link" placeholder="Länk">
       </div>
-      <div class="submitEdit">
+      <div class="submit">
         <button type="submit">
           <DocumentCheckIcon class="buttonIcon" />
-          <p>Spara</p>
-        </button>
-        <button class="delete" @click.prevent="Delete">
-          <BackspaceIcon class="buttonIcon" />
-          <p>Radera</p>
+          <p>Lägg till</p>
         </button>
       </div>
     </form>
@@ -70,13 +66,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps } from 'vue'
-import type { ItemAddRequest, ItemGetResponse, SupplierListGetResponse } from '@/types';
-import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, BackspaceIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
-
-const { item } = defineProps<{
-  item: ItemGetResponse,
-}>()
+import { ref } from 'vue'
+import type { ItemAddRequest, SupplierListGetResponse } from '@/types';
+import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
 
 const suppliers = ref<Array<SupplierListGetResponse>>([])
 
@@ -89,22 +81,17 @@ const GetSuppliers = async () => {
 }
 GetSuppliers();
 
-const name = ref<string>(item.name)
-const location = ref<string>(item.location)
-const min = ref<number | undefined>(item.min)
-const max = ref<number | undefined>(item.max)
-const current = ref<number>(item.current)
-const supplier = ref<number | undefined>(item.supplier)
-const link = ref<string | undefined>(item.link)
+const name = ref<string>("")
+const location = ref<string>("")
+const min = ref<number>()
+const max = ref<number>()
+const current = ref<number>(0)
+const supplier = ref<number>(-1)
+const link = ref<string>()
 
-const emit = defineEmits(["submit", "delete"]);
+const emit = defineEmits(["submit"]);
 
-const Delete = () => {
-  emit('delete')
-  console.log('Delete', item)
-}
-
-const editItem = async () => {
+const addItem = async () => {
   const res: ItemAddRequest = {
     name: name.value,
     location: location.value,
@@ -114,7 +101,7 @@ const editItem = async () => {
     supplier: supplier.value,
     link: link.value,
   }
-  console.log("Edit", res)
+  console.log(res)
   emit('submit')
 }
 
@@ -154,13 +141,6 @@ fieldset .item input {
   max-width: 100px;
 }
 
-.submitEdit {
-  display: flex;
-  align-items: center;
-  flex-direction: row-reverse;
-  gap: 1rem;
-}
-
 select {
   all: unset;
   padding: 0.5rem;
@@ -170,18 +150,11 @@ select {
   border-radius: 5px;
 }
 
-.delete {
+.submit {
   display: flex;
   align-items: center;
   flex-direction: row;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  padding: 0.6rem;
-  background-color: #B62E3D;
-  color: #FAFAFA;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  gap: 1rem;
 }
 
 button[type="submit"] {
@@ -192,7 +165,7 @@ button[type="submit"] {
   font-size: 1.1rem;
   padding: 0.6rem;
   background-color: #2EB563;
-  color: #FAFAFA;
+  color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -201,10 +174,9 @@ button[type="submit"] {
 input[type="number"] {
   -moz-appearance: textfield;
   -webkit-appearance: textfield;
-  appearance: textfield;
 }
 
-input {
+input::placeholder {
   font-size: 0.9rem;
 }
 
@@ -238,6 +210,12 @@ input {
   background-color: inherit;
   text-align: right;
   width: 100%;
+}
+
+.submit {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
 }
 
 @media (max-width: 700px) {
