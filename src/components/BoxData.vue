@@ -10,7 +10,7 @@ import { computed, defineProps } from 'vue'
 
 const props = defineProps({
   title: String,
-  amount: Number,
+  amount: String,
   good: Boolean,
 })
 

@@ -18,7 +18,7 @@
           <th scope="col">
             <span>
               <WalletIcon class="icon" />
-              <p v-if="!isMobile">Mangd</p>
+              <p v-if="!isMobile">Mängd</p>
             </span>
           </th>
           <th scope="col">

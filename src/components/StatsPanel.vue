@@ -15,6 +15,9 @@
       <TitleMedium title="Total Mängd">
         <ArchiveBoxIcon />
       </TitleMedium>
+      <div class="graphDiv">
+        <h6>WIP</h6>
+      </div>
     </div>
   </div>
 </template>
@@ -25,13 +28,27 @@ import BoxData from '@/components/BoxData.vue'
 import { ArchiveBoxIcon, ShoppingCartIcon } from '@heroicons/vue/24/outline'
 import { ref } from 'vue';
 
-const total = ref<number>(100);
-const toBuy = ref<number>(5);
-const totalSuppliers = ref<number>(8);
+const total = ref<string>("WIP");
+const toBuy = ref<string>("WIP");
+const totalSuppliers = ref<string>("WIP");
 
 </script>
 
 <style scoped>
+.graphDiv {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 220px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+}
+
+.graphDiv h6 {
+  color: white;
+  font-size: 4rem;
+}
 
 .statsContainer {
   display: flex;

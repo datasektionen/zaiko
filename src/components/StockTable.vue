@@ -18,13 +18,13 @@
           <th scope="col">
             <span>
               <ShoppingCartIcon class="icon" />
-              <p v-if="!isMobile">Leverantor</p>
+              <p v-if="!isMobile">Leverantör</p>
             </span>
           </th>
           <th scope="col">
             <span>
               <WalletIcon class="icon" />
-              <p v-if="!isMobile">Mangd</p>
+              <p v-if="!isMobile">Mängd</p>
             </span>
           </th>
           <th scope="col">
