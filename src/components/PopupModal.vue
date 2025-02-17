@@ -33,7 +33,7 @@ const emit = defineEmits(["exit"]);
 <style scoped>
 .modal {
   position: absolute;
-  top: 6rem;
+  top: 8rem;
   right: 0;
   width: 550px;
   z-index: 3;
@@ -71,7 +71,7 @@ button {
     padding: 15px 1rem;
     max-width: 95vw;
     min-width: unset;
-    top: 3rem;
+    top: 5rem;
   }
   .modalHeader {
     gap: 1rem;

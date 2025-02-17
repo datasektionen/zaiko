@@ -1,9 +1,9 @@
 <template>
   <BarHeader>
     <main>
-      <div id="popup"></div>
       <RouterView />
     </main>
+    <div id="popup"></div>
   </BarHeader>
   <NotificationList />
 </template>
