@@ -51,7 +51,7 @@ const getColor = computed<string>(() => {
 const iconType = computed<number>(() => {
   switch (props.notification.severity) {
     case "info":
-      return 0;
+      return 3;
     case "warning":
       return 1;
     case "error":
@@ -99,7 +99,7 @@ svg {
 }
 
 .yellow {
-  color: #F8E720;
+  color: #b6b42e;
 }
 
 .red {

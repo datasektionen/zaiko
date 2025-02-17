@@ -75,6 +75,16 @@ const addSupplier = async () => {
     link: link.value,
     notes: note.value,
   }
+  if (clubStore.getClub() == "Nämnd") {
+    const noti: Notification = {
+      id: Date.now(),
+      title: "Error",
+      message: "Ingen nämnd vald",
+      severity: "error",
+    }
+    notificationsStore.add(noti);
+    return;
+  };
   await fetch(url + "/supplier", {
     method: "POST",
     body: JSON.stringify(supplier),

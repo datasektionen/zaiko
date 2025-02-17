@@ -73,11 +73,22 @@ import { useClubsStore } from '@/stores/clubs';
 import { useNotificationsStore } from '@/stores/notifications';
 const HOST = import.meta.env.VITE_HOST;
 
+const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
 const suppliers = ref<Array<SupplierListGetResponse>>([])
 
 const GetSuppliers = async () => {
+  if (clubStore.getClub() == "Nämnd") {
+    const noti: Notification = {
+      id: Date.now(),
+      title: "Warning",
+      message: "Nämnden har inga leverantörer",
+      severity: "warning",
+    }
+    notificationsStore.add(noti);
+    return;
+  };
   const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
   suppliers.value = await fetch(url, {
     method: "GET",
@@ -103,7 +114,6 @@ const supplier = ref<number>(-1)
 const link = ref<string>()
 
 const emit = defineEmits(["submit"]);
-const notificationsStore = useNotificationsStore();
 
 const addItem = async () => {
   const res: ItemAddRequest = {
@@ -115,6 +125,16 @@ const addItem = async () => {
     supplier: supplier.value,
     link: link.value,
   }
+  if (clubStore.getClub() == "Nämnd") {
+    const noti: Notification = {
+      id: Date.now(),
+      title: "Error",
+      message: "Ingen nämnd vald",
+      severity: "error",
+    }
+    notificationsStore.add(noti);
+    return;
+  };
   const url: string = HOST + "/api/" + clubStore.getClub() + "/item";
   await fetch(url, {
     method: "POST",

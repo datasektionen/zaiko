@@ -53,6 +53,7 @@ const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
 const GetData = () => {
+  if (clubStore.getClub() == "Nämnd") return;
   const url: string = HOST + "/api/" + clubStore.getClub();
   fetch(url + "/item", {
     method: "GET",
