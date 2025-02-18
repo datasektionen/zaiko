@@ -50,4 +50,11 @@ h6 {
 .bad {
   background-color: #F6CDD6;
 }
+
+@media (max-width: 768px) {
+  div {
+    aspect-ratio: 1.2;
+  }
+
+}
 </style>

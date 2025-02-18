@@ -67,7 +67,13 @@ GetData();
   padding-bottom: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1150px) {
+  .main {
+    padding: 4rem 2rem;
+  }
+}
+
+@media (max-width: 1000px) {
   .main {
     grid-template-columns: 1fr;
     padding: 0.4rem;

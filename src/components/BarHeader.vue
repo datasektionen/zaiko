@@ -1,7 +1,7 @@
 <template>
   <div :class="Main">
     <div :class="barSidePanel">
-      <RouterLink to="/" class="titleDiv">
+      <RouterLink to="/" class="titleDiv" @click="isMobileClose()">
         <svg id="superdelta_img" width="26px" height="37px" viewBox="0 0 26 37" version="1.1"
           xmlns="http://www.w3.org/2000/svg">
           <g id="delta_logo" stroke-width="0.75" transform="translate(-19.000000, -14.000000)">
@@ -12,7 +12,7 @@
         </svg>
         <h1 v-if="barOpen">Zaiko</h1>
       </RouterLink>
-      <div class="navLinks">
+      <div class="navLinks" @click="isMobileClose()">
         <NavLink to="/search" title="Sök" :compact="!barOpen">
           <MagnifyingGlassIcon />
         </NavLink>
@@ -60,7 +60,14 @@ import NotificationList from '@/components/NotificationList.vue';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
 
 const isMobile = useMediaQuery("(max-width: 768px)");
-const barOpen = ref<boolean>(!isMobile.value);
+const ShouldBarOpenStart = (): boolean => {
+  const isSmallScreen = useMediaQuery("(max-width: 1250px)");
+  if (isSmallScreen.value || isMobile.value) {
+    return false;
+  }
+  return true;
+}
+const barOpen = ref<boolean>(ShouldBarOpenStart());
 
 const barSidePanel = computed<string>(() => {
   return barOpen.value ? "barSidePanel" : "barSidePanel closed";
@@ -69,6 +76,12 @@ const barSidePanel = computed<string>(() => {
 const Main = computed<string>(() => {
   return barOpen.value ? "Main" : "Main MainClosed";
 });
+
+const isMobileClose = () => {
+  if (isMobile.value) {
+    barOpen.value = false;
+  }
+}
 
 </script>
 
@@ -87,8 +100,8 @@ const Main = computed<string>(() => {
 }
 
 .mainContent {
-  overflow: scroll;
   overflow-x: hidden;
+  overflow-y: scroll;
   background-color: #FAFAFA;
   border-top-left-radius: 16px;
   min-height: 100%;
@@ -169,7 +182,7 @@ a {
   height: 34px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 890px) {
   .Main {
     grid-template-columns: 210px 1fr;
   }
@@ -192,6 +205,16 @@ a {
 
   .barPanel {
     grid-template-rows: 56px 1fr;
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  .Main {
+    overflow: hidden;
+  }
+
+  .MainClosed {
+    overflow: initial;
   }
 }
 </style>

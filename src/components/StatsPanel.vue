@@ -82,6 +82,10 @@ const totalSuppliers = ref<string>("WIP");
   .skip {
     grid-column: 2;
   }
+  .box {
+    margin-right: 0;
+    margin: 0;
+  }
   .box:nth-last-child(2) {
     grid-column: 1;
   }

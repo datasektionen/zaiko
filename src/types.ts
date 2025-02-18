@@ -32,6 +32,11 @@ export interface ItemUpdateRequest {
   link?: string,
 }
 
+export interface FilterItemParams {
+  column: string,
+  search: string,
+}
+
 export interface SupplierGetResponse {
   id: number,
   name: string,
