@@ -1,10 +1,10 @@
 use actix_identity::Identity;
 use actix_session::Session;
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 
-use crate::{auth::check_auth, item::ItemGetResponse};
+use crate::{auth::check_auth, error::Error, item::ItemGetResponse};
 
 #[derive(Serialize)]
 struct ShortageItem {
@@ -27,18 +27,13 @@ pub(crate) async fn get_shortage(
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Sqlite>>,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     log::info!("get shortage");
     let club = club.as_ref();
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+    check_auth(id, session, club).await?;
 
-    let items = match sqlx::query_as!(ItemGetResponse, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await {
-        Ok(items) => items,
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    };
+    let items = sqlx::query_as!(ItemGetResponse, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await?;
 
     let items: Vec<ShortageItem> = items
         .iter()
@@ -54,7 +49,7 @@ pub(crate) async fn get_shortage(
         })
         .collect();
 
-    HttpResponse::Ok().json(items)
+    Ok(HttpResponse::Ok().json(items))
 }
 
 #[post("/{club}/stock")]
@@ -64,50 +59,37 @@ pub(crate) async fn take_stock(
     session: Session,
     pool: web::Data<Pool<Sqlite>>,
     body: String,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     log::info!("update inventory");
     log::debug!("{}", body);
 
     let club = club.as_ref();
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+    check_auth(id, session, club).await?;
 
-    let items: StockUpdateRequest = match serde_json::from_str(&body) {
-        Ok(items) => items,
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    };
+    let items: StockUpdateRequest = serde_json::from_str(&body)?;
 
     for (id, amount) in items.items {
-        if sqlx::query!(
+        sqlx::query!(
             "UPDATE items SET current = $1 WHERE id = $2 AND club = $3",
             amount,
             id,
             club
         )
         .execute(pool.as_ref())
-        .await
-        .is_err()
-        {
-            return HttpResponse::InternalServerError().finish();
-        }
+        .await?;
 
-        match sqlx::query!(
+        sqlx::query!(
             "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
             id,
             amount,
             club
         )
         .execute(pool.get_ref())
-        .await
-        {
-            Ok(_) => {}
-            Err(_) => return HttpResponse::InternalServerError().finish(),
-        }
+        .await?;
     }
 
-    HttpResponse::Ok().finish()
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[cfg(test)]
