@@ -8,7 +8,7 @@
         <ItemsTable :items="items" @select="SelectItem" />
       </template>
       <template #headerRight>
-        <FilterPopup :columns="columns" @search="Filter" @clear="GetData()"/>
+        <FilterPopup :columns="columns" @search="Filter" @clear="GetData()" />
       </template>
     </PanelTemplate>
     <PopupModal :modal="isModal" @exit="UnSelect()" :title="ModalTitle">
@@ -21,8 +21,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, type FunctionalComponent } from 'vue';
-import type { ItemGetResponse, FilterItemParams, Notification } from '@/types';
+import { computed, ref } from 'vue';
+import type { ItemGetResponse, FilterItemParams, Notification, FilterColumn } from '@/types';
 import PanelTemplate from '@/components/PanelTemplate.vue';
 import ItemsTable from '@/components/ItemsTable.vue';
 import PopupModal from '@/components/PopupModal.vue';
@@ -39,15 +39,15 @@ const items = ref<Array<ItemGetResponse>>([]);
 const isModal = ref<boolean>(false);
 const selected = ref<ItemGetResponse>();
 
-const columns: Map<string, FunctionalComponent> = new Map([
-  ['Produkt', ArchiveBoxIcon],
-  ['Plats', HomeIcon],
-  ['Leverantör', ShoppingCartIcon],
-  ['Mängd', WalletIcon],
-  ['Min', Battery0Icon],
-  ['Max', Battery100Icon],
-  ['Status', InformationCircleIcon],
-])
+const columns: Array<FilterColumn> = [
+  { name: 'product', label: 'Produkt', icon: ArchiveBoxIcon },
+  { name: 'location', label: 'Plats', icon: HomeIcon },
+  { name: 'supplier', label: 'Leverantör', icon: ShoppingCartIcon },
+  { name: 'amount', label: 'Mängd', icon: WalletIcon },
+  { name: 'min', label: 'Min', icon: Battery0Icon },
+  { name: 'max', label: 'Max', icon: Battery100Icon },
+  { name: 'status', label: 'Status', icon: InformationCircleIcon },
+];
 
 const ModalTitle = computed(() => {
   return selected.value ? 'Redigera' : 'Lägg till';

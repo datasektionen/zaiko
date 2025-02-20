@@ -1,3 +1,4 @@
+import type { FunctionalComponent } from 'vue';
 
 export interface ItemGetResponse {
   id: number,
@@ -30,6 +31,12 @@ export interface ItemUpdateRequest {
   current: number,
   supplier?: number,
   link?: string,
+}
+
+export interface FilterColumn {
+  name: string,
+  label: string,
+  icon: FunctionalComponent,
 }
 
 export interface FilterItemParams {

@@ -4,14 +4,14 @@
       <FunnelIcon />
     </button>
     <form :class="filterClass + ' filterPanel'" v-if="isOpen"
-      @submit.prevent="emit('search', filterType[0], searchText)">
+      @submit.prevent="emit('search', filterType.name, searchText)">
       <div class="filterHeader">
         <FunnelIconSmall />
         <div class="colSelect">
-          <component :is="filterType[1]" />
+          <component :is="filterType.icon" />
           <select v-model="filterType" required>
-            <option :value="['Fält', NumberedListIcon]" selected disabled>Fält</option>
-            <option v-for="rec in columns" :key="rec[0]" :value="rec">{{ rec[0] }}</option>
+            <option :value="{ name: '', label: 'Fält', icon: NumberedListIcon }" selected disabled>Fält</option>
+            <option v-for="rec in columns" :key="rec.name" :value="rec">{{ rec.label }}</option>
           </select>
         </div>
       </div>
@@ -29,18 +29,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, type FunctionalComponent } from 'vue';
+import { ref, computed } from 'vue';
 import { FunnelIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
 import { FunnelIcon as FunnelIconSmall, NumberedListIcon, TrashIcon } from '@heroicons/vue/20/solid';
+import type { FilterColumn } from '@/types';
 
 const { columns } = defineProps<{
-  columns: Map<string, FunctionalComponent>;
+  columns: Array<FilterColumn>;
 }>()
 
 const emit = defineEmits(["search", "clear"]);
 
 const isOpen = ref(false);
-const filterType = ref<[string, FunctionalComponent]>(["Fält", NumberedListIcon]);
+const filterType = ref<FilterColumn>({ name: '', label: 'Fält', icon: NumberedListIcon });
 const searchText = ref();
 
 

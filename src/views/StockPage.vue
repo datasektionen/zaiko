@@ -22,17 +22,17 @@ import StockTable from '@/components/StockTable.vue'
 import { ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
 import FilterPopup from '@/components/FilterPopup.vue'
 import { ArchiveBoxIcon, HomeIcon, ShoppingCartIcon, WalletIcon, InboxArrowDownIcon, ArrowsUpDownIcon } from '@heroicons/vue/16/solid'
-import type { FilterItemParams } from '@/types'
+import type { FilterColumn, FilterItemParams } from '@/types'
 import { computed, ref } from 'vue'
 
-const columns = new Map([
-  ['Produkt', ArchiveBoxIcon],
-  ['Plats', HomeIcon],
-  ['Leverantör', ShoppingCartIcon],
-  ['Mängd', WalletIcon],
-  ['Nya', InboxArrowDownIcon],
-  ['Differens', ArrowsUpDownIcon],
-])
+const columns: Array<FilterColumn> = [
+  { name: 'product', label: 'Produkt', icon: ArchiveBoxIcon },
+  { name: 'location', label: 'Plats', icon: HomeIcon },
+  { name: 'supplier', label: 'Leverantör', icon: ShoppingCartIcon },
+  { name: 'quantity', label: 'Mängd', icon: WalletIcon },
+  { name: 'new', label: 'Nya', icon: InboxArrowDownIcon },
+  { name: 'difference', label: 'Differens', icon: ArrowsUpDownIcon },
+];
 
 const filter = ref<FilterItemParams | number>(0);
 

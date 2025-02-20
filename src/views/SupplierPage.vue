@@ -26,7 +26,7 @@ import PopupModal from '@/components/PopupModal.vue';
 import SupplierForm from '@/components/SupplierForm.vue';
 import { ShoppingCartIcon } from '@heroicons/vue/24/outline';
 import SupplierPanel from '@/components/SupplierPanel.vue';
-import type { SupplierGetResponse, Notification, FilterItemParams } from '@/types';
+import type { SupplierGetResponse, Notification, FilterItemParams, FilterColumn } from '@/types';
 import { useNotificationsStore } from '@/stores/notifications';
 import { useClubsStore } from '@/stores/clubs';
 import { ShoppingCartIcon as ShoppingCartIconSmall, UserCircleIcon, LockClosedIcon, DocumentTextIcon } from '@heroicons/vue/16/solid';
@@ -42,12 +42,12 @@ const ModalTitle = computed(() => {
   return selected.value ? 'Redigera' : 'Lägg till';
 })
 
-const columns = new Map([
-  ['Namn', ShoppingCartIconSmall],
-  ['Användarnamn', UserCircleIcon],
-  ['Lösenord', LockClosedIcon],
-  ['Anteckningar', DocumentTextIcon],
-])
+const columns: Array<FilterColumn> = [
+  { name: 'name', label: 'Namn', icon: ShoppingCartIconSmall },
+  { name: 'username', label: 'Användarnamn', icon: UserCircleIcon },
+  { name: 'password', label: 'Lösenord', icon: LockClosedIcon },
+  { name: 'notes', label: 'Anteckningar', icon: DocumentTextIcon },
+];
 
 const UnSelect = () => {
   selected.value = undefined
