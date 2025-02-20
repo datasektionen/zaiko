@@ -16,6 +16,8 @@ use openidconnect::{
 use serde::Deserialize;
 use std::env;
 
+use crate::error::Error;
+
 type OIDCClient = openidconnect::Client<
     EmptyAdditionalClaims,
     CoreAuthDisplay,
@@ -60,14 +62,16 @@ struct Query {
     state: String,
 }
 
-pub async fn check_auth(id: Option<Identity>, session: Session, club: &String) -> bool {
+pub async fn check_auth(id: Option<Identity>, session: Session, club: &String) -> Result<(), Error> {
     if id.is_some() {
         if let Ok(Some(privlages)) = session.get::<Vec<String>>("privlages") {
-            return privlages.contains(club);
+            if privlages.contains(club) {
+                return Ok(());
+            }
         }
     }
 
-    false
+    Err(Error::Unauthorized)
 }
 
 pub async fn get_oidc() -> (OIDCData, String) {
