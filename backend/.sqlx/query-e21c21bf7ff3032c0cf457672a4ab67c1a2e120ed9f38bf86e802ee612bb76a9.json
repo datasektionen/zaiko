@@ -1,21 +1,24 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "SELECT amount, time FROM log WHERE item_id = $1 AND club = $2",
   "describe": {
     "columns": [
       {
-        "name": "amount",
         "ordinal": 0,
-        "type_info": "Float"
+        "name": "amount",
+        "type_info": "Float4"
       },
       {
-        "name": "time",
         "ordinal": 1,
-        "type_info": "Integer"
+        "name": "time",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
-      "Right": 2
+      "Left": [
+        "Int4",
+        "Text"
+      ]
     },
     "nullable": [
       false,

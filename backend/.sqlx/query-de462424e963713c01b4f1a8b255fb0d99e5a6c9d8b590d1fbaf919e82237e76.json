@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, extract(epoch from now()), $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "de462424e963713c01b4f1a8b255fb0d99e5a6c9d8b590d1fbaf919e82237e76"
+}

@@ -22,33 +22,33 @@ COPY . .
 
 ENV NODE_ENV=production
 RUN bun test
-RUN bun run build-only ## FIXME
+RUN bun run build-only # FIXME
 
 ##
 ## -------------build backend-------------------------
 ##
 
-ENV APP_NAME=backend
 ENV SQLX_OFFLINE=true
+ENV RUST_LOG=info
 
 FROM rust:1.84-alpine AS build
 WORKDIR /build
 
+RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash postgresql
 
-RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash sqlite
-
-COPY backend/Cargo.lock backend/Cargo.toml ./
-
+COPY backend/Cargo.lock backend/Cargo.toml .
 COPY backend/.sqlx .sqlx
-COPY backend/dev_setup.sh dev_setup.sh
 
-RUN ./dev_setup.sh
-RUN mkdir /var/zaiko
+RUN mkdir src
+RUN echo "pub fn test() {}" > src/lib.rs
+
+RUN cargo build --locked --release
+
+RUN rm -r src
 
 COPY backend/src src
 RUN cargo build --locked --release
 RUN cp ./target/release/backend /bin/server
-RUN cp ./db.sqlite /var/zaiko/db.sqlite
 
 ##
 ## -------------deploy-----------------------------
@@ -61,7 +61,6 @@ RUN mkdir /var/zaiko
 COPY --from=prerelease /usr/src/app/dist dist
 
 COPY --from=build /bin/server /bin/
-COPY --from=build /var/zaiko/db.sqlite /var/zaiko/db.sqlite
 
 EXPOSE 8000
 

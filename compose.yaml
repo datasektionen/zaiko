@@ -3,5 +3,27 @@ services:
     build: .
     ports:
       - 8080:8080
-    volumes:
-      - ./backend/db.sqlite:/var/zaiko/db.sqlite
+    depends_on:
+      - db
+    environment:
+      APP_SECRET: ${APP_SECRET}
+      OIDC_SECRET: ${OIDC_SECRET}
+      DATABASE_URL: postgresql://postgres:postgres@db/db
+      PORT: 8080
+      OIDC_PROVIDER: https://sso.datasektionen.se/op
+      OIDC_ID: zaiko
+      REDIRECT_URL: http://localhost:8080/api/oidc/callback
+      PLS_URL: https://pls.datasektionen.se/api
+      APP_URL: 0.0.0.0
+      APP_ENV: production
+      APP_DEBUG: false
+      VITE_HOST: http://localhost:8080
+      VITE_HOST_FRONTEND: http://localhost:8080
+  db:
+    image: 'postgres:latest'
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db

@@ -1,46 +1,48 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1",
   "describe": {
     "columns": [
       {
-        "name": "id",
         "ordinal": 0,
-        "type_info": "Integer"
+        "name": "id",
+        "type_info": "Int4"
       },
       {
-        "name": "name",
         "ordinal": 1,
+        "name": "name",
         "type_info": "Text"
       },
       {
-        "name": "username",
         "ordinal": 2,
+        "name": "username",
         "type_info": "Text"
       },
       {
-        "name": "password",
         "ordinal": 3,
+        "name": "password",
         "type_info": "Text"
       },
       {
-        "name": "link",
         "ordinal": 4,
+        "name": "link",
         "type_info": "Text"
       },
       {
-        "name": "notes",
         "ordinal": 5,
+        "name": "notes",
         "type_info": "Text"
       },
       {
-        "name": "updated",
         "ordinal": 6,
-        "type_info": "Integer"
+        "name": "updated",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       false,

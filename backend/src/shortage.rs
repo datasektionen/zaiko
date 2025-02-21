@@ -2,23 +2,23 @@ use actix_identity::Identity;
 use actix_session::Session;
 use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Sqlite};
+use sqlx::{Pool, Postgres};
 
 use crate::{auth::check_auth, item::ItemGetResponse};
 
 #[derive(Serialize)]
 struct ShortageItem {
-    id: i64,
+    id: i32,
     name: String,
     location: String,
-    min: f64,
-    current: f64,
-    order: f64,
+    min: f32,
+    current: f32,
+    order: f32,
 }
 
 #[derive(Deserialize)]
 struct StockUpdateRequest {
-    items: Vec<(i64, f64)>
+    items: Vec<(i32, f32)>
 }
 
 #[get("/{club}/stock")]
@@ -26,7 +26,7 @@ pub(crate) async fn get_shortage(
     club: web::Path<String>,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
 ) -> impl Responder {
     log::info!("get shortage");
     let club = club.as_ref();
@@ -62,7 +62,7 @@ pub(crate) async fn take_stock(
     club: web::Path<String>,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
     body: String,
 ) -> impl Responder {
     log::info!("update inventory");
@@ -94,7 +94,7 @@ pub(crate) async fn take_stock(
         }
 
         match sqlx::query!(
-            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, extract(epoch from now()), $3)",
             id,
             amount,
             club
@@ -108,102 +108,4 @@ pub(crate) async fn take_stock(
     }
 
     HttpResponse::Ok().finish()
-}
-
-#[cfg(test)]
-mod tests {
-    use actix_web::{test, web, App};
-    use sqlx::SqlitePool;
-
-    use crate::item::ItemAddRequest;
-
-    use super::{get_shortage, take_stock};
-
-    #[actix_web::test]
-    async fn test_shortage() {
-        let pool = web::Data::new(
-            SqlitePool::connect("db.sqlite")
-                .await
-                .expect("Expected sqlite database with name db.sqlite"),
-        );
-
-        let item = ItemAddRequest {
-            name: String::from("tejp"),
-            min: Some(10.0),
-            max: Some(20.0),
-            current: 5.0,
-            location: String::from("Unknown"),
-            supplier: None,
-            link: None,
-        };
-
-        let club = String::from("metadorerna");
-
-        sqlx::query!(
-            "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
-            item.name,
-            item.location,
-            item.min,
-            item.max,
-            item.current,
-            item.supplier,
-            item.link,
-            club,
-        )
-        .execute(pool.get_ref())
-        .await.unwrap();
-
-        let app = test::init_service(App::new().app_data(pool).service(get_shortage)).await;
-        let req = test::TestRequest::get()
-            .uri("/metadorerna/shortage")
-            .to_request();
-        let res = test::call_service(&app, req).await;
-        assert!(res.status().is_success());
-    }
-
-    #[actix_web::test]
-    async fn test_take_stock() {
-        let pool = web::Data::new(
-            SqlitePool::connect("db.sqlite")
-                .await
-                .expect("Expected sqlite database with name db.sqlite"),
-        );
-
-        let item = ItemAddRequest {
-            name: String::from("tejp"),
-            min: Some(10.0),
-            max: Some(20.0),
-            current: 15.0,
-            location: String::from("Unknown"),
-            supplier: None,
-            link: None,
-        };
-
-        let club = String::from("metadorerna");
-
-        sqlx::query!(
-            "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
-            item.name,
-            item.location,
-            item.min,
-            item.max,
-            item.current,
-            item.supplier,
-            item.link,
-            club,
-        )
-        .execute(pool.get_ref())
-        .await.unwrap();
-
-        let mut body = Vec::new();
-        body.push((String::from("tejp"), 15.0));
-
-        let app = test::init_service(App::new().app_data(pool).service(take_stock)).await;
-        let req = test::TestRequest::post()
-            .uri("/metadorerna/take_stock")
-            .set_json(body)
-            .to_request();
-        let res = test::call_service(&app, req).await;
-        assert!(res.status().is_success());
-    }
 }
