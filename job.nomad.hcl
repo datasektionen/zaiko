@@ -40,6 +40,7 @@ PLS_URL=https://pls.datasektionen.se/api
 APP_URL=0.0.0.0
 APP_ENV=production
 APP_DEBUG=false
+RUST_LOG=info
 ENV
         destination = "local/.env"
         env         = true
