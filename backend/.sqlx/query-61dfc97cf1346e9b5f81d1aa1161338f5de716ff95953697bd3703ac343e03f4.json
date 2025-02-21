@@ -1,16 +1,19 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "SELECT current FROM items WHERE name = $1 AND club = $2",
   "describe": {
     "columns": [
       {
-        "name": "current",
         "ordinal": 0,
-        "type_info": "Float"
+        "name": "current",
+        "type_info": "Float4"
       }
     ],
     "parameters": {
-      "Right": 2
+      "Left": [
+        "Text",
+        "Text"
+      ]
     },
     "nullable": [
       false

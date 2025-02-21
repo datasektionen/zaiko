@@ -1,16 +1,18 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "SELECT name FROM suppliers WHERE id = $1",
   "describe": {
     "columns": [
       {
-        "name": "name",
         "ordinal": 0,
+        "name": "name",
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Left": [
+        "Int4"
+      ]
     },
     "nullable": [
       false

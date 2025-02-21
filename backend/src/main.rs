@@ -12,7 +12,7 @@ use actix_web::{
 };
 use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
-use sqlx::SqlitePool;
+use sqlx::postgres::PgPoolOptions;
 use supplier::get_suppliers;
 
 mod auth;
@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
     }
 
     let pool = web::Data::new(
-        SqlitePool::connect(&env::var("DATABASE_PATH").expect("DATABASE_PATH in .env"))
+        PgPoolOptions::new().connect("postgres://postgres:postgres@localhost/db")
             .await
             .expect("Expected sqlite database with name db.sqlite"),
     );

@@ -2,24 +2,24 @@ use actix_identity::Identity;
 use actix_session::Session;
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Sqlite};
+use sqlx::{Pool, Postgres};
 
 use crate::auth::check_auth;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SupplierGetResponse {
-    id: i64,
+    id: i32,
     name: String,
     link: Option<String>,
     notes: Option<String>,
     username: Option<String>,
     password: Option<String>,
-    updated: i64,
+    updated: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SupplierListGetResponse {
-    id: i64,
+    id: i32,
     name: String,
 }
 
@@ -34,7 +34,7 @@ struct SupplierAddRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SupplierUpdateRequest {
-    id: i64,
+    id: i32,
     name: String,
     link: Option<String>,
     notes: Option<String>,
@@ -44,7 +44,7 @@ struct SupplierUpdateRequest {
 
 #[derive(Deserialize)]
 struct Query {
-    id: Option<i64>
+    id: Option<i32>,
 }
 
 #[get("/{club}/supplier")]
@@ -52,7 +52,7 @@ pub(crate) async fn get_supplier(
     club: web::Path<String>,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
     query: web::Query<Query>,
 ) -> impl Responder {
     log::info!("get supplier");
@@ -60,8 +60,8 @@ pub(crate) async fn get_supplier(
     let club = club.as_ref();
 
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
     if let Some(id) = query.id {
         match sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id)
@@ -87,14 +87,19 @@ pub(crate) async fn get_supplier(
 }
 
 #[get("/{club}/suppliers")]
-pub(crate) async fn get_suppliers(club: web::Path<String>, id: Option<Identity>, session: Session, pool: web::Data<Pool<Sqlite>>) -> HttpResponse {
+pub(crate) async fn get_suppliers(
+    club: web::Path<String>,
+    id: Option<Identity>,
+    session: Session,
+    pool: web::Data<Pool<Postgres>>,
+) -> HttpResponse {
     log::info!("get suppliers");
 
     let club = club.as_ref();
-    
+
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
     match sqlx::query_as!(
         SupplierListGetResponse,
@@ -115,7 +120,7 @@ pub(crate) async fn add_supplier(
     club: web::Path<String>,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
 ) -> HttpResponse {
     log::info!("add supplier");
     log::debug!("{}", body);
@@ -123,8 +128,8 @@ pub(crate) async fn add_supplier(
     let club = club.as_ref();
 
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
     let supplier: SupplierAddRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
@@ -136,7 +141,7 @@ pub(crate) async fn add_supplier(
     }
 
     match sqlx::query!(
-        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, strftime('%s', 'now'), $6)",
+        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, extract(epoch from now()), $6)",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -158,7 +163,7 @@ pub(crate) async fn update_supplier(
     body: String,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
 ) -> impl Responder {
     log::info!("update supplier");
     log::debug!("{}", body);
@@ -166,8 +171,8 @@ pub(crate) async fn update_supplier(
     let club = club.as_ref();
 
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
     let supplier: SupplierUpdateRequest = match serde_json::from_str(&body) {
         Ok(item) => item,
@@ -179,7 +184,7 @@ pub(crate) async fn update_supplier(
     }
 
     match sqlx::query!(
-        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = strftime('%s', 'now') WHERE id = $6 AND club = $7",
+        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = extract(epoch from now()) WHERE id = $6 AND club = $7",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -199,16 +204,16 @@ pub(crate) async fn update_supplier(
 #[delete("/{club}/supplier")]
 pub(crate) async fn delete_supplier(
     club: web::Path<String>,
-    item_id: web::Query<i64>,
+    item_id: web::Query<i32>,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
 ) -> impl Responder {
     let club = club.as_ref();
 
     if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish()
-    } 
+        return HttpResponse::Unauthorized().finish();
+    }
 
     match sqlx::query!(
         "DELETE FROM suppliers WHERE id = $1 AND club = $2",

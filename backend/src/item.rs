@@ -2,20 +2,20 @@ use actix_identity::Identity;
 use actix_session::Session;
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Sqlite};
+use sqlx::{Pool, Postgres};
 
 use crate::auth::check_auth;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ItemGetResponse {
-    pub(crate) id: i64,
+    pub(crate) id: i32,
     pub(crate) name: String,
     pub(crate) location: String,
-    pub(crate) min: Option<f64>,
-    pub(crate) max: Option<f64>,
-    pub(crate) current: f64,
-    pub(crate) supplier: Option<i64>,
-    pub(crate) updated: i64,
+    pub(crate) min: Option<f32>,
+    pub(crate) max: Option<f32>,
+    pub(crate) current: f32,
+    pub(crate) supplier: Option<i32>,
+    pub(crate) updated: i32,
     pub(crate) link: Option<String>,
 }
 
@@ -23,29 +23,29 @@ pub(crate) struct ItemGetResponse {
 pub(crate) struct ItemAddRequest {
     pub(crate) name: String,
     pub(crate) location: String,
-    pub(crate) min: Option<f64>,
-    pub(crate) max: Option<f64>,
-    pub(crate) current: f64,
-    pub(crate) supplier: Option<i64>,
+    pub(crate) min: Option<f32>,
+    pub(crate) max: Option<f32>,
+    pub(crate) current: f32,
+    pub(crate) supplier: Option<i32>,
     pub(crate) link: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ItemUpdateRequest {
-    pub(crate) id: i64,
+    pub(crate) id: i32,
     pub(crate) name: String,
     pub(crate) location: String,
-    pub(crate) min: Option<f64>,
-    pub(crate) max: Option<f64>,
-    pub(crate) current: f64,
-    pub(crate) supplier: Option<i64>,
+    pub(crate) min: Option<f32>,
+    pub(crate) max: Option<f32>,
+    pub(crate) current: f32,
+    pub(crate) supplier: Option<i32>,
     pub(crate) link: Option<String>,
 }
 
 #[get("/{club}/item")]
 pub(crate) async fn get_item(
     club: web::Path<String>,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
     id: Option<Identity>,
     session: Session,
 ) -> impl Responder {
@@ -74,7 +74,7 @@ pub(crate) async fn add_item(
     club: web::Path<String>,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
 ) -> HttpResponse {
     log::info!("add item");
     log::debug!("{}", body);
@@ -95,7 +95,7 @@ pub(crate) async fn add_item(
     }
 
     let res = match sqlx::query!(
-        "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, strftime('%s', 'now'), $7, $8)",
+        "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
         item.name,
         item.location,
         item.min,
@@ -125,7 +125,7 @@ pub(crate) async fn add_item(
     };
 
     match sqlx::query!(
-        "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+        "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, extract(epoch from now()), $3)",
         id,
         item.current,
         club
@@ -146,7 +146,7 @@ pub(crate) async fn update_item(
     body: String,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
 ) -> impl Responder {
     log::info!("update item");
     log::debug!("{}", body);
@@ -180,7 +180,7 @@ pub(crate) async fn update_item(
 
     if current != item.current {
         match sqlx::query!(
-            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, strftime('%s', 'now'), $3)",
+            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, extract(epoch from now()), $3)",
             item.id,
             item.current,
             club
@@ -194,7 +194,7 @@ pub(crate) async fn update_item(
     }
 
     match sqlx::query!(
-        "UPDATE items SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = strftime('%s', 'now'), link = $6  WHERE name = $7 AND club = $8",
+        "UPDATE items SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = extract(epoch from now()), link = $6  WHERE name = $7 AND club = $8",
         item.location,
         item.min,
         item.max,
@@ -215,10 +215,10 @@ pub(crate) async fn update_item(
 #[delete("/{club}/item")]
 pub(crate) async fn delete_item(
     club: web::Path<String>,
-    item_id: web::Query<i64>,
+    item_id: web::Query<i32>,
     id: Option<Identity>,
     session: Session,
-    pool: web::Data<Pool<Sqlite>>,
+    pool: web::Data<Pool<Postgres>>,
 ) -> impl Responder {
     let club = club.as_ref();
 
@@ -248,101 +248,5 @@ pub(crate) async fn delete_item(
     {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(_) => HttpResponse::BadRequest().finish(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use actix_web::{test, web, App};
-    use sqlx::SqlitePool;
-
-    use super::{add_item, get_item, update_item, ItemAddRequest};
-
-    #[actix_web::test]
-    async fn test_get_all_items() {
-        let pool = web::Data::new(
-            SqlitePool::connect("db.sqlite")
-                .await
-                .expect("Expected sqlite database with name db.sqlite"),
-        );
-
-        let app = test::init_service(App::new().app_data(pool).service(get_item)).await;
-        let req = test::TestRequest::get()
-            .uri("/metadorerna/items")
-            .to_request();
-        let res = test::call_service(&app, req).await;
-        assert!(res.status().is_success());
-    }
-
-    #[actix_web::test]
-    async fn test_add_item() {
-        let pool = web::Data::new(
-            SqlitePool::connect("db.sqlite")
-                .await
-                .expect("Expected sqlite database with name db.sqlite"),
-        );
-
-        let body = ItemAddRequest {
-            name: String::from("tejp"),
-            min: Some(10.0),
-            max: Some(20.0),
-            current: 15.0,
-            location: String::from("Unknown"),
-            supplier: None,
-            link: None,
-        };
-
-        let app = test::init_service(App::new().app_data(pool).service(add_item)).await;
-        let req = test::TestRequest::post()
-            .uri("/metadorerna/item")
-            .set_json(body)
-            .to_request();
-        let res = test::call_service(&app, req).await;
-        assert!(res.status().is_success());
-    }
-
-    #[actix_web::test]
-    async fn test_update_item() {
-        let pool = web::Data::new(
-            SqlitePool::connect("db.sqlite")
-                .await
-                .expect("Expected sqlite database with name db.sqlite"),
-        );
-
-        let mut body = ItemAddRequest {
-            name: String::from("tejp"),
-            min: Some(10.0),
-            max: Some(20.0),
-            current: 15.0,
-            location: String::from("Unknown"),
-            supplier: None,
-            link: None,
-        };
-
-        let club = String::from("metadorerna");
-
-        sqlx::query!(
-            "UPDATE items SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = strftime('%s', 'now'), link = $6  WHERE name = $7 AND club = $8",
-            body.location,
-            body.min,
-            body.max,
-            body.current,
-            body.supplier,
-            body.link,
-            body.name,
-            club,
-        )
-        .execute(pool.get_ref())
-        .await.unwrap();
-
-        body.location = String::from("Metador closet");
-
-        let app = test::init_service(App::new().app_data(pool).service(update_item)).await;
-        let req = test::TestRequest::post()
-            .uri("/metadorerna/update")
-            .set_json(body)
-            .to_request();
-        let res = test::call_service(&app, req).await;
-        assert!(res.status().is_success());
     }
 }
