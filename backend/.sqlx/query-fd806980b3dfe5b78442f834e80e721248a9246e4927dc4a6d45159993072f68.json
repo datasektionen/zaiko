@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "CREATE TABLE IF NOT EXISTS log(\n    id SERIAL PRIMARY KEY NOT NULL,\n    item_id INTEGER NOT NULL,\n    amount REAL NOT NULL,\n    time INTEGER NOT NULL,\n    club TEXT NOT NULL);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "fd806980b3dfe5b78442f834e80e721248a9246e4927dc4a6d45159993072f68"
+}

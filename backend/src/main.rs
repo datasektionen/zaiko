@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, ops::Deref};
 
 use actix_cors::Cors;
 use actix_identity::{IdentityExt, IdentityMiddleware};
@@ -12,7 +12,7 @@ use actix_web::{
 };
 use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{postgres::PgPoolOptions, Executor, Pool, Postgres};
 use supplier::get_suppliers;
 
 mod auth;
@@ -37,10 +37,13 @@ async fn main() -> std::io::Result<()> {
     }
 
     let pool = web::Data::new(
-        PgPoolOptions::new().connect("postgres://postgres:postgres@localhost/db")
+        PgPoolOptions::new()
+            .connect(&env::var("DATABASE_URL").expect("DATABASE_URL to exist"))
             .await
-            .expect("Expected sqlite database with name db.sqlite"),
+            .expect("Expected to connect to database")
     );
+
+    db_init(&pool).await.expect("to setup db");
 
     let (oidc, auth_path) = get_oidc().await;
     let oidc = Data::new(oidc);
@@ -119,4 +122,49 @@ impl Guard for LoginGuard {
     fn check(&self, ctx: &actix_web::guard::GuardContext<'_>) -> bool {
         ctx.get_identity().is_ok()
     }
+}
+
+async fn db_init(pool: &web::Data<Pool<Postgres>>) -> Result<(), sqlx::error::Error> {
+    sqlx::query!(
+        "CREATE TABLE IF NOT EXISTS items(
+        id SERIAL PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        location TEXT NOT NULL,
+        min REAL,
+        max REAL,
+        current REAL NOT NULL,
+        supplier INTEGER,
+        updated INTEGER NOT NULL,
+        link TEXT,
+        club TEXT NOT NULL
+        )",
+    )
+    .execute(pool.get_ref())
+    .await?;
+
+    sqlx::query!(
+        "CREATE TABLE IF NOT EXISTS suppliers(
+    id SERIAL PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    link TEXT,
+    notes TEXT,
+    username TEXT,
+    password TEXT,
+    updated INTEGER NOT NULL);"
+    )
+    .execute(pool.get_ref())
+    .await?;
+
+    sqlx::query!(
+        "CREATE TABLE IF NOT EXISTS log(
+    id SERIAL PRIMARY KEY NOT NULL,
+    item_id INTEGER NOT NULL,
+    amount REAL NOT NULL,
+    time INTEGER NOT NULL,
+    club TEXT NOT NULL);"
+    )
+    .execute(pool.get_ref())
+    .await?;
+
+    Ok(())
 }
