@@ -30,14 +30,13 @@ job "zaiko" {
 {{ with nomadVar "nomad/jobs/zaiko" }}
 APP_SECRET={{ .app_secret }}
 OIDC_SECRET={{ .oidc_secret }}
+DATABASE_URL=postgresql://zaiko:{{ .database_password }}@postgresql.dsekt.internal:5432/zaiko
 {{ end }}
 PORT={{ env "NOMAD_PORT_http" }}
 OIDC_PROVIDER=https://sso.datasektionen.se/op
 OIDC_ID=zaiko
 REDIRECT_URL=https://zaiko.datasektionen.se/api/oidc/callback
 PLS_URL=https://pls.datasektionen.se/api
-DATABASE_URL=sqlite://db.sqlite
-DATABASE_PATH=/var/zaiko/db.sqlite
 APP_URL=0.0.0.0
 APP_ENV=production
 APP_DEBUG=false
