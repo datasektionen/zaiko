@@ -106,13 +106,14 @@ const emit = defineEmits(["submit"]);
 const notificationsStore = useNotificationsStore();
 
 const addItem = async () => {
+  const supplierId = supplier.value === -1 ? undefined : supplier.value;
   const res: ItemAddRequest = {
     name: name.value,
     location: location.value,
     min: min.value,
     max: max.value,
     current: current.value,
-    supplier: supplier.value,
+    supplier: supplierId,
     link: link.value,
   }
   const url: string = HOST + "/api/" + clubStore.getClub() + "/item";
