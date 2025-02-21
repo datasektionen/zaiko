@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "CREATE TABLE IF NOT EXISTS suppliers(\n    id SERIAL PRIMARY KEY NOT NULL,\n    name TEXT NOT NULL,\n    link TEXT,\n    notes TEXT,\n    username TEXT,\n    password TEXT,\n    updated INTEGER NOT NULL);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "335ca61d7d515e167ebbfbf2011095646e10e751cf8efd47bdd70f0e4a80d03b"
+}

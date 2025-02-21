@@ -1,10 +1,14 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "UPDATE items SET current = $1 WHERE id = $2 AND club = $3",
   "describe": {
     "columns": [],
     "parameters": {
-      "Right": 3
+      "Left": [
+        "Float4",
+        "Int4",
+        "Text"
+      ]
     },
     "nullable": []
   },
