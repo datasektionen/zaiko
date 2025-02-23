@@ -1,4 +1,4 @@
-use std::{env, ops::Deref};
+use std::env;
 
 use actix_cors::Cors;
 use actix_identity::{IdentityExt, IdentityMiddleware};
@@ -12,7 +12,7 @@ use actix_web::{
 };
 use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
-use sqlx::{postgres::PgPoolOptions, Executor, Pool, Postgres};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use supplier::get_suppliers;
 
 mod auth;

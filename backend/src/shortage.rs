@@ -18,7 +18,7 @@ struct ShortageItem {
 
 #[derive(Deserialize)]
 struct StockUpdateRequest {
-    items: Vec<(i32, f32)>
+    items: Vec<(i32, f32)>,
 }
 
 #[get("/{club}/stock")]
@@ -30,10 +30,17 @@ pub(crate) async fn get_shortage(
 ) -> Result<HttpResponse, Error> {
     log::info!("get shortage");
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
-    let items = sqlx::query_as!(ItemGetResponse, "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1", club).fetch_all(pool.get_ref()).await?;
+    let items = sqlx::query_as!(
+        ItemGetResponse,
+        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",
+        club
+    )
+    .fetch_all(&mut *pool)
+    .await?;
 
     let items: Vec<ShortageItem> = items
         .iter()
@@ -64,6 +71,7 @@ pub(crate) async fn take_stock(
     log::debug!("{}", body);
 
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -76,7 +84,7 @@ pub(crate) async fn take_stock(
             id,
             club
         )
-        .execute(pool.as_ref())
+        .execute(&mut *pool)
         .await?;
 
         sqlx::query!(
@@ -85,7 +93,7 @@ pub(crate) async fn take_stock(
             amount,
             club
         )
-        .execute(pool.get_ref())
+        .execute(&mut *pool)
         .await?;
     }
 

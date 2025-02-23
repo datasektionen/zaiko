@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 psql -h localhost -p 5432 -U postgres -c "CREATE DATABASE db ENCODING 'UTF8' OWNER postgres;"
+psql -h localhost -p 5432 -U postgres -d db -c "SET SCHEMA 'public';"
+psql -h localhost -p 5432 -U postgres -d db -c 'CREATE EXTENSION fuzzystrmatch SCHEMA public;'
 psql -h localhost -p 5432 -U postgres -d db -c 'CREATE TABLE IF NOT EXISTS items(
     id SERIAL PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,

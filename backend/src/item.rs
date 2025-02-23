@@ -42,25 +42,62 @@ pub(crate) struct ItemUpdateRequest {
     pub(crate) link: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct ItemGetQuery {
+    column: Option<String>,
+    search: Option<String>,
+}
+
 #[get("/{club}/item")]
 pub(crate) async fn get_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
+    query: web::Query<ItemGetQuery>,
     id: Option<Identity>,
     session: Session,
 ) -> Result<HttpResponse, Error> {
     log::info!("get items");
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
-    let items = sqlx::query_as!(
-        ItemGetResponse,
-        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
-        club
-    )
-    .fetch_all(pool.get_ref())
-    .await?;
+    let items = if let ItemGetQuery {
+        column: Some(column),
+        search: Some(search),
+    } = query.0
+    {
+        if matches!(column.as_str(), "name" | "location" | "link") {
+            sqlx::query_as!(
+                ItemGetResponse,
+                "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                club,
+                column,
+                search
+            ).fetch_all(&mut *pool).await?
+        } else if matches!(
+            column.as_str(),
+            "min" | "max" | "current" | "supplier" | "updated"
+        ) {
+            sqlx::query_as!(
+                ItemGetResponse,
+                "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1 AND $2 = $3",
+                club,
+                column,
+                search
+            ).fetch_all(&mut *pool).await?
+        } else {
+            return Err(Error::BadRequest);
+        }
+    } else {
+        sqlx::query_as!(
+            ItemGetResponse,
+            "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
+            club
+        )
+        .fetch_all(&mut *pool)
+        .await?
+    };
 
     Ok(HttpResponse::Ok().json(items))
 }
@@ -77,6 +114,7 @@ pub(crate) async fn add_item(
     log::debug!("{}", body);
 
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -86,7 +124,7 @@ pub(crate) async fn add_item(
         return Err(Error::BadRequest);
     }
 
-    let res = sqlx::query!(
+    sqlx::query!(
         "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
         item.name,
         item.location,
@@ -97,7 +135,7 @@ pub(crate) async fn add_item(
         item.link,
         club,
     )
-    .execute(pool.get_ref())
+    .execute(&mut *pool)
     .await?;
 
     let id = sqlx::query!(
@@ -105,7 +143,7 @@ pub(crate) async fn add_item(
         item.name,
         club
     )
-    .fetch_one(pool.get_ref())
+    .fetch_one(&mut *pool)
     .await?
     .id;
 
@@ -115,7 +153,7 @@ pub(crate) async fn add_item(
         item.current,
         club
     )
-    .execute(pool.get_ref())
+    .execute(&mut *pool)
     .await?;
 
     Ok(HttpResponse::Ok().finish())
@@ -133,6 +171,7 @@ pub(crate) async fn update_item(
     log::debug!("{}", body);
 
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -147,7 +186,7 @@ pub(crate) async fn update_item(
         item.name,
         club
     )
-    .fetch_one(pool.as_ref())
+    .fetch_one(&mut *pool)
     .await?
     .current;
 
@@ -158,7 +197,7 @@ pub(crate) async fn update_item(
             item.current,
             club
         )
-        .execute(pool.get_ref())
+        .execute(&mut *pool)
         .await?;
     }
 
@@ -173,7 +212,7 @@ pub(crate) async fn update_item(
         item.name,
         club,
     )
-    .execute(pool.get_ref())
+    .execute(&mut *pool)
     .await?;
 
     Ok(HttpResponse::Ok().finish())
@@ -188,6 +227,7 @@ pub(crate) async fn delete_item(
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -196,7 +236,7 @@ pub(crate) async fn delete_item(
         item_id.0,
         club
     )
-    .execute(pool.get_ref())
+    .execute(&mut *pool)
     .await?;
 
     sqlx::query!(
@@ -204,7 +244,7 @@ pub(crate) async fn delete_item(
         item_id.0,
         club
     )
-    .execute(pool.get_ref())
+    .execute(&mut *pool)
     .await?;
 
     Ok(HttpResponse::Ok().finish())

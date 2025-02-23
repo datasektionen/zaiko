@@ -58,12 +58,13 @@ pub(crate) async fn get_supplier(
     log::info!("get supplier");
 
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
     if let Some(id) = query.id {
         let name = sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id)
-            .fetch_one(pool.get_ref())
+            .fetch_one(&mut *pool)
             .await?
             .name;
 
@@ -74,7 +75,7 @@ pub(crate) async fn get_supplier(
             "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1",
             club
         )
-        .fetch_all(pool.get_ref())
+        .fetch_all(&mut *pool)
         .await?;
 
         Ok(HttpResponse::Ok().json(suppliers))
@@ -91,6 +92,7 @@ pub(crate) async fn get_suppliers(
     log::info!("get suppliers");
 
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -99,7 +101,7 @@ pub(crate) async fn get_suppliers(
         "SELECT id, name FROM suppliers WHERE club = $1",
         club
     )
-    .fetch_all(pool.get_ref())
+    .fetch_all(&mut *pool)
     .await?;
 
     Ok(HttpResponse::Ok().json(supplier))
@@ -117,6 +119,7 @@ pub(crate) async fn add_supplier(
     log::debug!("{}", body);
 
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -135,7 +138,7 @@ pub(crate) async fn add_supplier(
         supplier.password,
         club,
     )
-    .execute(pool.get_ref())
+    .execute(&mut *pool)
     .await?;
 
     Ok(HttpResponse::Ok().finish())
@@ -153,6 +156,7 @@ pub(crate) async fn update_supplier(
     log::debug!("{}", body);
 
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -172,7 +176,7 @@ pub(crate) async fn update_supplier(
         supplier.id,
         club,
     )
-    .execute(pool.get_ref())
+    .execute(&mut *pool)
     .await?;
 
     Ok(HttpResponse::Ok().finish())
@@ -187,6 +191,7 @@ pub(crate) async fn delete_supplier(
     session: Session,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -195,7 +200,7 @@ pub(crate) async fn delete_supplier(
         item_id.0,
         club
     )
-    .execute(pool.get_ref())
+    .execute(&mut *pool)
     .await?;
 
     Ok(HttpResponse::Ok().finish())

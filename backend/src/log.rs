@@ -21,6 +21,7 @@ pub(crate) async fn get_log(
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
     check_auth(id, session, club).await?;
 
@@ -30,7 +31,7 @@ pub(crate) async fn get_log(
         item.0,
         club
     )
-    .fetch_all(pool.get_ref())
+    .fetch_all(&mut *pool)
     .await?;
 
     Ok(HttpResponse::Ok().json(logs))
