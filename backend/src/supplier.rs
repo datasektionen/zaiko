@@ -45,6 +45,8 @@ struct SupplierUpdateRequest {
 #[derive(Deserialize)]
 struct Query {
     id: Option<i32>,
+    column: Option<String>,
+    search: Option<String>,
 }
 
 #[get("/{club}/supplier")]
@@ -69,6 +71,36 @@ pub(crate) async fn get_supplier(
             .name;
 
         Ok(HttpResponse::Ok().json(name))
+    } else if let Query {
+        column: Some(column),
+        search: Some(search),
+        id: _,
+    } = query.0
+    {
+        let suppliers = if matches!(
+            column.as_str(),
+            "name" | "username" | "password" | "link" | "notes"
+        ) {
+            sqlx::query_as!(
+            SupplierGetResponse,
+            "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                club,
+                column,
+                search
+        ).fetch_all(&mut *pool).await?
+        } else if matches!(column.as_str(), "updated") {
+            sqlx::query_as!(
+                SupplierGetResponse,
+                "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1 AND $2 = $3",
+                club,
+                column,
+                search
+            ).fetch_all(&mut *pool).await?
+        } else {
+            return Err(Error::BadRequest);
+        };
+
+        Ok(HttpResponse::Ok().json(suppliers))
     } else {
         let suppliers = sqlx::query_as!(
             SupplierGetResponse,
