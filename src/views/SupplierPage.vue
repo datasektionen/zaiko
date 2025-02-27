@@ -63,6 +63,7 @@ const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
 const GetData = () => {
+  UnSelect();
   const url: string = HOST + "/api/" + clubStore.getClub();
 
   fetch(url + "/supplier", {

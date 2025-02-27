@@ -16,12 +16,12 @@
         </div>
       </div>
       <div class="filterContent">
-        <button type="submit" class="filterSearch">
-          <MagnifyingGlassIcon />
-        </button>
-        <input type="text" placeholder="Filter" v-model="searchText" required />
         <button class="clearButton" @click="emit('clear')">
           <TrashIcon />
+        </button>
+        <input type="text" placeholder="Filter" v-model="searchText" required />
+        <button type="submit" class="filterSearch">
+          <MagnifyingGlassIcon />
         </button>
       </div>
     </form>

@@ -143,13 +143,15 @@ const updateItem = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => text).then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {
@@ -166,9 +168,9 @@ const updateItem = async () => {
 
 const Delete = async () => {
   const url: string = HOST + "/api/" + clubStore.getClub();
-  await fetch(url + "/item", {
+  const query = new URLSearchParams({ id: item.id.toString() }).toString();
+  await fetch(url + "/item?" + query, {
     method: "DELETE",
-    body: JSON.stringify({ name: name.value })
   })
     .then((res) => {
       if (res.ok) {
@@ -180,13 +182,15 @@ const Delete = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => text).then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {
