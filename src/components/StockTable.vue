@@ -66,11 +66,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ItemGetResponse, StockUpdateRequest, Notification } from '@/types'
+import type { ItemGetResponse, StockUpdateRequest, Notification, FilterItemParams } from '@/types'
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, InboxArrowDownIcon, WalletIcon, ArrowsUpDownIcon, ClipboardDocumentListIcon } from '@heroicons/vue/16/solid'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useClubsStore } from '@/stores/clubs'
 import { useMediaQuery } from '@vueuse/core/index.cjs'
+
+const { filter } = defineProps<{
+  filter: FilterItemParams | number
+}>()
 
 const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -88,6 +92,26 @@ const HOST: string = import.meta.env.VITE_HOST;
 
 const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
+
+const Filter = async () => {
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/item?";
+  const params = new URLSearchParams(Object.entries(filter)).toString();
+  fetch(url + params)
+    .then((res) => res.json())
+    .then((json) => {
+      items.value = json
+      items.value.forEach((e: ItemGetResponse, idx) => input.value.items[idx] = [e.id, e.current])
+    })
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+}
 
 const GetData = async () => {
   if (clubStore.getClub() == "Nämnd") return;
@@ -108,7 +132,11 @@ const GetData = async () => {
       notificationsStore.add(noti);
     })
 }
-GetData();
+if (filter == 0) {
+  GetData()
+} else {
+  Filter()
+}
 
 const updateItems = async () => {
   const url: string = HOST + "/api/" + clubStore.getClub();
@@ -144,13 +172,17 @@ const updateItems = async () => {
       }
       notificationsStore.add(noti);
     })
-  GetData()
+  if (filter == 0) {
+    GetData()
+  } else {
+    Filter()
+  }
 }
 </script>
 
 <style scoped>
 table {
-  width: 85%;
+  width: calc(100% - 2rem);
   border-collapse: collapse;
   margin: 3rem 1rem;
 }

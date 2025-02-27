@@ -99,13 +99,15 @@ const addSupplier = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {

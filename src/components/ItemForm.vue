@@ -116,13 +116,14 @@ const link = ref<string>()
 const emit = defineEmits(["submit"]);
 
 const addItem = async () => {
+  const supplierId = supplier.value === -1 ? undefined : supplier.value;
   const res: ItemAddRequest = {
     name: name.value,
     location: location.value,
     min: min.value,
     max: max.value,
     current: current.value,
-    supplier: supplier.value,
+    supplier: supplierId,
     link: link.value,
   }
   if (clubStore.getClub() == "Nämnd") {
@@ -150,13 +151,15 @@ const addItem = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {

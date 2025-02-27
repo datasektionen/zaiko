@@ -7,6 +7,9 @@
       <template #content>
         <SupplierTable :items="suppliers" @select="SelectItem" />
       </template>
+      <template #headerRight>
+        <FilterPopup :columns="columns" @search="Filter" @clear="GetData()"/>
+      </template>
     </PanelTemplate>
     <PopupModal :modal="isModal" @exit="UnSelect()" :title="ModalTitle">
       <SupplierPanel v-if="selected" :item="selected" @submit="GetData()" @delete="GetData()"/>
@@ -23,9 +26,11 @@ import PopupModal from '@/components/PopupModal.vue';
 import SupplierForm from '@/components/SupplierForm.vue';
 import { ShoppingCartIcon } from '@heroicons/vue/24/outline';
 import SupplierPanel from '@/components/SupplierPanel.vue';
-import type { SupplierGetResponse, Notification } from '@/types';
+import type { SupplierGetResponse, Notification, FilterItemParams, FilterColumn } from '@/types';
 import { useNotificationsStore } from '@/stores/notifications';
 import { useClubsStore } from '@/stores/clubs';
+import { ShoppingCartIcon as ShoppingCartIconSmall, UserCircleIcon, LockClosedIcon, DocumentTextIcon } from '@heroicons/vue/16/solid';
+import FilterPopup from '@/components/FilterPopup.vue';
 
 const HOST = import.meta.env.VITE_HOST;
 
@@ -36,6 +41,13 @@ const selected = ref<SupplierGetResponse>();
 const ModalTitle = computed(() => {
   return selected.value ? 'Redigera' : 'Lägg till';
 })
+
+const columns: Array<FilterColumn> = [
+  { name: 'name', label: 'Namn', icon: ShoppingCartIconSmall },
+  { name: 'username', label: 'Användarnamn', icon: UserCircleIcon },
+  { name: 'password', label: 'Lösenord', icon: LockClosedIcon },
+  { name: 'notes', label: 'Anteckningar', icon: DocumentTextIcon },
+];
 
 const UnSelect = () => {
   selected.value = undefined
@@ -52,6 +64,7 @@ const clubStore = useClubsStore();
 
 const GetData = () => {
   if (clubStore.getClub() == "Nämnd") return;
+  UnSelect();
   const url: string = HOST + "/api/" + clubStore.getClub();
 
   fetch(url + "/supplier", {
@@ -71,6 +84,26 @@ const GetData = () => {
 }
 GetData();
 
+const Filter = (column: string, search: string) => {
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/supplier?";
+  const query: FilterItemParams = {
+    column: column,
+    search: search,
+  }
+  const queryString = new URLSearchParams(Object.entries(query)).toString();
+  fetch(url + queryString, {
+    method: "GET",
+  }).then((r) => r.json()).then((r) => suppliers.value = r)
+    .catch((error) => {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Error",
+        message: error.toString(),
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+    })
+}
 </script>
 
 <style scoped>
