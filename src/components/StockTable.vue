@@ -114,6 +114,7 @@ const Filter = async () => {
 }
 
 const GetData = async () => {
+  if (clubStore.getClub() == "Nämnd") return;
   const url: string = HOST + "/api/" + clubStore.getClub();
   fetch(url + "/item")
     .then((res) => res.json())

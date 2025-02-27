@@ -88,6 +88,16 @@ const clubStore = useClubsStore();
 const suppliers = ref<Array<SupplierListGetResponse>>([])
 
 const GetSuppliers = () => {
+  if (clubStore.getClub() == "Nämnd") {
+    const noti: Notification = {
+      id: Date.now(),
+      title: "Error",
+      message: "Nämnd har ingen leverantör",
+      severity: "error",
+    }
+    notificationsStore.add(noti);
+    return;
+  };
   const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
   fetch(url, {
     method: "GET",
