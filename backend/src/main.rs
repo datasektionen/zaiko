@@ -13,6 +13,7 @@ use actix_web::{
 use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use stats::get_stats;
 use supplier::get_suppliers;
 
 mod auth;
@@ -21,6 +22,7 @@ mod item;
 mod log;
 mod serve;
 mod shortage;
+mod stats;
 mod supplier;
 
 use crate::item::{add_item, delete_item, get_item, update_item};
@@ -40,7 +42,7 @@ async fn main() -> std::io::Result<()> {
         PgPoolOptions::new()
             .connect(&env::var("DATABASE_URL").expect("DATABASE_URL to exist"))
             .await
-            .expect("Expected to connect to database")
+            .expect("Expected to connect to database"),
     );
 
     db_init(&pool).await.expect("to setup db");
@@ -95,7 +97,8 @@ async fn main() -> std::io::Result<()> {
                     .service(take_stock)
                     .service(get_log)
                     .service(auth_callback)
-                    .service(get_clubs),
+                    .service(get_clubs)
+                    .service(get_stats),
             )
             .service(serve_frontend)
             .service(

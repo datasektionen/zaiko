@@ -94,3 +94,9 @@ export interface ClubStorage {
   clubs: Array<string>,
   timestamp: number,
 }
+
+export interface Stats {
+  items: number,
+  suppliers: number,
+  shortages: number,
+}
