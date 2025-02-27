@@ -65,7 +65,7 @@ pub(crate) async fn get_supplier(
     check_auth(id, session, club).await?;
 
     if let Some(id) = query.id {
-        let name = sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id)
+        let name = sqlx::query!("SELECT name FROM suppliers WHERE club = $1 AND id = $2", club, id)
             .fetch_one(&mut *pool)
             .await?
             .name;
