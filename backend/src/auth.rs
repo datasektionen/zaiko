@@ -74,17 +74,9 @@ pub async fn check_auth(
 ) -> Result<Permission, Error> {
     if id.is_some() {
         if let Ok(Some(privlages)) = session.get::<Vec<String>>("privlages") {
-            if privlages
-                .iter()
-                .map(|x| (*x).clone() + "-r")
-                .any(|x| x == *club)
-            {
+            if privlages.contains(&((*club).clone() + "-r")) {
                 return Ok(Permission::Read);
-            } else if privlages
-                .iter()
-                .map(|x| (*x).clone() + "-rw")
-                .any(|x| x == *club)
-            {
+            } else if privlages.contains(&((*club).clone() + "-rw")) {
                 return Ok(Permission::Write);
             } else if matches!(club.as_str(), "metadorerna" | "sjukvård") {
                 return Ok(Permission::Read);
