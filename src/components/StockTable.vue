@@ -95,7 +95,7 @@ const clubStore = useClubsStore();
 
 const Filter = async () => {
   if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub() + "/item?";
+  const url: string = HOST + "/api/" + clubStore.getClub().name + "/item?";
   const params = new URLSearchParams(Object.entries(filter)).toString();
   fetch(url + params)
     .then((res) => res.json())
@@ -116,7 +116,7 @@ const Filter = async () => {
 
 const GetData = async () => {
   if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.getClub().name;
   fetch(url + "/item")
     .then((res) => res.json())
     .then((json) => {
@@ -141,7 +141,7 @@ if (filter == 0) {
 
 const updateItems = async () => {
   if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.getClub().name;
   await fetch(url + "/stock", {
     method: "POST",
     body: JSON.stringify(input.value),

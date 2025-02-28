@@ -40,7 +40,7 @@ const clubStore = useClubsStore();
 
 const GetData = () => {
   if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.getClub().name;
 
   fetch(url + "/stock")
     .then((res) => res.json())

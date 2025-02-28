@@ -101,7 +101,7 @@ const emit = defineEmits(['select'])
 
 const GetSuppliers = () => {
   if (!clubStore.checkClub()) return
-  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
+  const url: string = HOST + "/api/" + clubStore.getClub().name + "/suppliers";
   fetch(url, {
     method: "GET",
   }).then((r) => r.json())

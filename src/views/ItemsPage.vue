@@ -70,7 +70,7 @@ const clubStore = useClubsStore();
 const GetData = () => {
   if (!clubStore.checkClub()) return
   UnSelect();
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.getClub().name;
   fetch(url + "/item", {
     method: "GET",
   }).then((r) => r.json()).then((r) => items.value = r)
@@ -89,7 +89,7 @@ GetData()
 
 const Filter = (column: string, search: string) => {
   if (!clubStore.checkClub()) return
-  const url: string = HOST + "/api/" + clubStore.getClub() + "/item?";
+  const url: string = HOST + "/api/" + clubStore.getClub().name + "/item?";
   const query: FilterItemParams = {
     column: column,
     search: search,

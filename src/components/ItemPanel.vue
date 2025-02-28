@@ -98,7 +98,7 @@ const GetSuppliers = () => {
     notificationsStore.add(noti);
     return;
   };
-  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
+  const url: string = HOST + "/api/" + clubStore.getClub().name + "/suppliers";
   fetch(url, {
     method: "GET",
   }).then((r) => r.json())
@@ -138,7 +138,7 @@ const updateItem = async () => {
     supplier: supplier.value,
     link: link.value,
   }
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.getClub().name;
   await fetch(url + "/item", {
     method: "PATCH",
     body: JSON.stringify(res),
@@ -177,7 +177,7 @@ const updateItem = async () => {
 }
 
 const Delete = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.getClub().name;
   const query = new URLSearchParams({ id: item.id.toString() }).toString();
   await fetch(url + "/item?" + query, {
     method: "DELETE",
