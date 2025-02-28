@@ -42,7 +42,7 @@ const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
 const GetData = () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.displayClub();
 
   fetch(url + "/stats")
     .then((res) => res.json())

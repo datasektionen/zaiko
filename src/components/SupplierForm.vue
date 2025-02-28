@@ -66,7 +66,7 @@ const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
 const addSupplier = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.displayClub();
 
   const supplier: SupplierAddRequest = {
     name: name.value,

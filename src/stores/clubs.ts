@@ -61,10 +61,9 @@ export const useClubsStore = defineStore('clubs', () => {
   }
 
   function displayClub() {
-    if (clubs.value.club.length > 10) {
-      return clubs.value.club.substring(0, 9) + "...";
-    }
-    return clubs.value.club;
+    const club = getClub();
+    const displayClub = club.split("-")[0];
+    return displayClub;
   }
 
   return { clubs, setClub, getClub, displayClub }

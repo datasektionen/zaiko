@@ -89,7 +89,7 @@ const GetSuppliers = async () => {
     notificationsStore.add(noti);
     return;
   };
-  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
+  const url: string = HOST + "/api/" + clubStore.displayClub() + "/suppliers";
   suppliers.value = await fetch(url, {
     method: "GET",
   }).then((r) => r.json())
@@ -136,7 +136,7 @@ const addItem = async () => {
     notificationsStore.add(noti);
     return;
   };
-  const url: string = HOST + "/api/" + clubStore.getClub() + "/item";
+  const url: string = HOST + "/api/" + clubStore.displayClub() + "/item";
   await fetch(url, {
     method: "POST",
     body: JSON.stringify(res),
