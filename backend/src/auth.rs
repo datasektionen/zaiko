@@ -56,17 +56,38 @@ pub struct OIDCData {
     csrf_token: CsrfToken,
 }
 
+pub enum Permission {
+    Read,
+    Write,
+}
+
 #[derive(Deserialize)]
 struct Query {
     code: String,
     state: String,
 }
 
-pub async fn check_auth(id: Option<Identity>, session: Session, club: &String) -> Result<(), Error> {
+pub async fn check_auth(
+    id: &Option<Identity>,
+    session: &Session,
+    club: &String,
+) -> Result<Permission, Error> {
     if id.is_some() {
         if let Ok(Some(privlages)) = session.get::<Vec<String>>("privlages") {
-            if privlages.contains(club) {
-                return Ok(());
+            if privlages
+                .iter()
+                .map(|x| (*x).clone() + "-r")
+                .any(|x| x == *club)
+            {
+                return Ok(Permission::Read);
+            } else if privlages
+                .iter()
+                .map(|x| (*x).clone() + "-rw")
+                .any(|x| x == *club)
+            {
+                return Ok(Permission::Write);
+            } else if matches!(club.as_str(), "metadorerna" | "sjukvård") {
+                return Ok(Permission::Read);
             }
         }
     }

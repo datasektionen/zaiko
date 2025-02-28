@@ -23,7 +23,7 @@ pub(crate) async fn get_stats(
     let club = club.as_ref();
     let mut pool = pool.as_ref().begin().await?;
 
-    check_auth(id, session, club).await?;
+    check_auth(&id, &session, club).await?;
 
     let item_count = sqlx::query!("SELECT count(*) FROM items WHERE club = $1", club)
         .fetch_one(&mut *pool)

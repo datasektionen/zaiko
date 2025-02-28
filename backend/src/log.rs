@@ -23,7 +23,7 @@ pub(crate) async fn get_log(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(id, session, club).await?;
+    check_auth(&id, &session, club).await?;
 
     let logs = sqlx::query_as!(
         Log,

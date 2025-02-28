@@ -4,7 +4,7 @@ use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::{auth::check_auth, error::Error};
+use crate::{auth::{check_auth, Permission}, error::Error};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SupplierGetResponse {
@@ -62,7 +62,7 @@ pub(crate) async fn get_supplier(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(id, session, club).await?;
+    let permission = check_auth(&id, &session, club).await?;
 
     if let Some(id) = query.id {
         let name = sqlx::query!("SELECT name FROM suppliers WHERE club = $1 AND id = $2", club, id)
@@ -77,7 +77,7 @@ pub(crate) async fn get_supplier(
         id: _,
     } = query.0
     {
-        let suppliers = if matches!(
+        let mut suppliers = if matches!(
             column.as_str(),
             "name" | "username" | "password" | "link" | "notes"
         ) {
@@ -100,15 +100,23 @@ pub(crate) async fn get_supplier(
             return Err(Error::BadRequest);
         };
 
+        if matches!(permission, Permission::Read) {
+            suppliers.iter_mut().map(|supplier| supplier.password = Some(String::from("Unauthorized")));
+        }
+
         Ok(HttpResponse::Ok().json(suppliers))
     } else {
-        let suppliers = sqlx::query_as!(
+        let mut suppliers = sqlx::query_as!(
             SupplierGetResponse,
             "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1",
             club
         )
         .fetch_all(&mut *pool)
         .await?;
+
+        if matches!(permission, Permission::Read) {
+            suppliers.iter_mut().map(|supplier| supplier.password = Some(String::from("Unauthorized")));
+        }
 
         Ok(HttpResponse::Ok().json(suppliers))
     }
@@ -126,7 +134,7 @@ pub(crate) async fn get_suppliers(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(id, session, club).await?;
+    check_auth(&id, &session, club).await?;
 
     let supplier = sqlx::query_as!(
         SupplierListGetResponse,
@@ -153,7 +161,9 @@ pub(crate) async fn add_supplier(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(id, session, club).await?;
+    if matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
+    }
 
     let supplier: SupplierAddRequest = serde_json::from_str(&body)?;
 
@@ -190,7 +200,9 @@ pub(crate) async fn update_supplier(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(id, session, club).await?;
+    if matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
+    }
 
     let supplier: SupplierUpdateRequest = serde_json::from_str(&body)?;
 
@@ -225,7 +237,9 @@ pub(crate) async fn delete_supplier(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(id, session, club).await?;
+    if matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
+    }
 
     sqlx::query!(
         "DELETE FROM suppliers WHERE id = $1 AND club = $2",
