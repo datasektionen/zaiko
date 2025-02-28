@@ -51,6 +51,11 @@ struct ItemGetQuery {
     search: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct ItemDeleteQuery {
+    id: i32
+}
+
 #[get("/{club}/item")]
 pub(crate) async fn get_item(
     club: web::Path<String>,
@@ -239,7 +244,7 @@ pub(crate) async fn update_item(
 #[delete("/{club}/item")]
 pub(crate) async fn delete_item(
     club: web::Path<String>,
-    item_id: web::Query<i32>,
+    item_id: web::Query<ItemDeleteQuery>,
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
@@ -254,7 +259,7 @@ pub(crate) async fn delete_item(
     sqlx::query!(
         "DELETE FROM items 
          WHERE id = $1 AND club = $2",
-        item_id.0,
+        item_id.id,
         club
     )
     .execute(&mut *pool)
@@ -263,7 +268,7 @@ pub(crate) async fn delete_item(
     sqlx::query!(
         "DELETE FROM log 
          WHERE item_id = $1 AND club = $2",
-        item_id.0,
+        item_id.id,
         club
     )
     .execute(&mut *pool)
