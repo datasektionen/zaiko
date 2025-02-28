@@ -61,7 +61,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 
 <style scoped>
 table {
-  width: 85%;
+  width: calc(100% - 2rem);
   border-collapse: collapse;
   margin: 3rem 1rem;
 }

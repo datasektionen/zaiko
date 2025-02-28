@@ -43,4 +43,12 @@ h2 {
   font-weight: semi-bold;
 }
 
+@media (max-width: 520px) {
+  .titleDiv {
+    margin: 0;
+    margin-bottom: 1rem;
+    padding: 0;
+  }
+}
+
 </style>

@@ -92,7 +92,7 @@ td {
   height: 20px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
   table {
     width: 100%;
     margin: 2rem 0;

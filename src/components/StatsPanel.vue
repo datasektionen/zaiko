@@ -7,9 +7,9 @@
       <TitleMedium title="Leverantörer" class="skip">
         <ShoppingCartIcon />
       </TitleMedium>
-      <BoxData class="box" title="Totalt" :amount="total" good />
-      <BoxData class="box" title="Att köpa" :amount="toBuy" />
-      <BoxData class="box" title="Totalt" :amount="totalSuppliers" good />
+      <BoxData class="box" title="Totalt" :amount="stats.items" good />
+      <BoxData class="box" title="Att köpa" :amount="stats.shortages" />
+      <BoxData class="box" title="Totalt" :amount="stats.suppliers" good />
     </div>
     <div class="graphStats">
       <TitleMedium title="Total Mängd">
@@ -27,11 +27,38 @@ import TitleMedium from '@/components/TitleMedium.vue'
 import BoxData from '@/components/BoxData.vue'
 import { ArchiveBoxIcon, ShoppingCartIcon } from '@heroicons/vue/24/outline'
 import { ref } from 'vue';
+import { useNotificationsStore } from '@/stores/notifications'
+import { useClubsStore } from '@/stores/clubs';
+import type { Stats, Notification } from '@/types';
+const HOST = import.meta.env.VITE_HOST;
 
-const total = ref<string>("WIP");
-const toBuy = ref<string>("WIP");
-const totalSuppliers = ref<string>("WIP");
+const stats = ref<Stats>({
+  items: 0,
+  shortages: 0,
+  suppliers: 0.
+});
 
+const notificationsStore = useNotificationsStore();
+const clubStore = useClubsStore();
+
+const GetData = () => {
+  const url: string = HOST + "/api/" + clubStore.displayClub();
+
+  fetch(url + "/stats")
+    .then((res) => res.json())
+    .then((json: Stats) => stats.value = json)
+    .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+    })
+}
+
+GetData();
 </script>
 
 <style scoped>
@@ -81,6 +108,10 @@ const totalSuppliers = ref<string>("WIP");
   }
   .skip {
     grid-column: 2;
+  }
+  .box {
+    margin-right: 0;
+    margin: 0;
   }
   .box:nth-last-child(2) {
     grid-column: 1;

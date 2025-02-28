@@ -66,7 +66,7 @@ const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
 const addSupplier = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.displayClub();
 
   const supplier: SupplierAddRequest = {
     name: name.value,
@@ -75,6 +75,16 @@ const addSupplier = async () => {
     link: link.value,
     notes: note.value,
   }
+  if (clubStore.getClub() == "Nämnd") {
+    const noti: Notification = {
+      id: Date.now(),
+      title: "Error",
+      message: "Ingen nämnd vald",
+      severity: "error",
+    }
+    notificationsStore.add(noti);
+    return;
+  };
   await fetch(url + "/supplier", {
     method: "POST",
     body: JSON.stringify(supplier),
@@ -89,13 +99,15 @@ const addSupplier = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {

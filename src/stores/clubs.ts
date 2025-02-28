@@ -23,8 +23,19 @@ export const useClubsStore = defineStore('clubs', () => {
         if (clubs.value.clubs.length > 0) {
           clubs.value.timestamp = Date.now();
           clubs.value.club = clubs.value.clubs[0];
-          localStorage.setItem('clubs', JSON.stringify(clubs.value));
+        } else {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Nämnd",
+            message: "Ingen nämnd hittades",
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+          clubs.value.club = "Nämnd";
+          clubs.value.clubs = ["Nämnd"];
+          clubs.value.timestamp = 0;
         }
+        localStorage.setItem('clubs', JSON.stringify(clubs.value));
       })
       .catch((error) => {
         const noti: Notification = {
@@ -43,14 +54,16 @@ export const useClubsStore = defineStore('clubs', () => {
   }
 
   function getClub() {
-    return clubs.value.club;
+    if (clubs.value.club === "") {
+      return "Nämnd";
+    }
+    return clubs.value.club ?? "Nämnd";
   }
 
   function displayClub() {
-    if (clubs.value.club.length > 10) {
-      return clubs.value.club.substring(0, 9) + "...";
-    }
-    return clubs.value.club;
+    const club = getClub();
+    const displayClub = club.split("-")[0];
+    return displayClub;
   }
 
   return { clubs, setClub, getClub, displayClub }

@@ -100,7 +100,8 @@ const notificationsStore = useNotificationsStore()
 const emit = defineEmits(['select'])
 
 const GetSuppliers = () => {
-  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
+  if (clubStore.getClub() == "Nämnd") return;
+  const url: string = HOST + "/api/" + clubStore.displayClub() + "/suppliers";
   fetch(url, {
     method: "GET",
   }).then((r) => r.json())
@@ -122,7 +123,7 @@ GetSuppliers();
 
 <style scoped>
 table {
-  width: 85%;
+  width: calc(100% - 2rem);
   border-collapse: collapse;
   margin: 3rem 1rem;
 }

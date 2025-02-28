@@ -39,7 +39,8 @@ const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
 const GetData = () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  if (clubStore.getClub() == "Nämnd") return;
+  const url: string = HOST + "/api/" + clubStore.displayClub();
 
   fetch(url + "/stock")
     .then((res) => res.json())
@@ -67,7 +68,13 @@ GetData();
   padding-bottom: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1150px) {
+  .main {
+    padding: 4rem 2rem;
+  }
+}
+
+@media (max-width: 1000px) {
   .main {
     grid-template-columns: 1fr;
     padding: 0.4rem;

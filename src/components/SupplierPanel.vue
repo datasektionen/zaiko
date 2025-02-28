@@ -41,7 +41,7 @@
           <DocumentCheckIcon class="buttonIcon" />
           <p>Spara</p>
         </button>
-        <button class="delete" @click.prevent="Delete" >
+        <button class="delete" @click.prevent="Delete">
           <BackspaceIcon class="buttonIcon" />
           <p>Radera</p>
         </button>
@@ -73,7 +73,7 @@ const link = ref(item.link)
 const note = ref(item.notes)
 
 const updateSupplier = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.displayClub();
   const supplier: SupplierUpdateRequest = {
     id: item.id,
     name: name.value,
@@ -96,13 +96,15 @@ const updateSupplier = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {
@@ -118,10 +120,11 @@ const updateSupplier = async () => {
 }
 
 const Delete = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.displayClub();
+  const query = new URLSearchParams({ id: item.id.toString() }).toString();
 
   await fetch(
-    url + "/supplier?" + new URLSearchParams({ id: item.id.toString() }).toString(),
+    url + "/supplier?" + query,
     {
       method: "DELETE",
     })
@@ -135,13 +138,15 @@ const Delete = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {
