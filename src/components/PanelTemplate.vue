@@ -1,12 +1,17 @@
 <template>
   <div class="panelContainer">
     <div class="panelHeader">
-      <TitleBig :title="title">
-        <slot name="icon" />
-      </TitleBig>
-      <button v-if="button" @click="emit('button')">
-        <PlusIcon />
-      </button>
+      <div class="headerLeft">
+        <TitleBig :title="title">
+          <slot name="icon" />
+        </TitleBig>
+        <button v-if="button" @click="emit('button')">
+          <PlusIcon />
+        </button>
+      </div>
+      <div class="headerRight">
+        <slot name="headerRight" />
+      </div>
     </div>
     <div class="panelContent">
       <slot name="content" />
@@ -30,7 +35,6 @@ button {
   align-items: center;
   padding: 0.4rem;
   margin: 0;
-  background-color: transparent;
   border: none;
   cursor: pointer;
   background-color: #80CBC3;
@@ -45,14 +49,30 @@ svg {
 
 .panelHeader {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerLeft {
+  display: flex;
   justify-content: start;
   align-items: center;
-  gap: 1rem;
+}
+
+.headerRight {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  padding-right: 1rem;
 }
 
 @media (max-width: 768px) {
   .panelContainer {
     max-width: 100vw;
+  }
+
+  .headerRight {
+    padding-right: 0.5rem;
   }
 }
 </style>

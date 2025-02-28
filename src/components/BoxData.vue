@@ -10,7 +10,7 @@ import { computed, defineProps } from 'vue'
 
 const props = defineProps({
   title: String,
-  amount: String,
+  amount: Number,
   good: Boolean,
 })
 
@@ -49,5 +49,12 @@ h6 {
 
 .bad {
   background-color: #F6CDD6;
+}
+
+@media (max-width: 768px) {
+  div {
+    aspect-ratio: 1.2;
+  }
+
 }
 </style>

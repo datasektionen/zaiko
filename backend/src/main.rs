@@ -1,18 +1,17 @@
-use std::{env, ops::Deref};
+use std::env;
 
 use actix_cors::Cors;
 use actix_identity::{IdentityExt, IdentityMiddleware};
-use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
+use actix_session::{
+    config::PersistentSession, storage::CookieSessionStore, SessionMiddleware,
+};
 use actix_web::{
-    cookie::{time::Duration, Key},
-    guard::Guard,
-    http::Method,
-    web::{self, scope, Data},
-    App, HttpServer,
+    cookie::{time::Duration, Key}, guard::Guard, http::Method, middleware::Logger, web::{self, scope, Data}, App, HttpServer
 };
 use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
-use sqlx::{postgres::PgPoolOptions, Executor, Pool, Postgres};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use stats::get_stats;
 use supplier::get_suppliers;
 
 mod auth;
@@ -21,6 +20,7 @@ mod item;
 mod log;
 mod serve;
 mod shortage;
+mod stats;
 mod supplier;
 
 use crate::item::{add_item, delete_item, get_item, update_item};
@@ -40,7 +40,7 @@ async fn main() -> std::io::Result<()> {
         PgPoolOptions::new()
             .connect(&env::var("DATABASE_URL").expect("DATABASE_URL to exist"))
             .await
-            .expect("Expected to connect to database")
+            .expect("Expected to connect to database"),
     );
 
     db_init(&pool).await.expect("to setup db");
@@ -77,25 +77,27 @@ async fn main() -> std::io::Result<()> {
                     .build(),
             )
             .wrap(cors)
+            .wrap(Logger::default())
             .app_data(pool.clone())
             .app_data(oidc.clone())
             .app_data(auth_url.clone())
             .service(
                 scope("/api")
                     .service(get_item)
+                    .service(get_supplier)
+                    .service(get_suppliers)
+                    .service(get_shortage)
+                    .service(get_log)
+                    .service(get_clubs)
+                    .service(get_stats)
                     .service(add_item)
                     .service(update_item)
                     .service(delete_item)
-                    .service(get_supplier)
-                    .service(get_suppliers)
                     .service(add_supplier)
                     .service(update_supplier)
                     .service(delete_supplier)
-                    .service(get_shortage)
                     .service(take_stock)
-                    .service(get_log)
-                    .service(auth_callback)
-                    .service(get_clubs),
+                    .service(auth_callback),
             )
             .service(serve_frontend)
             .service(
@@ -144,24 +146,24 @@ async fn db_init(pool: &web::Data<Pool<Postgres>>) -> Result<(), sqlx::error::Er
 
     sqlx::query!(
         "CREATE TABLE IF NOT EXISTS suppliers(
-    id SERIAL PRIMARY KEY NOT NULL,
-    name TEXT NOT NULL,
-    link TEXT,
-    notes TEXT,
-    username TEXT,
-    password TEXT,
-    updated INTEGER NOT NULL);"
+        id SERIAL PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        link TEXT,
+        notes TEXT,
+        username TEXT,
+        password TEXT,
+        updated INTEGER NOT NULL);"
     )
     .execute(pool.get_ref())
     .await?;
 
     sqlx::query!(
         "CREATE TABLE IF NOT EXISTS log(
-    id SERIAL PRIMARY KEY NOT NULL,
-    item_id INTEGER NOT NULL,
-    amount REAL NOT NULL,
-    time INTEGER NOT NULL,
-    club TEXT NOT NULL);"
+        id SERIAL PRIMARY KEY NOT NULL,
+        item_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        time INTEGER NOT NULL,
+        club TEXT NOT NULL);"
     )
     .execute(pool.get_ref())
     .await?;

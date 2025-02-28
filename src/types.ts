@@ -1,3 +1,4 @@
+import type { FunctionalComponent } from 'vue';
 
 export interface ItemGetResponse {
   id: number,
@@ -30,6 +31,17 @@ export interface ItemUpdateRequest {
   current: number,
   supplier?: number,
   link?: string,
+}
+
+export interface FilterColumn {
+  name: string,
+  label: string,
+  icon: FunctionalComponent,
+}
+
+export interface FilterItemParams {
+  column: string,
+  search: string,
 }
 
 export interface SupplierGetResponse {
@@ -90,7 +102,18 @@ export interface Notification {
 }
 
 export interface ClubStorage {
-  club: string,
-  clubs: Array<string>,
+  club: ClubGetRequest,
+  clubs: Array<ClubGetRequest>,
   timestamp: number,
+}
+
+export interface ClubGetRequest {
+  name: string,
+  permission: "r" | "rw",
+}
+
+export interface Stats {
+  items: number,
+  suppliers: number,
+  shortages: number,
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
+  "query": "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) \n         VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -17,5 +17,5 @@
     },
     "nullable": []
   },
-  "hash": "49c472c0f5eaf735a09c0a8c55aef8eb3de545290a9e3b81f61cf0330e07047e"
+  "hash": "8974d8ae488644c87d73171edae2292abbb27dac82d0960172e50fb52939213c"
 }

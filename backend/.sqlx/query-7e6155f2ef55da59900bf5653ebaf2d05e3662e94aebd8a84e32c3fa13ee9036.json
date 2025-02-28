@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM log WHERE item_id = $1 AND club = $2",
+  "query": "DELETE FROM log \n         WHERE item_id = $1 AND club = $2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "f9cc4627776b685cfb84b3d11fadb42204260d7f00b3cb67c67ce344621748dc"
+  "hash": "7e6155f2ef55da59900bf5653ebaf2d05e3662e94aebd8a84e32c3fa13ee9036"
 }

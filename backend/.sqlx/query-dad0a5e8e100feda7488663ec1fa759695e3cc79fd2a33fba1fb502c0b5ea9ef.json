@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, name, location, min, max, current, link, supplier, updated \n             FROM items \n             WHERE club = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "location",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "min",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 4,
+        "name": "max",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 5,
+        "name": "current",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 6,
+        "name": "link",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "supplier",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "dad0a5e8e100feda7488663ec1fa759695e3cc79fd2a33fba1fb502c0b5ea9ef"
+}

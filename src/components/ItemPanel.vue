@@ -88,7 +88,17 @@ const clubStore = useClubsStore();
 const suppliers = ref<Array<SupplierListGetResponse>>([])
 
 const GetSuppliers = () => {
-  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
+  if (!clubStore.checkClub()) {
+    const noti: Notification = {
+      id: Date.now(),
+      title: "Error",
+      message: "Nämnd har ingen leverantör",
+      severity: "error",
+    }
+    notificationsStore.add(noti);
+    return;
+  };
+  const url: string = HOST + "/api/" + clubStore.getClub().name + "/suppliers";
   fetch(url, {
     method: "GET",
   }).then((r) => r.json())
@@ -128,7 +138,7 @@ const updateItem = async () => {
     supplier: supplier.value,
     link: link.value,
   }
-  const url: string = HOST + "/api/" + clubStore.getClub();
+  const url: string = HOST + "/api/" + clubStore.getClub().name;
   await fetch(url + "/item", {
     method: "PATCH",
     body: JSON.stringify(res),
@@ -143,13 +153,15 @@ const updateItem = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => text).then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {
@@ -165,10 +177,10 @@ const updateItem = async () => {
 }
 
 const Delete = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub();
-  await fetch(url + "/item", {
+  const url: string = HOST + "/api/" + clubStore.getClub().name;
+  const query = new URLSearchParams({ id: item.id.toString() }).toString();
+  await fetch(url + "/item?" + query, {
     method: "DELETE",
-    body: JSON.stringify({ name: name.value })
   })
     .then((res) => {
       if (res.ok) {
@@ -180,13 +192,15 @@ const Delete = async () => {
         }
         notificationsStore.add(noti);
       } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Något gick fel",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
+        res.text().then((text) => text).then((text) => {
+          const noti: Notification = {
+            id: Date.now(),
+            title: "Error",
+            message: text,
+            severity: "error",
+          }
+          notificationsStore.add(noti);
+        })
       }
     })
     .catch((error) => {

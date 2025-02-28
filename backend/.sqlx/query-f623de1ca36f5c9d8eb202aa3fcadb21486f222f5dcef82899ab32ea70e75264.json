@@ -1,12 +1,12 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT current FROM items WHERE name = $1 AND club = $2",
+  "query": "SELECT id \n         FROM items \n         WHERE name = $1 AND club = $2",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "current",
-        "type_info": "Float4"
+        "name": "id",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -19,5 +19,5 @@
       false
     ]
   },
-  "hash": "61dfc97cf1346e9b5f81d1aa1161338f5de716ff95953697bd3703ac343e03f4"
+  "hash": "f623de1ca36f5c9d8eb202aa3fcadb21486f222f5dcef82899ab32ea70e75264"
 }

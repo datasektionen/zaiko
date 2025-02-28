@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
+  "query": "SELECT id, name, location, min, max, current, link, supplier, updated \n         FROM items \n         WHERE current <= min AND club = $1",
   "describe": {
     "columns": [
       {
@@ -66,5 +66,5 @@
       false
     ]
   },
-  "hash": "1d5ff32353e390927796370c8e2937baccae8418d49cba92701587bbbcddbac8"
+  "hash": "f32b9010dc2a609cdc4288177ccf9f40bbbea4b7bbef606154b788dcbe8780f3"
 }

@@ -1,10 +1,13 @@
 use actix_identity::Identity;
 use actix_session::Session;
-use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
+use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::auth::check_auth;
+use crate::{
+    auth::{check_auth, Permission},
+    error::Error,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SupplierGetResponse {
@@ -43,8 +46,15 @@ struct SupplierUpdateRequest {
 }
 
 #[derive(Deserialize)]
-struct Query {
+struct SupplierGetQuery {
     id: Option<i32>,
+    column: Option<String>,
+    search: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SupplierDeleteQuery {
+    id: i32
 }
 
 #[get("/{club}/supplier")]
@@ -53,36 +63,92 @@ pub(crate) async fn get_supplier(
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
-    query: web::Query<Query>,
-) -> impl Responder {
-    log::info!("get supplier");
-
+    query: web::Query<SupplierGetQuery>,
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
-    }
+    let permission = check_auth(&id, &session, club).await?;
 
     if let Some(id) = query.id {
-        match sqlx::query!("SELECT name FROM suppliers WHERE id = $1", id)
-            .fetch_one(pool.get_ref())
-            .await
-        {
-            Ok(items) => HttpResponse::Ok().json(items.name),
-            Err(_) => HttpResponse::InternalServerError().finish(),
+        let name = sqlx::query!(
+            "SELECT name 
+             FROM suppliers 
+             WHERE club = $1 AND id = $2",
+            club,
+            id
+        )
+        .fetch_one(&mut *pool)
+        .await?
+        .name;
+
+        Ok(HttpResponse::Ok().json(name))
+    } else if let SupplierGetQuery {
+        column: Some(column),
+        search: Some(search),
+        id: _,
+    } = query.0
+    {
+        let mut suppliers = if matches!(
+            column.as_str(),
+            "name" | "username" | "password" | "link" | "notes"
+        ) {
+            sqlx::query_as!(
+                SupplierGetResponse,
+                "SELECT id, name, username, password, link, notes, updated 
+                 FROM suppliers 
+                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                club,
+                column,
+                search
+            )
+            .fetch_all(&mut *pool)
+            .await?
+        } else if matches!(column.as_str(), "updated") {
+            sqlx::query_as!(
+                SupplierGetResponse,
+                "SELECT id, name, username, password, link, notes, updated 
+                 FROM suppliers 
+                 WHERE club = $1 AND $2 = $3",
+                club,
+                column,
+                search
+            )
+            .fetch_all(&mut *pool)
+            .await?
+        } else {
+            return Err(Error::BadRequest);
+        };
+
+        if matches!(permission, Permission::Read) {
+            for supplier in suppliers.iter_mut() {
+                supplier.password = Some(String::from("Unauthorized"));
+            }
         }
+
+        pool.commit().await?;
+
+        Ok(HttpResponse::Ok().json(suppliers))
     } else {
-        match sqlx::query_as!(
+        let mut suppliers = sqlx::query_as!(
             SupplierGetResponse,
-            "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1",
+            "SELECT id, name, username, password, link, notes, updated 
+             FROM suppliers 
+             WHERE club = $1",
             club
         )
-        .fetch_all(pool.get_ref())
-        .await
-        {
-            Ok(supplier) => HttpResponse::Ok().json(supplier),
-            Err(_) => HttpResponse::InternalServerError().finish(),
+        .fetch_all(&mut *pool)
+        .await?;
+
+        if matches!(permission, Permission::Read) {
+            for supplier in suppliers.iter_mut() {
+                supplier.password = Some(String::from("Unauthorized"));
+            }
         }
+
+        pool.commit().await?;
+
+        Ok(HttpResponse::Ok().json(suppliers))
     }
 }
 
@@ -92,26 +158,25 @@ pub(crate) async fn get_suppliers(
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
-) -> HttpResponse {
-    log::info!("get suppliers");
-
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
-    }
+    check_auth(&id, &session, club).await?;
 
-    match sqlx::query_as!(
+    let supplier = sqlx::query_as!(
         SupplierListGetResponse,
-        "SELECT id, name FROM suppliers WHERE club = $1",
+        "SELECT id, name 
+         FROM suppliers 
+         WHERE club = $1",
         club
     )
-    .fetch_all(pool.get_ref())
-    .await
-    {
-        Ok(supplier) => HttpResponse::Ok().json(supplier),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    .fetch_all(&mut *pool)
+    .await?;
+
+    pool.commit().await?;
+
+    Ok(HttpResponse::Ok().json(supplier))
 }
 
 #[post("/{club}/supplier")]
@@ -121,27 +186,23 @@ pub(crate) async fn add_supplier(
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
-) -> HttpResponse {
-    log::info!("add supplier");
-    log::debug!("{}", body);
-
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
     }
 
-    let supplier: SupplierAddRequest = match serde_json::from_str(&body) {
-        Ok(item) => item,
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    };
+    let supplier: SupplierAddRequest = serde_json::from_str(&body)?;
 
     if supplier.name.is_empty() {
-        return HttpResponse::BadRequest().finish();
+        return Err(Error::BadRequest);
     }
 
-    match sqlx::query!(
-        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, extract(epoch from now()), $6)",
+    sqlx::query!(
+        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) 
+         VALUES ($1, $2, $3, $4, $5, extract(epoch from now()), $6)",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -149,12 +210,12 @@ pub(crate) async fn add_supplier(
         supplier.password,
         club,
     )
-    .execute(pool.get_ref())
-    .await
-    {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    .execute(&mut *pool)
+    .await?;
+
+    pool.commit().await?;
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[patch("/{club}/supplier")]
@@ -164,27 +225,24 @@ pub(crate) async fn update_supplier(
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
-) -> impl Responder {
-    log::info!("update supplier");
-    log::debug!("{}", body);
-
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
     }
 
-    let supplier: SupplierUpdateRequest = match serde_json::from_str(&body) {
-        Ok(item) => item,
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    };
+    let supplier: SupplierUpdateRequest = serde_json::from_str(&body)?;
 
     if supplier.name.is_empty() {
-        return HttpResponse::BadRequest().finish();
+        return Err(Error::BadRequest);
     }
 
-    match sqlx::query!(
-        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = extract(epoch from now()) WHERE id = $6 AND club = $7",
+    sqlx::query!(
+        "UPDATE suppliers 
+         SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = extract(epoch from now()) 
+         WHERE id = $6 AND club = $7",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -193,37 +251,39 @@ pub(crate) async fn update_supplier(
         supplier.id,
         club,
     )
-    .execute(pool.get_ref())
-    .await
-    {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    .execute(&mut *pool)
+    .await?;
+
+    pool.commit().await?;
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[delete("/{club}/supplier")]
 pub(crate) async fn delete_supplier(
     club: web::Path<String>,
-    item_id: web::Query<i32>,
+    item_id: web::Query<SupplierDeleteQuery>,
     id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
-) -> impl Responder {
+    session: Session,
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
     }
 
-    match sqlx::query!(
-        "DELETE FROM suppliers WHERE id = $1 AND club = $2",
-        item_id.0,
+    sqlx::query!(
+        "DELETE FROM suppliers 
+         WHERE id = $1 AND club = $2",
+        item_id.id,
         club
     )
-    .execute(pool.get_ref())
-    .await
-    {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    .execute(&mut *pool)
+    .await?;
+
+    pool.commit().await?;
+
+    Ok(HttpResponse::Ok().finish())
 }

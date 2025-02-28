@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM suppliers WHERE id = $1 AND club = $2",
+  "query": "DELETE FROM suppliers \n         WHERE id = $1 AND club = $2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "65a5edec10d2c99e552091332447027295c483c98c21f58828f35ffaea30e620"
+  "hash": "41d507665599dcebf296946ce7d0c2e85054a69d77e3637bfcf93ebf4fa6d83d"
 }

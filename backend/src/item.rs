@@ -1,10 +1,13 @@
 use actix_identity::Identity;
 use actix_session::Session;
-use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
+use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::auth::check_auth;
+use crate::{
+    auth::{check_auth, Permission},
+    error::Error,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ItemGetResponse {
@@ -42,30 +45,80 @@ pub(crate) struct ItemUpdateRequest {
     pub(crate) link: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct ItemGetQuery {
+    column: Option<String>,
+    search: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ItemDeleteQuery {
+    id: i32
+}
+
 #[get("/{club}/item")]
 pub(crate) async fn get_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
+    query: web::Query<ItemGetQuery>,
     id: Option<Identity>,
     session: Session,
-) -> impl Responder {
-    log::info!("get items");
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
-    }
+    check_auth(&id, &session, club).await?;
 
-    match sqlx::query_as!(
-        ItemGetResponse,
-        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
-        club
-    )
-    .fetch_all(pool.get_ref())
-    .await {
-        Ok(items) => HttpResponse::Ok().json(items),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    let items = if let ItemGetQuery {
+        column: Some(column),
+        search: Some(search),
+    } = query.0
+    {
+        if matches!(column.as_str(), "name" | "location" | "link") {
+            sqlx::query_as!(
+                ItemGetResponse,
+                "SELECT id, name, location, min, max, current, link, supplier, updated 
+                 FROM items
+                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                club,
+                column,
+                search
+            )
+            .fetch_all(&mut *pool)
+            .await?
+        } else if matches!(
+            column.as_str(),
+            "min" | "max" | "current" | "supplier" | "updated"
+        ) {
+            sqlx::query_as!(
+                ItemGetResponse,
+                "SELECT id, name, location, min, max, current, link, supplier, updated 
+                 FROM items 
+                 WHERE club = $1 AND $2 = $3",
+                club,
+                column,
+                search
+            )
+            .fetch_all(&mut *pool)
+            .await?
+        } else {
+            return Err(Error::BadRequest);
+        }
+    } else {
+        sqlx::query_as!(
+            ItemGetResponse,
+            "SELECT id, name, location, min, max, current, link, supplier, updated 
+             FROM items 
+             WHERE club = $1",
+            club
+        )
+        .fetch_all(&mut *pool)
+        .await?
+    };
+
+    pool.commit().await?;
+
+    Ok(HttpResponse::Ok().json(items))
 }
 
 #[post("/{club}/item")]
@@ -75,27 +128,23 @@ pub(crate) async fn add_item(
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
-) -> HttpResponse {
-    log::info!("add item");
-    log::debug!("{}", body);
-
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
     }
 
-    let item: ItemAddRequest = match serde_json::from_str(&body) {
-        Ok(item) => item,
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    };
+    let item: ItemAddRequest = serde_json::from_str(&body)?;
 
     if item.name.is_empty() && item.location.is_empty() {
-        return HttpResponse::BadRequest().finish();
+        return Err(Error::BadRequest);
     }
 
-    let res = match sqlx::query!(
-        "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
+    sqlx::query!(
+        "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) 
+         VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
         item.name,
         item.location,
         item.min,
@@ -105,39 +154,33 @@ pub(crate) async fn add_item(
         item.link,
         club,
     )
-    .execute(pool.get_ref())
-    .await
-    {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
-    };
+    .execute(&mut *pool)
+    .await?;
 
-    let id = match sqlx::query!(
-        "SELECT id FROM items WHERE name = $1 AND club = $2",
+    let id = sqlx::query!(
+        "SELECT id 
+         FROM items 
+         WHERE name = $1 AND club = $2",
         item.name,
         club
     )
-    .fetch_one(pool.get_ref())
-    .await
-    {
-        Ok(id) => id.id,
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    };
+    .fetch_one(&mut *pool)
+    .await?
+    .id;
 
-    match sqlx::query!(
-        "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, extract(epoch from now()), $3)",
+    sqlx::query!(
+        "INSERT INTO log (item_id, amount, time, club) 
+         VALUES ($1, $2, extract(epoch from now()), $3)",
         id,
         item.current,
         club
     )
-    .execute(pool.get_ref())
-    .await
-    {
-        Ok(_) => {}
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    }
+    .execute(&mut *pool)
+    .await?;
 
-    res
+    pool.commit().await?;
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[patch("/{club}/item")]
@@ -147,54 +190,46 @@ pub(crate) async fn update_item(
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
-) -> impl Responder {
-    log::info!("update item");
-    log::debug!("{}", body);
-
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
     }
 
-    let item: ItemUpdateRequest = match serde_json::from_str(&body) {
-        Ok(item) => item,
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    };
+    let item: ItemUpdateRequest = serde_json::from_str(&body)?;
 
     if item.name.is_empty() && item.location.is_empty() {
-        return HttpResponse::BadRequest().finish();
+        return Err(Error::BadRequest);
     }
 
-    let current = match sqlx::query!(
-        "SELECT current FROM items WHERE name = $1 AND club = $2",
+    let current = sqlx::query!(
+        "SELECT current 
+         FROM items 
+         WHERE name = $1 AND club = $2",
         item.name,
         club
     )
-    .fetch_one(pool.as_ref())
-    .await
-    {
-        Ok(current) => current.current,
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    };
+    .fetch_one(&mut *pool)
+    .await?
+    .current;
 
     if current != item.current {
-        match sqlx::query!(
-            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, extract(epoch from now()), $3)",
+        sqlx::query!(
+            "INSERT INTO log (item_id, amount, time, club) 
+             VALUES ($1, $2, extract(epoch from now()), $3)",
             item.id,
             item.current,
             club
         )
-        .execute(pool.get_ref())
-        .await
-        {
-            Ok(_) => {}
-            Err(_) => return HttpResponse::BadRequest().finish(),
-        }
+        .execute(&mut *pool)
+        .await?;
     }
 
-    match sqlx::query!(
-        "UPDATE items SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = extract(epoch from now()), link = $6  WHERE name = $7 AND club = $8",
+    sqlx::query!(
+        "UPDATE items 
+         SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = extract(epoch from now()), link = $6  WHERE name = $7 AND club = $8",
         item.location,
         item.min,
         item.max,
@@ -204,49 +239,48 @@ pub(crate) async fn update_item(
         item.name,
         club,
     )
-    .execute(pool.get_ref())
-    .await
-    {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
-    }
+    .execute(&mut *pool)
+    .await?;
+
+    pool.commit().await?;
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[delete("/{club}/item")]
 pub(crate) async fn delete_item(
     club: web::Path<String>,
-    item_id: web::Query<i32>,
+    item_id: web::Query<ItemDeleteQuery>,
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
-) -> impl Responder {
+) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
+    let mut pool = pool.get_ref().begin().await?;
 
-    if !check_auth(id, session, club).await {
-        return HttpResponse::Unauthorized().finish();
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+        return Err(Error::Unauthorized);
     }
 
-    match sqlx::query!(
-        "DELETE FROM items WHERE id = $1 AND club = $2",
-        item_id.0,
+    sqlx::query!(
+        "DELETE FROM items 
+         WHERE id = $1 AND club = $2",
+        item_id.id,
         club
     )
-    .execute(pool.get_ref())
-    .await
-    {
-        Ok(_) => {}
-        Err(_) => return HttpResponse::BadRequest().finish(),
-    }
+    .execute(&mut *pool)
+    .await?;
 
-    match sqlx::query!(
-        "DELETE FROM log WHERE item_id = $1 AND club = $2",
-        item_id.0,
+    sqlx::query!(
+        "DELETE FROM log 
+         WHERE item_id = $1 AND club = $2",
+        item_id.id,
         club
     )
-    .execute(pool.get_ref())
-    .await
-    {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::BadRequest().finish(),
-    }
+    .execute(&mut *pool)
+    .await?;
+
+    pool.commit().await?;
+
+    Ok(HttpResponse::Ok().finish())
 }
