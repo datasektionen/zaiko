@@ -64,5 +64,7 @@ pub(crate) async fn get_stats(
         shortages: shortage_count,
     };
 
+    pool.commit().await?;
+
     Ok(HttpResponse::Ok().json(stats))
 }

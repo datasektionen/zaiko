@@ -116,6 +116,8 @@ pub(crate) async fn get_item(
         .await?
     };
 
+    pool.commit().await?;
+
     Ok(HttpResponse::Ok().json(items))
 }
 
@@ -175,6 +177,8 @@ pub(crate) async fn add_item(
     )
     .execute(&mut *pool)
     .await?;
+
+    pool.commit().await?;
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -238,6 +242,8 @@ pub(crate) async fn update_item(
     .execute(&mut *pool)
     .await?;
 
+    pool.commit().await?;
+
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -273,6 +279,8 @@ pub(crate) async fn delete_item(
     )
     .execute(&mut *pool)
     .await?;
+
+    pool.commit().await?;
 
     Ok(HttpResponse::Ok().finish())
 }

@@ -57,6 +57,8 @@ pub(crate) async fn get_shortage(
         })
         .collect();
 
+    pool.commit().await?;
+
     Ok(HttpResponse::Ok().json(items))
 }
 
@@ -99,6 +101,8 @@ pub(crate) async fn take_stock(
         .execute(&mut *pool)
         .await?;
     }
+
+    pool.commit().await?;
 
     Ok(HttpResponse::Ok().finish())
 }

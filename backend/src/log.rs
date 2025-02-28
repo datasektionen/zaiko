@@ -36,5 +36,7 @@ pub(crate) async fn get_log(
     .fetch_all(&mut *pool)
     .await?;
 
+    pool.commit().await?;
+
     Ok(HttpResponse::Ok().json(logs))
 }

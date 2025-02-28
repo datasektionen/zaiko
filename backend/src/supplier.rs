@@ -126,6 +126,8 @@ pub(crate) async fn get_supplier(
             }
         }
 
+        pool.commit().await?;
+
         Ok(HttpResponse::Ok().json(suppliers))
     } else {
         let mut suppliers = sqlx::query_as!(
@@ -143,6 +145,8 @@ pub(crate) async fn get_supplier(
                 supplier.password = Some(String::from("Unauthorized"));
             }
         }
+
+        pool.commit().await?;
 
         Ok(HttpResponse::Ok().json(suppliers))
     }
@@ -170,6 +174,8 @@ pub(crate) async fn get_suppliers(
     .fetch_all(&mut *pool)
     .await?;
 
+    pool.commit().await?;
+
     Ok(HttpResponse::Ok().json(supplier))
 }
 
@@ -184,7 +190,7 @@ pub(crate) async fn add_supplier(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    if matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
         return Err(Error::Unauthorized);
     }
 
@@ -207,6 +213,8 @@ pub(crate) async fn add_supplier(
     .execute(&mut *pool)
     .await?;
 
+    pool.commit().await?;
+
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -221,7 +229,7 @@ pub(crate) async fn update_supplier(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    if matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
         return Err(Error::Unauthorized);
     }
 
@@ -246,6 +254,8 @@ pub(crate) async fn update_supplier(
     .execute(&mut *pool)
     .await?;
 
+    pool.commit().await?;
+
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -260,7 +270,7 @@ pub(crate) async fn delete_supplier(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    if matches!(check_auth(&id, &session, club).await?, Permission::Write) {
+    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
         return Err(Error::Unauthorized);
     }
 
@@ -272,6 +282,8 @@ pub(crate) async fn delete_supplier(
     )
     .execute(&mut *pool)
     .await?;
+
+    pool.commit().await?;
 
     Ok(HttpResponse::Ok().finish())
 }
