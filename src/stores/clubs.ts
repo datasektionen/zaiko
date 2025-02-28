@@ -1,13 +1,13 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { ClubStorage, Notification } from "@/types";
+import type { ClubGetRequest, ClubStorage, Notification } from "@/types";
 import { useNotificationsStore } from './notifications';
 
 export const useClubsStore = defineStore('clubs', () => {
   const HOST = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
-  const clubs = ref<ClubStorage>({ club: "", clubs: [], timestamp: 0 });
+  const clubs = ref<ClubStorage>({ club: { name: "Nämnd", permission: "r" }, clubs: [], timestamp: 0 });
 
   const clubsStore = localStorage.getItem('clubs');
   if (clubsStore && Date.now() - JSON.parse(clubsStore).timestamp < 1000 * 60 * 60 * 24) {
@@ -31,8 +31,14 @@ export const useClubsStore = defineStore('clubs', () => {
             severity: "error",
           }
           notificationsStore.add(noti);
-          clubs.value.club = "Nämnd";
-          clubs.value.clubs = ["Nämnd"];
+          clubs.value.club = {
+            name: "Nämnd",
+            permission: "r",
+          };
+          clubs.value.clubs = [{
+            name: "Nämnd",
+            permission: "r",
+          }];
           clubs.value.timestamp = 0;
         }
         localStorage.setItem('clubs', JSON.stringify(clubs.value));
@@ -48,23 +54,26 @@ export const useClubsStore = defineStore('clubs', () => {
       })
   }
 
-  function setClub(club: string) {
+  function setClub(club: ClubGetRequest) {
     clubs.value.club = club;
     localStorage.setItem('clubs', JSON.stringify(clubs.value));
+    console.log(clubs.value);
   }
 
   function getClub() {
-    if (clubs.value.club === "") {
-      return "Nämnd";
+    if (!clubs.value.club) {
+      return { name: "Nämnd", permission: "r" };
     }
-    return clubs.value.club ?? "Nämnd";
+    return clubs.value.club;
   }
 
-  function displayClub() {
+  function checkClub() {
     const club = getClub();
-    const displayClub = club.split("-")[0];
-    return displayClub;
+    if (club.name === "Nämnd") {
+      return false;
+    }
+    return true;
   }
 
-  return { clubs, setClub, getClub, displayClub }
+  return { clubs, setClub, getClub, checkClub }
 })

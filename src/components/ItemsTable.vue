@@ -100,8 +100,8 @@ const notificationsStore = useNotificationsStore()
 const emit = defineEmits(['select'])
 
 const GetSuppliers = () => {
-  if (clubStore.getClub() == "Nämnd") return;
-  const url: string = HOST + "/api/" + clubStore.displayClub() + "/suppliers";
+  if (!clubStore.checkClub()) return
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
   fetch(url, {
     method: "GET",
   }).then((r) => r.json())

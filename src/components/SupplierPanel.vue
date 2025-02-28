@@ -73,7 +73,8 @@ const link = ref(item.link)
 const note = ref(item.notes)
 
 const updateSupplier = async () => {
-  const url: string = HOST + "/api/" + clubStore.displayClub();
+  if (!clubStore.checkClub()) return;
+  const url: string = HOST + "/api/" + clubStore.getClub();
   const supplier: SupplierUpdateRequest = {
     id: item.id,
     name: name.value,
@@ -120,7 +121,8 @@ const updateSupplier = async () => {
 }
 
 const Delete = async () => {
-  const url: string = HOST + "/api/" + clubStore.displayClub();
+  if (!clubStore.checkClub()) return;
+  const url: string = HOST + "/api/" + clubStore.getClub();
   const query = new URLSearchParams({ id: item.id.toString() }).toString();
 
   await fetch(

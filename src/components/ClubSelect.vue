@@ -1,7 +1,7 @@
 <template>
   <div class="ClubSelect">
     <select class="dropdown" v-model="clubs.club">
-      <option v-for="club in clubs.clubs" :key="club" :value="club">{{ club }}</option>
+      <option v-for="club in clubs.clubs" :key="club.name" :value="club">{{ club.name }}</option>
     </select>
   </div>
 </template>

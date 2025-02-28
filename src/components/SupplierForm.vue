@@ -66,7 +66,7 @@ const notificationsStore = useNotificationsStore();
 const clubStore = useClubsStore();
 
 const addSupplier = async () => {
-  const url: string = HOST + "/api/" + clubStore.displayClub();
+  const url: string = HOST + "/api/" + clubStore.getClub();
 
   const supplier: SupplierAddRequest = {
     name: name.value,
@@ -75,7 +75,7 @@ const addSupplier = async () => {
     link: link.value,
     notes: note.value,
   }
-  if (clubStore.getClub() == "Nämnd") {
+  if (!clubStore.checkClub()) {
     const noti: Notification = {
       id: Date.now(),
       title: "Error",

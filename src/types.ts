@@ -102,9 +102,14 @@ export interface Notification {
 }
 
 export interface ClubStorage {
-  club: string,
-  clubs: Array<string>,
+  club: ClubGetRequest,
+  clubs: Array<ClubGetRequest>,
   timestamp: number,
+}
+
+export interface ClubGetRequest {
+  name: string,
+  permission: "r" | "rw",
 }
 
 export interface Stats {

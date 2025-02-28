@@ -88,7 +88,7 @@ const clubStore = useClubsStore();
 const suppliers = ref<Array<SupplierListGetResponse>>([])
 
 const GetSuppliers = () => {
-  if (clubStore.getClub() == "Nämnd") {
+  if (!clubStore.checkClub()) {
     const noti: Notification = {
       id: Date.now(),
       title: "Error",
@@ -98,7 +98,7 @@ const GetSuppliers = () => {
     notificationsStore.add(noti);
     return;
   };
-  const url: string = HOST + "/api/" + clubStore.displayClub() + "/suppliers";
+  const url: string = HOST + "/api/" + clubStore.getClub() + "/suppliers";
   fetch(url, {
     method: "GET",
   }).then((r) => r.json())
@@ -138,7 +138,7 @@ const updateItem = async () => {
     supplier: supplier.value,
     link: link.value,
   }
-  const url: string = HOST + "/api/" + clubStore.displayClub();
+  const url: string = HOST + "/api/" + clubStore.getClub();
   await fetch(url + "/item", {
     method: "PATCH",
     body: JSON.stringify(res),
@@ -177,7 +177,7 @@ const updateItem = async () => {
 }
 
 const Delete = async () => {
-  const url: string = HOST + "/api/" + clubStore.displayClub();
+  const url: string = HOST + "/api/" + clubStore.getClub();
   const query = new URLSearchParams({ id: item.id.toString() }).toString();
   await fetch(url + "/item?" + query, {
     method: "DELETE",
