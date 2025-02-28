@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name FROM suppliers WHERE club = $1",
+  "query": "SELECT id, name \n         FROM suppliers \n         WHERE club = $1",
   "describe": {
     "columns": [
       {
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "58965a2aba623c8f6cb54e937509ce08d1c32fdb1fa325d43857b130b51cbf0e"
+  "hash": "1f278f245a06d42446b86045ca87e67d01e21befcf3841da48af81bedd2af1ce"
 }

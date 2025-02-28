@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1 AND $2 = $3",
+  "query": "SELECT id, name, username, password, link, notes, updated \n                 FROM suppliers \n                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
   "describe": {
     "columns": [
       {
@@ -15,36 +15,26 @@
       },
       {
         "ordinal": 2,
-        "name": "location",
+        "name": "username",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
-        "name": "min",
-        "type_info": "Float4"
+        "name": "password",
+        "type_info": "Text"
       },
       {
         "ordinal": 4,
-        "name": "max",
-        "type_info": "Float4"
-      },
-      {
-        "ordinal": 5,
-        "name": "current",
-        "type_info": "Float4"
-      },
-      {
-        "ordinal": 6,
         "name": "link",
         "type_info": "Text"
       },
       {
-        "ordinal": 7,
-        "name": "supplier",
-        "type_info": "Int4"
+        "ordinal": 5,
+        "name": "notes",
+        "type_info": "Text"
       },
       {
-        "ordinal": 8,
+        "ordinal": 6,
         "name": "updated",
         "type_info": "Int4"
       }
@@ -59,14 +49,12 @@
     "nullable": [
       false,
       false,
-      false,
       true,
       true,
-      false,
       true,
       true,
       false
     ]
   },
-  "hash": "409938dc015a94825b69f5c790cffbd822cbda2a90be5335adee30ede7617d1b"
+  "hash": "37efde880f0834f408dc517035dfaabcb3d741b7f2cc8bae335a3767e1191af4"
 }

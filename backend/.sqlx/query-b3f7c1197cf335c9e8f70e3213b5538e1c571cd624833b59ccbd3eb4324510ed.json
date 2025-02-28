@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE items SET current = $1 WHERE id = $2 AND club = $3",
+  "query": "UPDATE items \n             SET current = $1 \n             WHERE id = $2 AND club = $3",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "c1b10e07f4936033b5603ff3e71506edcae0e3c3cc869e609f80710768fb5cc8"
+  "hash": "b3f7c1197cf335c9e8f70e3213b5538e1c571cd624833b59ccbd3eb4324510ed"
 }

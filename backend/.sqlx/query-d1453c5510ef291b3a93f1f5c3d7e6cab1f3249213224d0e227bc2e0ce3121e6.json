@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT name FROM suppliers WHERE id = $1",
+  "query": "SELECT name \n             FROM suppliers \n             WHERE club = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -11,6 +11,7 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
         "Int4"
       ]
     },
@@ -18,5 +19,5 @@
       false
     ]
   },
-  "hash": "f2aa126767b22e5f896fae390e848f4cb02a9abf9fcf85673176be9f69fce8e8"
+  "hash": "d1453c5510ef291b3a93f1f5c3d7e6cab1f3249213224d0e227bc2e0ce3121e6"
 }

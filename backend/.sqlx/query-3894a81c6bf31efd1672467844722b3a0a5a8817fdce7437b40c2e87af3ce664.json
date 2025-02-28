@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE suppliers \n         SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = extract(epoch from now()) \n         WHERE id = $6 AND club = $7",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3894a81c6bf31efd1672467844722b3a0a5a8817fdce7437b40c2e87af3ce664"
+}

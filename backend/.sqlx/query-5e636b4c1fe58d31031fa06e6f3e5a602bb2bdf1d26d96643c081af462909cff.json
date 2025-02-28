@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1",
+  "query": "SELECT id, name, username, password, link, notes, updated \n                 FROM suppliers \n                 WHERE club = $1 AND $2 = $3",
   "describe": {
     "columns": [
       {
@@ -41,6 +41,8 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
+        "Text",
         "Text"
       ]
     },
@@ -54,5 +56,5 @@
       false
     ]
   },
-  "hash": "ea2050e7c419edeefbbe9969261ee4acee810a6a7d12cafa408c31849be54122"
+  "hash": "5e636b4c1fe58d31031fa06e6f3e5a602bb2bdf1d26d96643c081af462909cff"
 }

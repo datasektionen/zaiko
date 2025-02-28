@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT amount, time FROM log WHERE item_id = $1 AND club = $2",
+  "query": "SELECT amount, time \n         FROM log \n         WHERE item_id = $1 AND club = $2",
   "describe": {
     "columns": [
       {
@@ -25,5 +25,5 @@
       false
     ]
   },
-  "hash": "e21c21bf7ff3032c0cf457672a4ab67c1a2e120ed9f38bf86e802ee612bb76a9"
+  "hash": "917c189ccf34a2ff27658db68ed6802c308dea590321c1a59f0fd60958cf9dc6"
 }
