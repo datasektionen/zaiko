@@ -1,20 +1,18 @@
 use std::env;
 
 use actix_cors::Cors;
-use actix_identity::{Identity, IdentityExt, IdentityMiddleware};
+use actix_identity::{IdentityExt, IdentityMiddleware};
 use actix_session::{
-    config::PersistentSession, storage::CookieSessionStore, SessionExt, SessionMiddleware,
+    config::PersistentSession, storage::CookieSessionStore, SessionMiddleware,
 };
 use actix_web::{
     cookie::{time::Duration, Key},
-    dev::Service,
     guard::Guard,
     http::Method,
-    middleware::Identity,
     web::{self, scope, Data},
     App, HttpServer,
 };
-use auth::{auth_callback, check_auth, get_clubs, get_oidc};
+use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use stats::get_stats;

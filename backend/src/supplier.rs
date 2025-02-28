@@ -118,9 +118,9 @@ pub(crate) async fn get_supplier(
         };
 
         if matches!(permission, Permission::Read) {
-            suppliers
-                .iter_mut()
-                .map(|supplier| supplier.password = Some(String::from("Unauthorized")));
+            for supplier in suppliers.iter_mut() {
+                supplier.password = Some(String::from("Unauthorized"));
+            }
         }
 
         Ok(HttpResponse::Ok().json(suppliers))
@@ -136,9 +136,9 @@ pub(crate) async fn get_supplier(
         .await?;
 
         if matches!(permission, Permission::Read) {
-            suppliers
-                .iter_mut()
-                .map(|supplier| supplier.password = Some(String::from("Unauthorized")));
+            for supplier in suppliers.iter_mut() {
+                supplier.password = Some(String::from("Unauthorized"));
+            }
         }
 
         Ok(HttpResponse::Ok().json(suppliers))
