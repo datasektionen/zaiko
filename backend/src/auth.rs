@@ -13,7 +13,7 @@ use openidconnect::{
     StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
     TokenResponse,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 
 use crate::error::Error;
@@ -61,6 +61,12 @@ pub enum Permission {
     Write,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Club {
+    name: String,
+    permission: String,
+}
+
 #[derive(Deserialize)]
 struct Query {
     code: String,
@@ -73,10 +79,16 @@ pub async fn check_auth(
     club: &String,
 ) -> Result<Permission, Error> {
     if id.is_some() {
-        if let Ok(Some(privlages)) = session.get::<Vec<String>>("privlages") {
-            if privlages.contains(&((*club).clone() + "-r")) {
+        if let Ok(Some(privlages)) = session.get::<Vec<Club>>("privlages") {
+            if privlages
+                .iter()
+                .any(|privlage| privlage.name == *club && privlage.permission == "r")
+            {
                 return Ok(Permission::Read);
-            } else if privlages.contains(&((*club).clone() + "-rw")) {
+            } else if privlages
+                .iter()
+                .any(|privlage| privlage.name == *club && privlage.permission == "rw")
+            {
                 return Ok(Permission::Write);
             } else if matches!(club.as_str(), "metadorerna" | "sjukvård") {
                 return Ok(Permission::Read);
@@ -252,8 +264,16 @@ pub async fn auth_callback(
         }
     };
 
-    let privlages: Vec<String> = match serde_json::from_str(&res) {
-        Ok(privlages) => privlages,
+    let privlages: Vec<Club> = match serde_json::from_str::<Vec<String>>(&res) {
+        Ok(privlages) => privlages
+            .iter()
+            .filter_map(|privlage| {
+                let mut permission = privlage.split("-");
+                let name = permission.next()?.to_string();
+                let permission = permission.next()?.to_string();
+                Some(Club { name, permission })
+            })
+            .collect(),
         Err(err) => {
             log::error!("failed to parse data from pls: {}", err);
             return HttpResponse::InternalServerError().finish();
