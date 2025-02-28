@@ -59,7 +59,6 @@ pub(crate) async fn get_item(
     id: Option<Identity>,
     session: Session,
 ) -> Result<HttpResponse, Error> {
-    log::info!("get items");
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
@@ -123,9 +122,6 @@ pub(crate) async fn add_item(
     session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
-    log::info!("add item");
-    log::debug!("{}", body);
-
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
@@ -186,9 +182,6 @@ pub(crate) async fn update_item(
     session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
-    log::info!("update item");
-    log::debug!("{}", body);
-
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 

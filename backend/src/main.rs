@@ -6,11 +6,7 @@ use actix_session::{
     config::PersistentSession, storage::CookieSessionStore, SessionMiddleware,
 };
 use actix_web::{
-    cookie::{time::Duration, Key},
-    guard::Guard,
-    http::Method,
-    web::{self, scope, Data},
-    App, HttpServer,
+    cookie::{time::Duration, Key}, guard::Guard, http::Method, middleware::Logger, web::{self, scope, Data}, App, HttpServer
 };
 use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
@@ -81,6 +77,7 @@ async fn main() -> std::io::Result<()> {
                     .build(),
             )
             .wrap(cors)
+            .wrap(Logger::default())
             .app_data(pool.clone())
             .app_data(oidc.clone())
             .app_data(auth_url.clone())
