@@ -293,7 +293,7 @@ pub async fn auth_callback(
 #[get("/clubs")]
 pub async fn get_clubs(id: Option<Identity>, session: Session) -> HttpResponse {
     if id.is_some() {
-        let clubs = match session.get::<Vec<String>>("privlages") {
+        let clubs = match session.get::<Vec<Club>>("privlages") {
             Ok(clubs) => clubs,
             Err(err) => {
                 log::error!("{}", err);
