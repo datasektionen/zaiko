@@ -36,7 +36,9 @@ pub(crate) async fn get_shortage(
 
     let items = sqlx::query_as!(
         ItemGetResponse,
-        "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE current <= min AND club = $1",
+        "SELECT id, name, location, min, max, current, link, supplier, updated 
+         FROM items 
+         WHERE current <= min AND club = $1",
         club
     )
     .fetch_all(&mut *pool)
@@ -81,7 +83,9 @@ pub(crate) async fn take_stock(
 
     for (id, amount) in items.items {
         sqlx::query!(
-            "UPDATE items SET current = $1 WHERE id = $2 AND club = $3",
+            "UPDATE items 
+             SET current = $1 
+             WHERE id = $2 AND club = $3",
             amount,
             id,
             club
@@ -90,7 +94,8 @@ pub(crate) async fn take_stock(
         .await?;
 
         sqlx::query!(
-            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, extract(epoch from now()), $3)",
+            "INSERT INTO log (item_id, amount, time, club) 
+             VALUES ($1, $2, extract(epoch from now()), $3)",
             id,
             amount,
             club

@@ -4,7 +4,10 @@ use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::{auth::{check_auth, Permission}, error::Error};
+use crate::{
+    auth::{check_auth, Permission},
+    error::Error,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ItemGetResponse {
@@ -70,29 +73,39 @@ pub(crate) async fn get_item(
         if matches!(column.as_str(), "name" | "location" | "link") {
             sqlx::query_as!(
                 ItemGetResponse,
-                "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                "SELECT id, name, location, min, max, current, link, supplier, updated 
+                 FROM items
+                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
                 club,
                 column,
                 search
-            ).fetch_all(&mut *pool).await?
+            )
+            .fetch_all(&mut *pool)
+            .await?
         } else if matches!(
             column.as_str(),
             "min" | "max" | "current" | "supplier" | "updated"
         ) {
             sqlx::query_as!(
                 ItemGetResponse,
-                "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1 AND $2 = $3",
+                "SELECT id, name, location, min, max, current, link, supplier, updated 
+                 FROM items 
+                 WHERE club = $1 AND $2 = $3",
                 club,
                 column,
                 search
-            ).fetch_all(&mut *pool).await?
+            )
+            .fetch_all(&mut *pool)
+            .await?
         } else {
             return Err(Error::BadRequest);
         }
     } else {
         sqlx::query_as!(
             ItemGetResponse,
-            "SELECT id, name, location, min, max, current, link, supplier, updated FROM items WHERE club = $1",
+            "SELECT id, name, location, min, max, current, link, supplier, updated 
+             FROM items 
+             WHERE club = $1",
             club
         )
         .fetch_all(&mut *pool)
@@ -127,7 +140,8 @@ pub(crate) async fn add_item(
     }
 
     sqlx::query!(
-        "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
+        "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) 
+         VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
         item.name,
         item.location,
         item.min,
@@ -141,7 +155,9 @@ pub(crate) async fn add_item(
     .await?;
 
     let id = sqlx::query!(
-        "SELECT id FROM items WHERE name = $1 AND club = $2",
+        "SELECT id 
+         FROM items 
+         WHERE name = $1 AND club = $2",
         item.name,
         club
     )
@@ -150,7 +166,8 @@ pub(crate) async fn add_item(
     .id;
 
     sqlx::query!(
-        "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, extract(epoch from now()), $3)",
+        "INSERT INTO log (item_id, amount, time, club) 
+         VALUES ($1, $2, extract(epoch from now()), $3)",
         id,
         item.current,
         club
@@ -186,7 +203,9 @@ pub(crate) async fn update_item(
     }
 
     let current = sqlx::query!(
-        "SELECT current FROM items WHERE name = $1 AND club = $2",
+        "SELECT current 
+         FROM items 
+         WHERE name = $1 AND club = $2",
         item.name,
         club
     )
@@ -196,7 +215,8 @@ pub(crate) async fn update_item(
 
     if current != item.current {
         sqlx::query!(
-            "INSERT INTO log (item_id, amount, time, club) VALUES ($1, $2, extract(epoch from now()), $3)",
+            "INSERT INTO log (item_id, amount, time, club) 
+             VALUES ($1, $2, extract(epoch from now()), $3)",
             item.id,
             item.current,
             club
@@ -206,7 +226,8 @@ pub(crate) async fn update_item(
     }
 
     sqlx::query!(
-        "UPDATE items SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = extract(epoch from now()), link = $6  WHERE name = $7 AND club = $8",
+        "UPDATE items 
+         SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = extract(epoch from now()), link = $6  WHERE name = $7 AND club = $8",
         item.location,
         item.min,
         item.max,
@@ -238,7 +259,8 @@ pub(crate) async fn delete_item(
     }
 
     sqlx::query!(
-        "DELETE FROM items WHERE id = $1 AND club = $2",
+        "DELETE FROM items 
+         WHERE id = $1 AND club = $2",
         item_id.0,
         club
     )
@@ -246,7 +268,8 @@ pub(crate) async fn delete_item(
     .await?;
 
     sqlx::query!(
-        "DELETE FROM log WHERE item_id = $1 AND club = $2",
+        "DELETE FROM log 
+         WHERE item_id = $1 AND club = $2",
         item_id.0,
         club
     )

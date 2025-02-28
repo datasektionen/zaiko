@@ -27,7 +27,9 @@ pub(crate) async fn get_log(
 
     let logs = sqlx::query_as!(
         Log,
-        "SELECT amount, time FROM log WHERE item_id = $1 AND club = $2",
+        "SELECT amount, time 
+         FROM log 
+         WHERE item_id = $1 AND club = $2",
         item.0,
         club
     )

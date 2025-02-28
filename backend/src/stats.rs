@@ -25,20 +25,32 @@ pub(crate) async fn get_stats(
 
     check_auth(&id, &session, club).await?;
 
-    let item_count = sqlx::query!("SELECT count(*) FROM items WHERE club = $1", club)
-        .fetch_one(&mut *pool)
-        .await?
-        .count
-        .unwrap_or(0);
+    let item_count = sqlx::query!(
+        "SELECT count(*) 
+         FROM items 
+         WHERE club = $1",
+        club
+    )
+    .fetch_one(&mut *pool)
+    .await?
+    .count
+    .unwrap_or(0);
 
-    let supplier_count = sqlx::query!("SELECT count(*) FROM suppliers WHERE club = $1", club)
-        .fetch_one(&mut *pool)
-        .await?
-        .count
-        .unwrap_or(0);
+    let supplier_count = sqlx::query!(
+        "SELECT count(*) 
+         FROM suppliers 
+         WHERE club = $1",
+        club
+    )
+    .fetch_one(&mut *pool)
+    .await?
+    .count
+    .unwrap_or(0);
 
     let shortage_count = sqlx::query!(
-        "SELECT count(*) FROM items WHERE current <= min AND club = $1",
+        "SELECT count(*) 
+         FROM items 
+         WHERE current <= min AND club = $1",
         club
     )
     .fetch_one(&mut *pool)

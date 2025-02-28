@@ -4,7 +4,10 @@ use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::{auth::{check_auth, Permission}, error::Error};
+use crate::{
+    auth::{check_auth, Permission},
+    error::Error,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SupplierGetResponse {
@@ -65,10 +68,16 @@ pub(crate) async fn get_supplier(
     let permission = check_auth(&id, &session, club).await?;
 
     if let Some(id) = query.id {
-        let name = sqlx::query!("SELECT name FROM suppliers WHERE club = $1 AND id = $2", club, id)
-            .fetch_one(&mut *pool)
-            .await?
-            .name;
+        let name = sqlx::query!(
+            "SELECT name 
+             FROM suppliers 
+             WHERE club = $1 AND id = $2",
+            club,
+            id
+        )
+        .fetch_one(&mut *pool)
+        .await?
+        .name;
 
         Ok(HttpResponse::Ok().json(name))
     } else if let Query {
@@ -82,40 +91,54 @@ pub(crate) async fn get_supplier(
             "name" | "username" | "password" | "link" | "notes"
         ) {
             sqlx::query_as!(
-            SupplierGetResponse,
-            "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                SupplierGetResponse,
+                "SELECT id, name, username, password, link, notes, updated 
+                 FROM suppliers 
+                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
                 club,
                 column,
                 search
-        ).fetch_all(&mut *pool).await?
+            )
+            .fetch_all(&mut *pool)
+            .await?
         } else if matches!(column.as_str(), "updated") {
             sqlx::query_as!(
                 SupplierGetResponse,
-                "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1 AND $2 = $3",
+                "SELECT id, name, username, password, link, notes, updated 
+                 FROM suppliers 
+                 WHERE club = $1 AND $2 = $3",
                 club,
                 column,
                 search
-            ).fetch_all(&mut *pool).await?
+            )
+            .fetch_all(&mut *pool)
+            .await?
         } else {
             return Err(Error::BadRequest);
         };
 
         if matches!(permission, Permission::Read) {
-            suppliers.iter_mut().map(|supplier| supplier.password = Some(String::from("Unauthorized")));
+            suppliers
+                .iter_mut()
+                .map(|supplier| supplier.password = Some(String::from("Unauthorized")));
         }
 
         Ok(HttpResponse::Ok().json(suppliers))
     } else {
         let mut suppliers = sqlx::query_as!(
             SupplierGetResponse,
-            "SELECT id, name, username, password, link, notes, updated FROM suppliers WHERE club = $1",
+            "SELECT id, name, username, password, link, notes, updated 
+             FROM suppliers 
+             WHERE club = $1",
             club
         )
         .fetch_all(&mut *pool)
         .await?;
 
         if matches!(permission, Permission::Read) {
-            suppliers.iter_mut().map(|supplier| supplier.password = Some(String::from("Unauthorized")));
+            suppliers
+                .iter_mut()
+                .map(|supplier| supplier.password = Some(String::from("Unauthorized")));
         }
 
         Ok(HttpResponse::Ok().json(suppliers))
@@ -138,7 +161,9 @@ pub(crate) async fn get_suppliers(
 
     let supplier = sqlx::query_as!(
         SupplierListGetResponse,
-        "SELECT id, name FROM suppliers WHERE club = $1",
+        "SELECT id, name 
+         FROM suppliers 
+         WHERE club = $1",
         club
     )
     .fetch_all(&mut *pool)
@@ -172,7 +197,8 @@ pub(crate) async fn add_supplier(
     }
 
     sqlx::query!(
-        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) VALUES ($1, $2, $3, $4, $5, extract(epoch from now()), $6)",
+        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) 
+         VALUES ($1, $2, $3, $4, $5, extract(epoch from now()), $6)",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -211,7 +237,9 @@ pub(crate) async fn update_supplier(
     }
 
     sqlx::query!(
-        "UPDATE suppliers SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = extract(epoch from now()) WHERE id = $6 AND club = $7",
+        "UPDATE suppliers 
+         SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = extract(epoch from now()) 
+         WHERE id = $6 AND club = $7",
         supplier.name,
         supplier.link,
         supplier.notes,
@@ -242,7 +270,8 @@ pub(crate) async fn delete_supplier(
     }
 
     sqlx::query!(
-        "DELETE FROM suppliers WHERE id = $1 AND club = $2",
+        "DELETE FROM suppliers 
+         WHERE id = $1 AND club = $2",
         item_id.0,
         club
     )

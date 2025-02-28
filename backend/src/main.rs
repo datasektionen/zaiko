@@ -2,7 +2,9 @@ use std::env;
 
 use actix_cors::Cors;
 use actix_identity::{Identity, IdentityExt, IdentityMiddleware};
-use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionExt, SessionMiddleware};
+use actix_session::{
+    config::PersistentSession, storage::CookieSessionStore, SessionExt, SessionMiddleware,
+};
 use actix_web::{
     cookie::{time::Duration, Key},
     dev::Service,
@@ -95,7 +97,8 @@ async fn main() -> std::io::Result<()> {
                             .service(get_log)
                             .service(get_clubs)
                             .service(get_stats),
-                    ).guard(guard)
+                    )
+                    .guard(guard)
                     .service(add_item)
                     .service(update_item)
                     .service(delete_item)
@@ -152,24 +155,24 @@ async fn db_init(pool: &web::Data<Pool<Postgres>>) -> Result<(), sqlx::error::Er
 
     sqlx::query!(
         "CREATE TABLE IF NOT EXISTS suppliers(
-    id SERIAL PRIMARY KEY NOT NULL,
-    name TEXT NOT NULL,
-    link TEXT,
-    notes TEXT,
-    username TEXT,
-    password TEXT,
-    updated INTEGER NOT NULL);"
+        id SERIAL PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        link TEXT,
+        notes TEXT,
+        username TEXT,
+        password TEXT,
+        updated INTEGER NOT NULL);"
     )
     .execute(pool.get_ref())
     .await?;
 
     sqlx::query!(
         "CREATE TABLE IF NOT EXISTS log(
-    id SERIAL PRIMARY KEY NOT NULL,
-    item_id INTEGER NOT NULL,
-    amount REAL NOT NULL,
-    time INTEGER NOT NULL,
-    club TEXT NOT NULL);"
+        id SERIAL PRIMARY KEY NOT NULL,
+        item_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        time INTEGER NOT NULL,
+        club TEXT NOT NULL);"
     )
     .execute(pool.get_ref())
     .await?;
