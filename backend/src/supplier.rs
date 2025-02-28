@@ -46,10 +46,15 @@ struct SupplierUpdateRequest {
 }
 
 #[derive(Deserialize)]
-struct Query {
+struct SupplierGetQuery {
     id: Option<i32>,
     column: Option<String>,
     search: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SupplierDeleteQuery {
+    id: i32
 }
 
 #[get("/{club}/supplier")]
@@ -58,7 +63,7 @@ pub(crate) async fn get_supplier(
     id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
-    query: web::Query<Query>,
+    query: web::Query<SupplierGetQuery>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
@@ -78,7 +83,7 @@ pub(crate) async fn get_supplier(
         .name;
 
         Ok(HttpResponse::Ok().json(name))
-    } else if let Query {
+    } else if let SupplierGetQuery {
         column: Some(column),
         search: Some(search),
         id: _,
@@ -247,7 +252,7 @@ pub(crate) async fn update_supplier(
 #[delete("/{club}/supplier")]
 pub(crate) async fn delete_supplier(
     club: web::Path<String>,
-    item_id: web::Query<i32>,
+    item_id: web::Query<SupplierDeleteQuery>,
     id: Option<Identity>,
     pool: web::Data<Pool<Postgres>>,
     session: Session,
@@ -262,7 +267,7 @@ pub(crate) async fn delete_supplier(
     sqlx::query!(
         "DELETE FROM suppliers 
          WHERE id = $1 AND club = $2",
-        item_id.0,
+        item_id.id,
         club
     )
     .execute(&mut *pool)
