@@ -60,8 +60,6 @@ pub(crate) async fn get_supplier(
     pool: web::Data<Pool<Postgres>>,
     query: web::Query<Query>,
 ) -> Result<HttpResponse, Error> {
-    log::info!("get supplier");
-
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
@@ -152,8 +150,6 @@ pub(crate) async fn get_suppliers(
     session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
-    log::info!("get suppliers");
-
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
@@ -180,9 +176,6 @@ pub(crate) async fn add_supplier(
     session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
-    log::info!("add supplier");
-    log::debug!("{}", body);
-
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
@@ -220,9 +213,6 @@ pub(crate) async fn update_supplier(
     session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
-    log::info!("update supplier");
-    log::debug!("{}", body);
-
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 

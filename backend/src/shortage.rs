@@ -28,7 +28,6 @@ pub(crate) async fn get_shortage(
     session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
-    log::info!("get shortage");
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
@@ -69,9 +68,6 @@ pub(crate) async fn take_stock(
     pool: web::Data<Pool<Postgres>>,
     body: String,
 ) -> Result<HttpResponse, Error> {
-    log::info!("update inventory");
-    log::debug!("{}", body);
-
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
