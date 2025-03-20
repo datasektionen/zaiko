@@ -138,7 +138,7 @@ pub(crate) async fn add_item(
 
     let item: ItemAddRequest = serde_json::from_str(&body)?;
 
-    if item.name.is_empty() && item.location.is_empty() {
+    if item.name.is_empty() || item.location.is_empty() {
         return Err(Error::BadRequest);
     }
 
@@ -200,7 +200,7 @@ pub(crate) async fn update_item(
 
     let item: ItemUpdateRequest = serde_json::from_str(&body)?;
 
-    if item.name.is_empty() && item.location.is_empty() {
+    if item.name.is_empty() || item.location.is_empty() {
         return Err(Error::BadRequest);
     }
 
