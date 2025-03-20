@@ -2,11 +2,14 @@ use std::env;
 
 use actix_cors::Cors;
 use actix_identity::{IdentityExt, IdentityMiddleware};
-use actix_session::{
-    config::PersistentSession, storage::CookieSessionStore, SessionMiddleware,
-};
+use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
-    cookie::{time::Duration, Key}, guard::Guard, http::Method, middleware::Logger, web::{self, scope, Data}, App, HttpServer
+    cookie::{time::Duration, Key},
+    guard::Guard,
+    http::Method,
+    middleware::Logger,
+    web::{self, scope, Data},
+    App, HttpServer,
 };
 use auth::{auth_callback, get_clubs, get_oidc};
 use dotenv::dotenv;
@@ -138,8 +141,7 @@ async fn db_init(pool: &web::Data<Pool<Postgres>>) -> Result<(), sqlx::error::Er
         supplier INTEGER,
         updated INTEGER NOT NULL,
         link TEXT,
-        club TEXT NOT NULL
-        )",
+        club TEXT NOT NULL);",
     )
     .execute(pool.get_ref())
     .await?;
@@ -152,7 +154,8 @@ async fn db_init(pool: &web::Data<Pool<Postgres>>) -> Result<(), sqlx::error::Er
         notes TEXT,
         username TEXT,
         password TEXT,
-        updated INTEGER NOT NULL);"
+        updated INTEGER NOT NULL,
+        club TEXT NOT NULL);"
     )
     .execute(pool.get_ref())
     .await?;
