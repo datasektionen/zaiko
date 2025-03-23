@@ -53,7 +53,7 @@ struct ItemGetQuery {
 
 #[derive(Debug, Deserialize)]
 struct ItemDeleteQuery {
-    id: i32
+    id: i32,
 }
 
 #[get("/{club}/item")]
@@ -67,7 +67,7 @@ pub(crate) async fn get_item(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(&id, &session, club).await?;
+    check_auth(&id, &session, club, Permission::Read)?;
 
     let items = if let ItemGetQuery {
         column: Some(column),
@@ -132,9 +132,7 @@ pub(crate) async fn add_item(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
+    check_auth(&id, &session, club, Permission::ReadWrite)?;
 
     let item: ItemAddRequest = serde_json::from_str(&body)?;
 
@@ -194,9 +192,7 @@ pub(crate) async fn update_item(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
+    check_auth(&id, &session, club, Permission::ReadWrite)?;
 
     let item: ItemUpdateRequest = serde_json::from_str(&body)?;
 
@@ -258,9 +254,7 @@ pub(crate) async fn delete_item(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
+    check_auth(&id, &session, club, Permission::ReadWrite)?;
 
     sqlx::query!(
         "DELETE FROM items 

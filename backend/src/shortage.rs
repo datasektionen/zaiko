@@ -31,7 +31,7 @@ pub(crate) async fn get_shortage(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(&id, &session, club).await?;
+    check_auth(&id, &session, club, Permission::Read)?;
 
     let items = sqlx::query_as!(
         ItemGetResponse,
@@ -73,9 +73,7 @@ pub(crate) async fn take_stock(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
+    check_auth(&id, &session, club, Permission::ReadWrite)?;
 
     let items: StockUpdateRequest = serde_json::from_str(&body)?;
 

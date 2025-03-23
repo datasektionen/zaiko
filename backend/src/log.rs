@@ -4,7 +4,7 @@ use actix_web::{get, web, HttpResponse};
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 
-use crate::{auth::check_auth, error::Error};
+use crate::{auth::{check_auth, Permission}, error::Error};
 
 #[derive(Debug, Serialize)]
 struct Log {
@@ -23,7 +23,7 @@ pub(crate) async fn get_log(
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
 
-    check_auth(&id, &session, club).await?;
+    check_auth(&id, &session, club, Permission::Read)?;
 
     let logs = sqlx::query_as!(
         Log,

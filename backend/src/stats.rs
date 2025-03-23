@@ -4,7 +4,7 @@ use actix_web::{get, web, HttpResponse};
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 
-use crate::{auth::check_auth, error::Error};
+use crate::{auth::{check_auth, Permission}, error::Error};
 
 #[derive(Debug, Serialize)]
 struct StatsGetResponse {
@@ -23,7 +23,7 @@ pub(crate) async fn get_stats(
     let club = club.as_ref();
     let mut pool = pool.as_ref().begin().await?;
 
-    check_auth(&id, &session, club).await?;
+    check_auth(&id, &session, club, Permission::Read)?;
 
     let item_count = sqlx::query!(
         "SELECT count(*) 

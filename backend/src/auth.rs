@@ -1,6 +1,7 @@
 use actix_identity::Identity;
 use actix_session::Session;
 use actix_web::{get, web, HttpMessage, HttpRequest, HttpResponse};
+use derive_more::Display;
 use openidconnect::{
     core::{
         CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
@@ -9,12 +10,12 @@ use openidconnect::{
     },
     reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
     EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
-    IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, RevocationErrorResponseType,
-    StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
-    TokenResponse,
+    IdToken, IdTokenClaims, IdTokenFields, IdTokenVerifier, IssuerUrl, Nonce, OAuth2TokenResponse,
+    RedirectUrl, RevocationErrorResponseType, StandardErrorResponse,
+    StandardTokenIntrospectionResponse, StandardTokenResponse, TokenResponse,
 };
 use serde::{Deserialize, Serialize};
-use std::env;
+use std::{collections::HashMap, env};
 
 use crate::error::Error;
 
@@ -56,15 +57,18 @@ pub struct OIDCData {
     csrf_token: CsrfToken,
 }
 
+#[derive(Debug, Display, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Permission {
+    #[serde(rename = "r")]
     Read,
-    Write,
+    #[serde(rename = "rw")]
+    ReadWrite,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Club {
     name: String,
-    permission: String,
+    permission: Permission,
 }
 
 #[derive(Deserialize)]
@@ -73,30 +77,45 @@ struct Query {
     state: String,
 }
 
-pub async fn check_auth(
+pub fn check_auth(
     id: &Option<Identity>,
     session: &Session,
     club: &String,
-) -> Result<Permission, Error> {
+    required_permission: Permission,
+) -> Result<(), Error> {
     if id.is_some() {
-        if let Ok(Some(privlages)) = session.get::<Vec<Club>>("privlages") {
-            if privlages
-                .iter()
-                .any(|privlage| privlage.name == *club && privlage.permission == "r")
-            {
-                return Ok(Permission::Read);
-            } else if privlages
-                .iter()
-                .any(|privlage| privlage.name == *club && privlage.permission == "rw")
-            {
-                return Ok(Permission::Write);
-            } else if matches!(club.as_str(), "metadorerna" | "sjukvård") {
-                return Ok(Permission::Read);
-            }
-        }
-    }
+        let permission = get_permissions(id, session, club).ok_or(Error::Unauthorized)?;
 
-    Err(Error::Unauthorized)
+        if required_permission == Permission::Read {
+            Ok(())
+        } else if required_permission == Permission::ReadWrite
+            && permission == Permission::ReadWrite
+        {
+            Ok(())
+        } else {
+            Err(Error::Unauthorized)
+        }
+    } else {
+        Err(Error::Unauthorized)
+    }
+}
+
+pub fn get_permissions(
+    id: &Option<Identity>,
+    session: &Session,
+    club: &String,
+) -> Option<Permission> {
+    if id.is_some() {
+        Some(
+            session
+                .get::<HashMap<String, Permission>>("privlages")
+                .ok()??
+                .get(club)?
+                .clone(),
+        )
+    } else {
+        None
+    }
 }
 
 pub async fn get_oidc() -> (OIDCData, String) {
@@ -154,154 +173,161 @@ pub async fn auth_callback(
     session: Session,
     query: web::Query<Query>,
     oidc: web::Data<OIDCData>,
-) -> HttpResponse {
-    if *oidc.csrf_token.secret() != query.state {
+) -> Result<HttpResponse, Error> {
+    let Query { code, state } = query.0;
+    let OIDCData {
+        client,
+        http_client,
+        nonce,
+        csrf_token,
+    } = oidc.get_ref();
+
+    check_csrf_token(csrf_token, state)?;
+
+    let token_respones = client
+        .exchange_code(AuthorizationCode::new(code))?
+        .request_async(http_client)
+        .await?;
+
+    let id_token = token_respones
+        .id_token()
+        .ok_or(Error::InternalServerError(String::from(
+            "oidc server returned no id",
+        )))?;
+
+    let id_token_verifier = client.id_token_verifier();
+
+    let claims = id_token.claims(&id_token_verifier, nonce)?;
+
+    check_token_hash(claims, &token_respones, id_token, id_token_verifier)?;
+
+    Identity::login(&req.extensions(), claims.subject().to_string())?;
+
+    let privlages = get_pls_permissions(claims.subject().to_string()).await?;
+
+    session.insert("privlages", privlages)?;
+
+    Ok(HttpResponse::TemporaryRedirect()
+        .insert_header(("location", "/"))
+        .finish())
+}
+
+fn check_csrf_token(token: &CsrfToken, state: String) -> Result<(), Error> {
+    if *token.secret() != state {
         log::error!("Invalid CSRF token on oidc callback");
-        return HttpResponse::BadRequest().finish();
+        return Err(Error::BadRequest);
     }
 
-    let token_respones = match oidc
-        .client
-        .exchange_code(AuthorizationCode::new(query.code.to_string()))
-    {
-        Ok(request) => match request.request_async(&oidc.http_client).await {
-            Ok(token) => token,
-            Err(err) => {
-                log::error!("token request error: {}", err);
-                return HttpResponse::InternalServerError().finish();
-            }
-        },
-        Err(err) => {
-            log::error!("token clinet request config error: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
+    Ok(())
+}
 
-    let id_token = match token_respones.id_token() {
-        Some(token) => token,
-        None => {
-            log::error!("oidc server returned no id");
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
+fn check_token_hash(
+    claims: &IdTokenClaims<EmptyAdditionalClaims, CoreGenderClaim>,
+    token_respones: &StandardTokenResponse<
+        IdTokenFields<
+            EmptyAdditionalClaims,
+            EmptyExtraTokenFields,
+            CoreGenderClaim,
+            CoreJweContentEncryptionAlgorithm,
+            CoreJwsSigningAlgorithm,
+        >,
+        CoreTokenType,
+    >,
+    id_token: &IdToken<
+        EmptyAdditionalClaims,
+        CoreGenderClaim,
+        CoreJweContentEncryptionAlgorithm,
+        CoreJwsSigningAlgorithm,
+    >,
+    id_token_verifier: IdTokenVerifier<'_, CoreJsonWebKey>,
+) -> Result<(), Error> {
+    let expected_access_token_hash =
+        claims
+            .access_token_hash()
+            .ok_or(Error::InternalServerError(String::from(
+                "Missing access token hash",
+            )))?;
 
-    let id_token_verifier = oidc.client.id_token_verifier();
+    let actual_access_token_hash = AccessTokenHash::from_token(
+        token_respones.access_token(),
+        id_token.signing_alg()?,
+        id_token.signing_key(&id_token_verifier)?,
+    )?;
 
-    let claims = match id_token.claims(&id_token_verifier, &oidc.nonce) {
-        Ok(claims) => claims,
-        Err(err) => {
-            log::error!("aquireing claims error: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
-
-    if let Some(expected_access_token_hash) = claims.access_token_hash() {
-        let actual_access_token_hash = match AccessTokenHash::from_token(
-            token_respones.access_token(),
-            match id_token.signing_alg() {
-                Ok(alg) => alg,
-                Err(err) => {
-                    log::error!("aquireing signing algorithm: {}", err);
-                    return HttpResponse::InternalServerError().finish();
-                }
-            },
-            match id_token.signing_key(&id_token_verifier) {
-                Ok(key) => key,
-                Err(err) => {
-                    log::error!("aquireing signing key: {}", err);
-                    return HttpResponse::InternalServerError().finish();
-                }
-            },
-        ) {
-            Ok(hash) => hash,
-            Err(err) => {
-                log::error!("checking hash error: {}", err);
-                return HttpResponse::InternalServerError().finish();
-            }
-        };
-        if actual_access_token_hash != *expected_access_token_hash {
-            log::error!(
-                "Hashes did not mach for subject {}",
-                claims.subject().to_string()
-            );
-            return HttpResponse::InternalServerError().finish();
-        }
+    if actual_access_token_hash != *expected_access_token_hash {
+        return Err(Error::InternalServerError(format!(
+            "Hashes did not mach for subject {}",
+            **claims.subject()
+        )));
     }
 
-    if let Err(err) = Identity::login(&req.extensions(), claims.subject().to_string()) {
-        log::error!("fail to login error: {}", err);
-        return HttpResponse::InternalServerError().finish();
-    }
+    Ok(())
+}
 
-    let pls_url = match env::var("PLS_URL") {
-        Ok(url) => url,
-        Err(err) => {
-            log::error!("getting pls url error: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
+async fn get_pls_permissions(subject: String) -> Result<HashMap<String, Permission>, Error> {
+    let pls_url = env::var("PLS_URL")?;
 
     log::debug!("{}", pls_url);
-    log::debug!("{}", claims.subject().as_str());
+    log::debug!("{}", subject.as_str());
 
-    let res = match reqwest::get(format!(
-        "{}/user/{}/zaiko",
-        pls_url,
-        claims.subject().as_str()
-    ))
-    .await
-    {
-        Ok(res) => match res.text().await {
-            Ok(res) => res,
-            Err(err) => {
-                log::error!("failed to get data from pls: {}", err);
-                return HttpResponse::InternalServerError().finish();
+    let res = reqwest::get(format!("{}/user/{}/zaiko", pls_url, subject.as_str()))
+        .await?
+        .text()
+        .await?;
+
+    let mut privlages: HashMap<String, Permission> = default_privlages();
+
+    let pls_permissions = serde_json::from_str::<Vec<String>>(&res)?;
+
+    for privlage in pls_permissions {
+        let mut permission = privlage.split("-");
+        let name = permission
+            .next()
+            .ok_or(Error::InternalServerError(String::from(
+                "Incorrect formating och pls permission",
+            )))?
+            .to_string();
+        let permission = match permission
+            .next()
+            .ok_or(Error::InternalServerError(String::from(
+                "Incorrect formatting of pls permission",
+            )))? {
+            "r" => Permission::Read,
+            "rw" => Permission::ReadWrite,
+            _ => {
+                return Err(Error::InternalServerError(String::from(
+                    "pls permission contains incorrect access type",
+                )))
             }
-        },
-        Err(err) => {
-            log::error!("failed to query pls: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
-
-    let privlages: Vec<Club> = match serde_json::from_str::<Vec<String>>(&res) {
-        Ok(privlages) => privlages
-            .iter()
-            .filter_map(|privlage| {
-                let mut permission = privlage.split("-");
-                let name = permission.next()?.to_string();
-                let permission = permission.next()?.to_string();
-                Some(Club { name, permission })
-            })
-            .collect(),
-        Err(err) => {
-            log::error!("failed to parse data from pls: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
-
-    if let Err(err) = session.insert("privlages", privlages) {
-        log::error!("failed to add privlages to session: {}", err);
-        return HttpResponse::InternalServerError().finish();
+        };
+        log::debug!("{}:{}", name, permission);
+        privlages.insert(name, permission);
     }
 
-    HttpResponse::TemporaryRedirect()
-        .insert_header(("location", "/"))
-        .finish()
+    Ok(privlages)
+}
+
+fn default_privlages() -> HashMap<String, Permission> {
+    let mut privlages = HashMap::new();
+
+    privlages.insert(String::from("metadorerna"), Permission::Read);
+
+    privlages
 }
 
 #[get("/clubs")]
-pub async fn get_clubs(id: Option<Identity>, session: Session) -> HttpResponse {
+pub async fn get_clubs(id: Option<Identity>, session: Session) -> Result<HttpResponse, Error> {
     if id.is_some() {
-        let clubs = match session.get::<Vec<Club>>("privlages") {
-            Ok(clubs) => clubs,
-            Err(err) => {
-                log::error!("{}", err);
-                return HttpResponse::InternalServerError().finish();
-            }
-        };
-        return HttpResponse::Ok().json(clubs);
+        let clubs: Vec<Club> = session
+            .get::<HashMap<String, Permission>>("privlages")?
+            .ok_or(Error::InternalServerError(String::from(
+                "Session contians no permissions",
+            )))?
+            .into_iter()
+            .map(|(name, permission)| Club { name, permission })
+            .collect();
+        return Ok(HttpResponse::Ok().json(clubs));
     }
 
-    HttpResponse::Unauthorized().finish()
+    Err(Error::Unauthorized)
 }
