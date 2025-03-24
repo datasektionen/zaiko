@@ -78,44 +78,28 @@ struct Query {
 }
 
 pub fn check_auth(
-    id: &Option<Identity>,
     session: &Session,
     club: &String,
     required_permission: Permission,
 ) -> Result<(), Error> {
-    if id.is_some() {
-        let permission = get_permissions(id, session, club).ok_or(Error::Unauthorized)?;
-
-        if required_permission == Permission::Read {
-            Ok(())
-        } else if required_permission == Permission::ReadWrite
-            && permission == Permission::ReadWrite
-        {
-            Ok(())
-        } else {
-            Err(Error::Unauthorized)
-        }
-    } else {
-        Err(Error::Unauthorized)
+    match get_permissions(session, club) {
+        Some(Permission::ReadWrite) => Ok(()),
+        Some(Permission::Read) => match required_permission {
+            Permission::Read => Ok(()),
+            Permission::ReadWrite => Err(Error::Unauthorized),
+        },
+        None => Err(Error::Unauthorized),
     }
 }
 
-pub fn get_permissions(
-    id: &Option<Identity>,
-    session: &Session,
-    club: &String,
-) -> Option<Permission> {
-    if id.is_some() {
-        Some(
-            session
-                .get::<HashMap<String, Permission>>("privlages")
-                .ok()??
-                .get(club)?
-                .clone(),
-        )
-    } else {
-        None
-    }
+pub fn get_permissions(session: &Session, club: &String) -> Option<Permission> {
+    Some(
+        session
+            .get::<HashMap<String, Permission>>("privlages")
+            .ok()??
+            .get(club)?
+            .clone(),
+    )
 }
 
 pub async fn get_oidc() -> (OIDCData, String) {
@@ -316,18 +300,15 @@ fn default_privlages() -> HashMap<String, Permission> {
 }
 
 #[get("/clubs")]
-pub async fn get_clubs(id: Option<Identity>, session: Session) -> Result<HttpResponse, Error> {
-    if id.is_some() {
-        let clubs: Vec<Club> = session
-            .get::<HashMap<String, Permission>>("privlages")?
-            .ok_or(Error::InternalServerError(String::from(
-                "Session contians no permissions",
-            )))?
-            .into_iter()
-            .map(|(name, permission)| Club { name, permission })
-            .collect();
-        return Ok(HttpResponse::Ok().json(clubs));
-    }
+pub async fn get_clubs(_id: Identity, session: Session) -> Result<HttpResponse, Error> {
+    let clubs: Vec<Club> = session
+        .get::<HashMap<String, Permission>>("privlages")?
+        .ok_or(Error::InternalServerError(String::from(
+            "Session contians no permissions",
+        )))?
+        .into_iter()
+        .map(|(name, permission)| Club { name, permission })
+        .collect();
 
-    Err(Error::Unauthorized)
+    Ok(HttpResponse::Ok().json(clubs))
 }

@@ -1,17 +1,19 @@
-use std::env;
+use std::{env, time::Duration};
 
 use actix_cors::Cors;
 use actix_identity::{IdentityExt, IdentityMiddleware};
-use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
+use actix_session::{
+    config::BrowserSession, storage::CookieSessionStore, SessionExt, SessionMiddleware,
+};
 use actix_web::{
-    cookie::{time::Duration, Key},
+    cookie::Key,
     guard::Guard,
     http::Method,
     middleware::Logger,
     web::{self, scope, Data},
     App, HttpServer,
 };
-use auth::{auth_callback, get_clubs, get_oidc};
+use auth::{auth_callback, check_auth, get_clubs, get_oidc, Permission};
 use dotenv::dotenv;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use stats::get_stats;
@@ -20,14 +22,14 @@ use supplier::get_suppliers;
 mod auth;
 mod error;
 mod item;
-mod log;
+mod loging;
 mod serve;
 mod shortage;
 mod stats;
 mod supplier;
 
 use crate::item::{add_item, delete_item, get_item, update_item};
-use crate::log::get_log;
+use crate::loging::get_log;
 use crate::serve::serve_frontend;
 use crate::shortage::{get_shortage, take_stock};
 use crate::supplier::{add_supplier, delete_supplier, get_supplier, update_supplier};
@@ -69,14 +71,16 @@ async fn main() -> std::io::Result<()> {
             .allow_any_header();
 
         App::new()
-            .wrap(IdentityMiddleware::default())
+            .wrap(
+                IdentityMiddleware::builder()
+                    .visit_deadline(Some(Duration::from_secs(3600)))
+                    .build(),
+            )
             .wrap(
                 SessionMiddleware::builder(CookieSessionStore::default(), session_secret.clone())
                     .cookie_name(String::from("session"))
                     .cookie_secure(true)
-                    .session_lifecycle(
-                        PersistentSession::default().session_ttl(Duration::minutes(15)),
-                    )
+                    .session_lifecycle(BrowserSession::default())
                     .build(),
             )
             .wrap(cors)
@@ -85,13 +89,15 @@ async fn main() -> std::io::Result<()> {
             .app_data(oidc.clone())
             .app_data(auth_url.clone())
             .service(
+                // Enpoints requiring write access (also needs to contian enpoints requiring read
+                // acccess)
                 scope("/api")
+                    .guard(WriteGuard)
                     .service(get_item)
                     .service(get_supplier)
                     .service(get_suppliers)
                     .service(get_shortage)
                     .service(get_log)
-                    .service(get_clubs)
                     .service(get_stats)
                     .service(add_item)
                     .service(update_item)
@@ -99,8 +105,22 @@ async fn main() -> std::io::Result<()> {
                     .service(add_supplier)
                     .service(update_supplier)
                     .service(delete_supplier)
-                    .service(take_stock)
-                    .service(auth_callback),
+                    .service(take_stock),
+            )
+            .service(
+                // Endpoints requiring read access
+                scope("/api")
+                    .guard(ReadGuard)
+                    .service(get_item)
+                    .service(get_supplier)
+                    .service(get_suppliers)
+                    .service(get_shortage)
+                    .service(get_log)
+                    .service(get_stats),
+            )
+            .service(
+                // Endpoints requiring no access
+                scope("/api").service(auth_callback).service(get_clubs),
             )
             .service(serve_frontend)
             .service(
@@ -122,10 +142,52 @@ async fn main() -> std::io::Result<()> {
 }
 
 struct LoginGuard;
+struct ReadGuard;
+struct WriteGuard;
 
 impl Guard for LoginGuard {
     fn check(&self, ctx: &actix_web::guard::GuardContext<'_>) -> bool {
         ctx.get_identity().is_ok()
+    }
+}
+
+impl Guard for ReadGuard {
+    fn check(&self, ctx: &actix_web::guard::GuardContext<'_>) -> bool {
+        log::debug!("read guard");
+        if ctx.get_identity().is_err() {
+            log::debug!("no id");
+            return false;
+        }
+
+        let session = ctx.get_session();
+
+        if let Some(club) = ctx.head().uri.path().split("/").nth(2) {
+            log::debug!("path: {}", club);
+            check_auth(&session, &club.to_string(), Permission::Read).is_ok()
+        } else {
+            log::debug!("no path");
+            false
+        }
+    }
+}
+
+impl Guard for WriteGuard {
+    fn check(&self, ctx: &actix_web::guard::GuardContext<'_>) -> bool {
+        log::debug!("write guard");
+        if ctx.get_identity().is_err() {
+            log::debug!("no id");
+            return false;
+        }
+
+        let session = ctx.get_session();
+
+        if let Some(club) = ctx.head().uri.path().split("/").nth(2) {
+            log::debug!("path: {}", club);
+            check_auth(&session, &club.to_string(), Permission::ReadWrite).is_ok()
+        } else {
+            log::debug!("no path");
+            false
+        }
     }
 }
 

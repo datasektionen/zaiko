@@ -1,13 +1,8 @@
-use actix_identity::Identity;
-use actix_session::Session;
 use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::{
-    auth::{check_auth, Permission},
-    error::Error,
-};
+use crate::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ItemGetResponse {
@@ -61,13 +56,9 @@ pub(crate) async fn get_item(
     club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
     query: web::Query<ItemGetQuery>,
-    id: Option<Identity>,
-    session: Session,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    check_auth(&id, &session, club, Permission::Read)?;
 
     let items = if let ItemGetQuery {
         column: Some(column),
@@ -125,14 +116,10 @@ pub(crate) async fn get_item(
 pub(crate) async fn add_item(
     body: String,
     club: web::Path<String>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    check_auth(&id, &session, club, Permission::ReadWrite)?;
 
     let item: ItemAddRequest = serde_json::from_str(&body)?;
 
@@ -185,14 +172,10 @@ pub(crate) async fn add_item(
 pub(crate) async fn update_item(
     club: web::Path<String>,
     body: String,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    check_auth(&id, &session, club, Permission::ReadWrite)?;
 
     let item: ItemUpdateRequest = serde_json::from_str(&body)?;
 
@@ -247,14 +230,10 @@ pub(crate) async fn update_item(
 pub(crate) async fn delete_item(
     club: web::Path<String>,
     item_id: web::Query<ItemDeleteQuery>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    check_auth(&id, &session, club, Permission::ReadWrite)?;
 
     sqlx::query!(
         "DELETE FROM items 
