@@ -1,4 +1,3 @@
-use actix_identity::Identity;
 use actix_session::Session;
 use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
@@ -54,21 +53,18 @@ struct SupplierGetQuery {
 
 #[derive(Debug, Deserialize)]
 struct SupplierDeleteQuery {
-    id: i32
+    id: i32,
 }
 
 #[get("/{club}/supplier")]
 pub(crate) async fn get_supplier(
     club: web::Path<String>,
-    id: Option<Identity>,
     session: Session,
     pool: web::Data<Pool<Postgres>>,
     query: web::Query<SupplierGetQuery>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    let permission = check_auth(&id, &session, club).await?;
 
     if let Some(id) = query.id {
         let name = sqlx::query!(
@@ -97,10 +93,8 @@ pub(crate) async fn get_supplier(
                 SupplierGetResponse,
                 "SELECT id, name, username, password, link, notes, updated 
                  FROM suppliers 
-                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                 WHERE club = $1",
                 club,
-                column,
-                search
             )
             .fetch_all(&mut *pool)
             .await?
@@ -120,7 +114,7 @@ pub(crate) async fn get_supplier(
             return Err(Error::BadRequest);
         };
 
-        if matches!(permission, Permission::Read) {
+        if check_auth(&session, club, Permission::ReadWrite).is_ok() {
             for supplier in suppliers.iter_mut() {
                 supplier.password = Some(String::from("Unauthorized"));
             }
@@ -140,7 +134,7 @@ pub(crate) async fn get_supplier(
         .fetch_all(&mut *pool)
         .await?;
 
-        if matches!(permission, Permission::Read) {
+        if check_auth(&session, club, Permission::ReadWrite).is_ok() {
             for supplier in suppliers.iter_mut() {
                 supplier.password = Some(String::from("Unauthorized"));
             }
@@ -155,14 +149,10 @@ pub(crate) async fn get_supplier(
 #[get("/{club}/suppliers")]
 pub(crate) async fn get_suppliers(
     club: web::Path<String>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    check_auth(&id, &session, club).await?;
 
     let supplier = sqlx::query_as!(
         SupplierListGetResponse,
@@ -183,16 +173,10 @@ pub(crate) async fn get_suppliers(
 pub(crate) async fn add_supplier(
     body: String,
     club: web::Path<String>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
 
     let supplier: SupplierAddRequest = serde_json::from_str(&body)?;
 
@@ -222,16 +206,10 @@ pub(crate) async fn add_supplier(
 pub(crate) async fn update_supplier(
     club: web::Path<String>,
     body: String,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
 
     let supplier: SupplierUpdateRequest = serde_json::from_str(&body)?;
 
@@ -263,16 +241,10 @@ pub(crate) async fn update_supplier(
 pub(crate) async fn delete_supplier(
     club: web::Path<String>,
     item_id: web::Query<SupplierDeleteQuery>,
-    id: Option<Identity>,
     pool: web::Data<Pool<Postgres>>,
-    session: Session,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
 
     sqlx::query!(
         "DELETE FROM suppliers 

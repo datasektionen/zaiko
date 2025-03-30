@@ -1,10 +1,8 @@
-use actix_identity::Identity;
-use actix_session::Session;
 use actix_web::{get, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::{auth::{check_auth, Permission}, error::Error, item::ItemGetResponse};
+use crate::{error::Error, item::ItemGetResponse};
 
 #[derive(Serialize)]
 struct ShortageItem {
@@ -24,14 +22,10 @@ struct StockUpdateRequest {
 #[get("/{club}/stock")]
 pub(crate) async fn get_shortage(
     club: web::Path<String>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    check_auth(&id, &session, club).await?;
 
     let items = sqlx::query_as!(
         ItemGetResponse,
@@ -65,17 +59,11 @@ pub(crate) async fn get_shortage(
 #[post("/{club}/stock")]
 pub(crate) async fn take_stock(
     club: web::Path<String>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
     body: String,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_ref();
     let mut pool = pool.get_ref().begin().await?;
-
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
 
     let items: StockUpdateRequest = serde_json::from_str(&body)?;
 
