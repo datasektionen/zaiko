@@ -79,10 +79,8 @@ pub(crate) async fn get_item(
                 ItemGetResponse,
                 "SELECT id, name, location, min, max, current, link, supplier, updated 
                  FROM items
-                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                 WHERE club = $1",
                 club,
-                column,
-                search
             )
             .fetch_all(&mut *pool)
             .await?

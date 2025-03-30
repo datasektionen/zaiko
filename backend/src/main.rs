@@ -36,7 +36,7 @@ use crate::supplier::{add_supplier, delete_supplier, get_supplier, update_suppli
 async fn main() -> std::io::Result<()> {
     env_logger::init();
     if env::var("APP_ENV") == Ok(String::from("development")) {
-        dotenv().expect(".env to exist");
+        let _ = dotenv();
     }
 
     let pool = web::Data::new(
@@ -109,6 +109,7 @@ async fn main() -> std::io::Result<()> {
                     .guard(LoginGuard),
             )
             .service(web::redirect("/", auth_path.to_string()))
+            .service(web::redirect("/auth", auth_path.to_string()))
     })
     .bind((
         env::var("APP_URL").expect("APP_URL in .env"),

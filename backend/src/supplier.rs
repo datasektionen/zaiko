@@ -97,10 +97,8 @@ pub(crate) async fn get_supplier(
                 SupplierGetResponse,
                 "SELECT id, name, username, password, link, notes, updated 
                  FROM suppliers 
-                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
+                 WHERE club = $1",
                 club,
-                column,
-                search
             )
             .fetch_all(&mut *pool)
             .await?
