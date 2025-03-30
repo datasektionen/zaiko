@@ -1,11 +1,16 @@
 services:
-  app:
-    build: .
+  frontend:
+    build: 
+      dockerfile: ./Dockerfile.frontend
+    tty: true
     ports:
+      - 5173:5173
       - 8080:8080
     depends_on:
       - db
     environment:
+      VITE_HOST: http://localhost:8080
+      VITE_HOST_FRONTEND: http://localhost:5173
       APP_SECRET: ${APP_SECRET}
       OIDC_SECRET: ${OIDC_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@db/db
@@ -15,10 +20,13 @@ services:
       REDIRECT_URL: http://localhost:8080/api/oidc/callback
       PLS_URL: https://pls.datasektionen.se/api
       APP_URL: 0.0.0.0
-      APP_ENV: production
-      VITE_HOST: http://localhost:8080
-      VITE_HOST_FRONTEND: http://localhost:8080
+      APP_ENV: development
+      APP_AUTH: false
       RUST_LOG: debug
+    volumes:
+      - type: bind
+        source: ./src
+        target: /usr/src/app/src
   db:
     image: 'postgres:latest'
     ports:
