@@ -61,15 +61,19 @@ async fn main() -> std::io::Result<()> {
     );
 
     HttpServer::new(move || {
-        let cors = Cors::default()
-            .allowed_methods(vec![
-                Method::GET,
-                Method::POST,
-                Method::PATCH,
-                Method::DELETE,
-            ])
-            .allow_any_header()
-            .block_on_origin_mismatch(true);
+        let cors = if env::var("APP_ENV") == Ok(String::from("development")) {
+            Cors::permissive()
+        } else {
+            Cors::default()
+                .allowed_methods(vec![
+                    Method::GET,
+                    Method::POST,
+                    Method::PATCH,
+                    Method::DELETE,
+                ])
+                .allow_any_header()
+                .block_on_origin_mismatch(true)
+        };
 
         App::new()
             .wrap(
@@ -106,7 +110,8 @@ async fn main() -> std::io::Result<()> {
                     .service(add_supplier)
                     .service(update_supplier)
                     .service(delete_supplier)
-                    .service(take_stock),
+                    .service(take_stock)
+                    .service(get_clubs),
             )
             .service(
                 // Endpoints requiring read access
@@ -149,6 +154,10 @@ struct WriteGuard;
 
 impl Guard for LoginGuard {
     fn check(&self, ctx: &actix_web::guard::GuardContext<'_>) -> bool {
+        if env::var("APP_AUTH") == Ok(String::from("false")) {
+            return true;
+        }
+
         ctx.get_identity().is_ok()
     }
 }
@@ -156,6 +165,9 @@ impl Guard for LoginGuard {
 impl Guard for ReadGuard {
     fn check(&self, ctx: &actix_web::guard::GuardContext<'_>) -> bool {
         log::debug!("read guard");
+        if env::var("APP_AUTH") == Ok(String::from("false")) {
+            return true;
+        }
         if ctx.get_identity().is_err() {
             log::debug!("no id");
             return false;
@@ -176,6 +188,9 @@ impl Guard for ReadGuard {
 impl Guard for WriteGuard {
     fn check(&self, ctx: &actix_web::guard::GuardContext<'_>) -> bool {
         log::debug!("write guard");
+        if env::var("APP_AUTH") == Ok(String::from("false")) {
+            return true;
+        }
         if ctx.get_identity().is_err() {
             log::debug!("no id");
             return false;

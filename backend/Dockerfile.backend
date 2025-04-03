@@ -57,4 +57,4 @@ EXPOSE 8000
 ENV SQLX_OFFLINE=true
 ENV RUST_LOG=debug
 
-CMD ["cargo", "watch", "-x", "run"]
+CMD ["cargo", "watch", "--why", "-x", "run"]

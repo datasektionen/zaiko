@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: ..
-      dockerfile: backend/Dockerfile
+      dockerfile: backend/Dockerfile.backend
     ports:
       - 8080:8080
     depends_on:
@@ -19,14 +19,13 @@ services:
       REDIRECT_URL: http://localhost:8080/api/oidc/callback
       PLS_URL: https://pls.datasektionen.se/api
       APP_URL: 0.0.0.0
-      APP_ENV: production
+      APP_ENV: development
       APP_AUTH: true
       RUST_LOG: debug
-    develop:
-      watch:
-        - action: sync
-          path: ./src
-          target: ./src
+    volumes:
+      - type: bind
+        source: ./src
+        target: /build/src
   db:
     image: 'postgres:latest'
     ports:

@@ -300,7 +300,20 @@ fn default_privlages() -> HashMap<String, Permission> {
 }
 
 #[get("/clubs")]
-pub async fn get_clubs(_id: Identity, session: Session) -> Result<HttpResponse, Error> {
+pub async fn get_clubs(session: Session) -> Result<HttpResponse, Error> {
+    if env::var("APP_AUTH") == Ok(String::from("false")) {
+        log::warn!("fake auth");
+        let mut clubs = HashMap::new();
+        clubs.insert(String::from("metadorerna"), Permission::ReadWrite);
+        session.insert("privlages", clubs)?;
+
+        let clubs = vec![Club {
+            name: String::from("metadorerna"),
+            permission: Permission::ReadWrite,
+        }];
+        return Ok(HttpResponse::Ok().json(clubs));
+    }
+
     let clubs: Vec<Club> = session
         .get::<HashMap<String, Permission>>("privlages")?
         .ok_or(Error::InternalServerError(String::from(
