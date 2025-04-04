@@ -1,0 +1,95 @@
+import { ref } from 'vue'
+import { defineStore } from 'pinia'
+import type { ItemGetResponse, Notification, StockGetResponse, StockUpdateRequest } from "@/types";
+import { useNotificationsStore } from '@/stores/notifications';
+import { useClubsStore } from '@/stores/clubs';
+import { useItemStore } from '@/stores/items';
+
+export const useStockStore = defineStore('stock', () => {
+  const HOST: string = import.meta.env.VITE_HOST;
+
+  const notificationsStore = useNotificationsStore();
+  const clubsStore = useClubsStore();
+  const itemStore = useItemStore();
+
+  const output = ref<StockUpdateRequest>({ items: [] });
+  const shortage = ref<Array<StockGetResponse>>([]);
+
+  async function fetchShortage(): Promise<Array<StockGetResponse>> {
+    const club = await clubsStore.getClub();
+
+    return fetch(HOST + "/api/" + club.name + "/stock", {
+      method: "GET",
+    })
+      .then((res) => res.json())
+      .then((json: Array<StockGetResponse>) => {
+        shortage.value = json;
+        return shortage.value;
+      })
+      .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+        return [];
+      });
+  }
+
+  async function fetchStock(): Promise<Array<Array<number>>> {
+    const items = await itemStore.fetchItems();
+
+    output.value.items = items.map((item) => {
+      return [
+        item.id,
+        item.current,
+      ]
+    });
+    return output.value.items;
+  }
+
+  async function takeStock(): Promise<Array<ItemGetResponse>> {
+    const club = await clubsStore.getClub();
+
+    if (club.permission !== "rw") {
+      const noti: Notification = {
+        id: Date.now(),
+        title: "Icke behörig",
+        message: "Du har inte behörighet att inventera",
+        severity: "error",
+      }
+      notificationsStore.add(noti);
+      return [] as Array<ItemGetResponse>;
+    }
+
+    return fetch(HOST + "/api/" + club.name + "/stock", {
+      method: "POST",
+      body: JSON.stringify(output.value)
+    })
+      .then(() => itemStore.fetchItems())
+      .then((items) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Success",
+          message: "Inventering lyckades",
+          severity: "info",
+        }
+        notificationsStore.add(noti);
+        return items;
+      })
+      .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+        return {} as Array<ItemGetResponse>;
+      });
+  }
+
+  return { fetchShortage, takeStock, fetchStock, shortage, output }
+})
