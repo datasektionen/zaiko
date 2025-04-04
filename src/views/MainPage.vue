@@ -6,7 +6,12 @@
       </template>
       <template #content>
         <div class="shortageDiv">
-          <ShortageTable :items="shortage" />
+          <Suspense>
+            <ShortageTable />
+            <template #fallback>
+              <p>Laddar...</p>
+            </template>
+          </Suspense>
         </div>
       </template>
     </PanelTemplate>
@@ -15,7 +20,12 @@
         <ChartBarIcon />
       </template>
       <template #content>
-        <StatsPanel />
+        <Suspense>
+          <StatsPanel />
+          <template #fallback>
+            <p>Laddar...</p>
+          </template>
+        </Suspense>
       </template>
     </PanelTemplate>
   </div>
@@ -26,37 +36,7 @@ import PanelTemplate from '@/components/PanelTemplate.vue'
 import ShortageTable from '@/components/ShortageTable.vue'
 import StatsPanel from '@/components/StatsPanel.vue'
 import { BellAlertIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
-import { ref } from 'vue'
-import type { StockGetResponse } from '@/types';
-import type { Notification } from '@/types';
-import { useNotificationsStore } from '@/stores/notifications'
-import { useClubsStore } from '@/stores/clubs';
 
-const HOST = import.meta.env.VITE_HOST;
-const shortage = ref<Array<StockGetResponse>>([]);
-
-const notificationsStore = useNotificationsStore();
-const clubStore = useClubsStore();
-
-const GetData = () => {
-  if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub().name;
-
-  fetch(url + "/stock")
-    .then((res) => res.json())
-    .then((json: Array<StockGetResponse>) => shortage.value = json)
-    .catch((error) => {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: error.toString(),
-          severity: "error",
-        }
-        notificationsStore.add(noti);
-    })
-
-}
-GetData();
 </script>
 
 <style scoped>

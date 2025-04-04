@@ -30,7 +30,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="item, idx in items" :key="item.id" @click="emit('select', idx)">
+        <tr v-for="item in supplierStore.suppliers" :key="item.id" @click="emit('select', item.id)">
           <td scope="row">
             <a :href="item.link" target="_blank" @click.stop="" v-if="item.link">{{ item.name }}</a>
             <p v-else>{{ item.name }}</p>
@@ -45,17 +45,18 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue'
-import type { SupplierGetResponse } from '@/types'
 import { LockClosedIcon, ShoppingCartIcon, UserCircleIcon, DocumentTextIcon } from '@heroicons/vue/16/solid'
 import { useMediaQuery } from '@vueuse/core/index.cjs';
+import { useSupplierStore } from '@/stores/suppliers';
 
-defineProps<{
-  items: Array<SupplierGetResponse>
-}>()
+const supplierStore = useSupplierStore();
 
 const emit = defineEmits(['select'])
 const isMobile = useMediaQuery('(max-width: 768px)');
+
+if (supplierStore.suppliers.length == 0) {
+  await supplierStore.fetchSuppliers();
+}
 
 </script>
 

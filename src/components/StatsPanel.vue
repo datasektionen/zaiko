@@ -7,9 +7,9 @@
       <TitleMedium title="Leverantörer" class="skip">
         <ShoppingCartIcon />
       </TitleMedium>
-      <BoxData class="box" title="Totalt" :amount="stats.items" good />
-      <BoxData class="box" title="Att köpa" :amount="stats.shortages" />
-      <BoxData class="box" title="Totalt" :amount="stats.suppliers" good />
+      <BoxData class="box" title="Totalt" :amount="statsStore.stats.items" good />
+      <BoxData class="box" title="Att köpa" :amount="statsStore.stats.shortages" />
+      <BoxData class="box" title="Totalt" :amount="statsStore.stats.suppliers" good />
     </div>
     <div class="graphStats">
       <TitleMedium title="Total Mängd">
@@ -26,40 +26,11 @@
 import TitleMedium from '@/components/TitleMedium.vue'
 import BoxData from '@/components/BoxData.vue'
 import { ArchiveBoxIcon, ShoppingCartIcon } from '@heroicons/vue/24/outline'
-import { ref } from 'vue';
-import { useNotificationsStore } from '@/stores/notifications'
-import { useClubsStore } from '@/stores/clubs';
-import type { Stats, Notification } from '@/types';
-const HOST = import.meta.env.VITE_HOST;
+import { useStatsStore } from '@/stores/stats'
 
-const stats = ref<Stats>({
-  items: 0,
-  shortages: 0,
-  suppliers: 0.
-});
+const statsStore = useStatsStore();
+await statsStore.fetchStats();
 
-const notificationsStore = useNotificationsStore();
-const clubStore = useClubsStore();
-
-const GetData = () => {
-  if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub().name;
-
-  fetch(url + "/stats")
-    .then((res) => res.json())
-    .then((json: Stats) => stats.value = json)
-    .catch((error) => {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: error.toString(),
-          severity: "error",
-        }
-        notificationsStore.add(noti);
-    })
-}
-
-GetData();
 </script>
 
 <style scoped>
@@ -107,16 +78,20 @@ GetData();
     max-width: 100%;
     gap: 20px;
   }
+
   .skip {
     grid-column: 2;
   }
+
   .box {
     margin-right: 0;
     margin: 0;
   }
+
   .box:nth-last-child(2) {
     grid-column: 1;
   }
+
   .box:last-child {
     grid-column: 2;
     grid-row: 2;

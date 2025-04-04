@@ -98,7 +98,7 @@ export interface Notification {
   id: number,
   title: string,
   message: string,
-  severity: string,
+  severity: "error" | "warning" | "info",
 }
 
 export interface ClubStorage {

@@ -30,7 +30,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="item in items" :key="item.id">
+        <p v-if="stockStore.shortage.length == 0">Inga brister</p>
+        <tr v-for="item in stockStore.shortage" :key="item.id" v-else>
           <td scope="row">{{ item.name }}</td>
           <td>{{ item.location }}</td>
           <td>{{ item.current }}</td>
@@ -42,14 +43,16 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue'
-import type { StockGetResponse } from '@/types'
 import { ArchiveBoxIcon, HomeIcon, WalletIcon, CurrencyDollarIcon } from '@heroicons/vue/16/solid'
 import { useMediaQuery } from '@vueuse/core/index.cjs';
+import { useStockStore } from '@/stores/stock';
 
-defineProps<{
-  items: Array<StockGetResponse>
-}>()
+const stockStore = useStockStore();
+
+if (stockStore.shortage.length == 0) {
+  await stockStore.fetchShortage();
+}
+
 
 const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -98,6 +101,7 @@ td {
     margin: 2rem 0;
     overflow-x: scroll;
   }
+
   td {
     text-overflow: ellipsis;
   }

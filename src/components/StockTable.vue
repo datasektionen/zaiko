@@ -42,39 +42,35 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(item, idx) in items" :key="item.id">
+        <tr v-for="item, idx in itemStore.items" :key="item.id">
           <td scope="row">
             <a :href="item.link" target="_blank" v-if="item.link">{{ item.name }}</a>
             <p v-else>{{ item.name }}</p>
           </td>
           <td>{{ item.location }}</td>
-          <td>{{ item.supplier }}</td>
+          <td>{{ supplierStore.getSupplierName(item.supplier) }}</td>
           <td>{{ item.current }}</td>
           <td>
-            <input v-model.number="input.items[idx][1]" type="number">
+            <input v-model.number="stockStore.output.items[idx][1]" type="number">
           </td>
-          <td :class="diffColor(input.items[idx][1], item.current)">{{ diff(input.items[idx][1], item.current) }}</td>
+          <td :class="diffColor(stockStore.output.items[idx][1], item.current)">{{ diff(stockStore.output.items[idx][1], item.current) }}</td>
         </tr>
       </tbody>
     </table>
-    <button @click="updateItems">
-      <ClipboardDocumentListIcon />
-      <p>Inventera</p>
-    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { ItemGetResponse, StockUpdateRequest, Notification, FilterItemParams } from '@/types'
-import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, InboxArrowDownIcon, WalletIcon, ArrowsUpDownIcon, ClipboardDocumentListIcon } from '@heroicons/vue/16/solid'
-import { useNotificationsStore } from '@/stores/notifications'
-import { useClubsStore } from '@/stores/clubs'
+import { useItemStore } from '@/stores/items';
+import { useStockStore } from '@/stores/stock';
+import { useSupplierStore } from '@/stores/suppliers';
+import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, InboxArrowDownIcon, WalletIcon, ArrowsUpDownIcon } from '@heroicons/vue/16/solid'
 import { useMediaQuery } from '@vueuse/core/index.cjs'
 
-const { filter } = defineProps<{
-  filter: FilterItemParams | number
-}>()
+const supplierStore = useSupplierStore();
+const itemStore = useItemStore();
+const stockStore = useStockStore();
+
 
 const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -86,99 +82,8 @@ const diffColor = (newVal: number, current: number) => {
   return newVal - current < 0 ? 'red' : 'green'
 }
 
-const items = ref<Array<ItemGetResponse>>([]);
-const input = ref<StockUpdateRequest>({ items: [] });
-const HOST: string = import.meta.env.VITE_HOST;
-
-const notificationsStore = useNotificationsStore();
-const clubStore = useClubsStore();
-
-const Filter = async () => {
-  if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub().name + "/item?";
-  const params = new URLSearchParams(Object.entries(filter)).toString();
-  fetch(url + params)
-    .then((res) => res.json())
-    .then((json) => {
-      items.value = json
-      items.value.forEach((e: ItemGetResponse, idx) => input.value.items[idx] = [e.id, e.current])
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-}
-
-const GetData = async () => {
-  if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub().name;
-  fetch(url + "/item")
-    .then((res) => res.json())
-    .then((json) => {
-      items.value = json
-      items.value.forEach((e: ItemGetResponse, idx) => input.value.items[idx] = [e.id, e.current])
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-}
-if (filter == 0) {
-  GetData()
-} else {
-  Filter()
-}
-
-const updateItems = async () => {
-  if (!clubStore.checkClub()) return;
-  const url: string = HOST + "/api/" + clubStore.getClub().name;
-  await fetch(url + "/stock", {
-    method: "POST",
-    body: JSON.stringify(input.value),
-  })
-    .then((res) => {
-      if (res.ok) {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Sparad",
-          message: "Inventeringen lyckades",
-          severity: "info",
-        }
-        notificationsStore.add(noti);
-      } else {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Error",
-          message: "Inventeringen misslyckades",
-          severity: "error",
-        }
-        notificationsStore.add(noti);
-      }
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-  if (filter == 0) {
-    GetData()
-  } else {
-    Filter()
-  }
+if (stockStore.output.items.length === 0) {
+  await stockStore.fetchStock();
 }
 </script>
 
@@ -241,28 +146,6 @@ a {
 }
 
 
-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  background-color: #2EB563;
-  color: #FAFAFA;
-  cursor: pointer;
-}
-
-button p {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-button svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
 
 @media (max-width: 768px) {
   table {

@@ -5,16 +5,24 @@
         <ArchiveBoxIcon />
       </template>
       <template #content>
-        <ItemsTable :items="items" @select="SelectItem" />
+        <Suspense>
+          <ItemsTable @select="SelectItem" />
+          <template #fallback>
+            <p>Laddar...</p>
+          </template>
+        </Suspense>
       </template>
       <template #headerRight>
-        <FilterPopup :columns="columns" @search="Filter" @clear="GetData()" />
+        <FilterPopup :columns="columns" />
       </template>
     </PanelTemplate>
     <PopupModal :modal="isModal" @exit="UnSelect()" :title="ModalTitle">
       <Suspense>
-        <ItemPanel :item="selected" @submit="GetData()" @delete="GetData()" v-if="selected != undefined" />
-        <ItemForm v-else @submit="GetData()" />
+        <ItemPanel :id="selected" @submit="UnSelect()" @delete="UnSelect()" v-if="selected != -1" />
+        <ItemForm v-else @submit="UnSelect()" />
+        <template #fallback>
+          <p>Laddar...</p>
+        </template>
       </Suspense>
     </PopupModal>
   </div>
@@ -22,7 +30,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { ItemGetResponse, FilterItemParams, Notification, FilterColumn } from '@/types';
+import type { FilterColumn } from '@/types';
 import PanelTemplate from '@/components/PanelTemplate.vue';
 import ItemsTable from '@/components/ItemsTable.vue';
 import PopupModal from '@/components/PopupModal.vue';
@@ -31,13 +39,9 @@ import FilterPopup from '@/components/FilterPopup.vue';
 import { ArchiveBoxIcon } from '@heroicons/vue/24/outline';
 import ItemPanel from '@/components/ItemPanel.vue';
 import { HomeIcon, ShoppingCartIcon, WalletIcon, Battery0Icon, Battery100Icon, InformationCircleIcon } from '@heroicons/vue/16/solid';
-import { useClubsStore } from '@/stores/clubs';
-import { useNotificationsStore } from '@/stores/notifications';
-const HOST = import.meta.env.VITE_HOST;
 
-const items = ref<Array<ItemGetResponse>>([]);
 const isModal = ref<boolean>(false);
-const selected = ref<ItemGetResponse>();
+const selected = ref<number>(-1);
 
 const columns: Array<FilterColumn> = [
   { name: 'product', label: 'Produkt', icon: ArchiveBoxIcon },
@@ -50,64 +54,19 @@ const columns: Array<FilterColumn> = [
 ];
 
 const ModalTitle = computed(() => {
-  return selected.value ? 'Redigera' : 'Lägg till';
+  return selected.value != -1 ? 'Redigera' : 'Lägg till';
 })
 
 const UnSelect = () => {
-  selected.value = undefined
+  selected.value = -1
   isModal.value = false
 }
 
-const SelectItem = (idx: number) => {
-  selected.value = items.value[idx]
+const SelectItem = (id: number) => {
+  selected.value = id;
   isModal.value = true
 }
 
-
-const notificationsStore = useNotificationsStore();
-const clubStore = useClubsStore();
-
-const GetData = () => {
-  if (!clubStore.checkClub()) return
-  UnSelect();
-  const url: string = HOST + "/api/" + clubStore.getClub().name;
-  fetch(url + "/item", {
-    method: "GET",
-  }).then((r) => r.json()).then((r) => items.value = r)
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-
-}
-GetData()
-
-const Filter = (column: string, search: string) => {
-  if (!clubStore.checkClub()) return
-  const url: string = HOST + "/api/" + clubStore.getClub().name + "/item?";
-  const query: FilterItemParams = {
-    column: column,
-    search: search,
-  }
-  const queryString = new URLSearchParams(Object.entries(query)).toString();
-  fetch(url + queryString, {
-    method: "GET",
-  }).then((r) => r.json()).then((r) => items.value = r)
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-}
 </script>
 
 <style scoped>

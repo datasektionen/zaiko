@@ -10,38 +10,25 @@ export const useClubsStore = defineStore('clubs', () => {
   const clubs = ref<ClubStorage>({ club: { name: "Nämnd", permission: "r" }, clubs: [], timestamp: 0 });
 
   const clubsStore = localStorage.getItem('clubs');
-  if (clubsStore && Date.now() - JSON.parse(clubsStore).timestamp < 1000 * 60 * 60 * 24) {
+  if (clubsStore && Date.now() - JSON.parse(clubsStore).timestamp < 1000 * 60 * 60) {
     const parsed = JSON.parse(clubsStore);
     clubs.value = parsed;
   } else {
-    fetch(HOST + "/api/clubs", {
+    fetchClubs();
+  }
+
+  async function fetchClubs(): Promise<Array<ClubGetRequest>> {
+    console.log("Fetching clubs");
+    return await fetch(HOST + "/api/clubs", {
       method: "GET",
     })
       .then((res) => res.json())
-      .then((json) => clubs.value.clubs = json)
-      .then(() => {
-        if (clubs.value.clubs.length > 0) {
-          clubs.value.timestamp = Date.now();
-          clubs.value.club = clubs.value.clubs[0];
-        } else {
-          const noti: Notification = {
-            id: Date.now(),
-            title: "Nämnd",
-            message: "Ingen nämnd hittades",
-            severity: "error",
-          }
-          notificationsStore.add(noti);
-          clubs.value.club = {
-            name: "Nämnd",
-            permission: "r",
-          };
-          clubs.value.clubs = [{
-            name: "Nämnd",
-            permission: "r",
-          }];
-          clubs.value.timestamp = 0;
-        }
+      .then((json: Array<ClubGetRequest>) => {
+        clubs.value.clubs = json;
+        clubs.value.timestamp = Date.now();
+        clubs.value.club = clubs.value.clubs[0];
         localStorage.setItem('clubs', JSON.stringify(clubs.value));
+        return clubs.value.clubs;
       })
       .catch((error) => {
         const noti: Notification = {
@@ -51,29 +38,25 @@ export const useClubsStore = defineStore('clubs', () => {
           severity: "error",
         }
         notificationsStore.add(noti);
-      })
+        return [];
+      });
   }
 
-  function setClub(club: ClubGetRequest) {
+  async function setClub(club: ClubGetRequest) {
+    if (clubs.value.club.name === "Nämnd") {
+      await fetchClubs();
+    }
     clubs.value.club = club;
     localStorage.setItem('clubs', JSON.stringify(clubs.value));
     console.log(clubs.value);
   }
 
-  function getClub() {
-    if (!clubs.value.club) {
-      return { name: "Nämnd", permission: "r" };
+  async function getClub() {
+    if (clubs.value.club.name === "Nämnd") {
+      await fetchClubs();
     }
     return clubs.value.club;
   }
 
-  function checkClub() {
-    const club = getClub();
-    if (club.name === "Nämnd") {
-      return false;
-    }
-    return true;
-  }
-
-  return { clubs, setClub, getClub, checkClub }
+  return { clubs, setClub, getClub, fetchClubs }
 })

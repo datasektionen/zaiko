@@ -13,9 +13,6 @@
         <h1 v-if="barOpen">Zaiko</h1>
       </RouterLink>
       <div class="navLinks" @click="isMobileClose()">
-        <NavLink to="/search" title="Sök" :compact="!barOpen">
-          <MagnifyingGlassIcon />
-        </NavLink>
         <NavLink to="/" title="Dashboard" :compact="!barOpen">
           <CommandLineIcon />
         </NavLink>
@@ -54,7 +51,7 @@
 <script setup lang="ts">
 import NavLink from '@/components/NavLink.vue'
 import ClubSelect from '@/components/ClubSelect.vue'
-import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, MagnifyingGlassIcon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
+import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
 import { computed, ref } from 'vue';
 import NotificationList from '@/components/NotificationList.vue';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
