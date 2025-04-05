@@ -68,6 +68,7 @@ export const useStockStore = defineStore('stock', () => {
       method: "POST",
       body: JSON.stringify(output.value)
     })
+      .then(() => fetchShortage())
       .then(() => itemStore.fetchItems())
       .then((items) => {
         const noti: Notification = {

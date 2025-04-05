@@ -8,7 +8,7 @@
         <Suspense>
           <SupplierTable @select="SelectItem" />
           <template #fallback>
-            <p>Laddar...</p>
+            <SpinnerSimple color="#DADADA" />
           </template>
         </Suspense>
       </template>
@@ -21,7 +21,7 @@
         <SupplierPanel v-if="selected != -1" :id="selected" @submit="UnSelect()" @delete="UnSelect()" />
         <SupplierForm v-else @submit="UnSelect()" />
         <template #fallback>
-          <p>Laddar...</p>
+          <SpinnerSimple color="#DADADA" />
         </template>
       </Suspense>
     </PopupModal>
@@ -39,6 +39,7 @@ import SupplierPanel from '@/components/SupplierPanel.vue';
 import type { FilterColumn } from '@/types';
 import { ShoppingCartIcon as ShoppingCartIconSmall, UserCircleIcon, LockClosedIcon, DocumentTextIcon } from '@heroicons/vue/16/solid';
 import FilterPopup from '@/components/FilterPopup.vue';
+import SpinnerSimple from '@/components/SpinnerSimple.vue';
 
 const isModal = ref<boolean>(false);
 const selected = ref<number>(-1);
@@ -72,9 +73,9 @@ const SelectItem = (id: number) => {
   padding-bottom: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 940px) {
   .main {
-    padding: 0.4rem;
+    padding: 2rem 0.4rem;
   }
 }
 </style>

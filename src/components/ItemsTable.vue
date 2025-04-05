@@ -1,6 +1,6 @@
 <template>
   <div>
-    <table>
+    <table v-if="itemStore.items.length > 0">
       <thead>
         <tr>
           <th scope="col">
@@ -62,6 +62,9 @@
         </tr>
       </tbody>
     </table>
+    <div v-else>
+      <EmptyTable :compact="isMobile.value" text="Inga produkter" :icon="ArchiveBoxXMarkIcon" />
+    </div>
   </div>
 </template>
 
@@ -69,7 +72,9 @@
 import { useItemStore } from '@/stores/items';
 import { useSupplierStore } from '@/stores/suppliers';
 import { ArchiveBoxIcon, ShoppingCartIcon, Battery0Icon, Battery100Icon, HomeIcon, WalletIcon, InformationCircleIcon } from '@heroicons/vue/16/solid'
+import { ArchiveBoxXMarkIcon } from '@heroicons/vue/24/outline';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
+import EmptyTable from './EmptyTable.vue';
 
 const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -86,12 +91,12 @@ const status = (min?: number, current: number) => {
 const supplierStore = useSupplierStore();
 const itemStore = useItemStore();
 
-if (itemStore.items.length === 0) {
-  await itemStore.fetchItems();
-}
 if (supplierStore.suppliers.length === 0) {
   await supplierStore.fetchSuppliers();
   await supplierStore.fetchSupplierNames();
+}
+if (itemStore.items.length === 0) {
+  await itemStore.fetchItems();
 }
 
 const emit = defineEmits(['select'])
@@ -120,11 +125,14 @@ th[scope="col"] {
   padding: 0.5rem;
   border-left: 1px solid #DADADA;
   color: #DADADA;
+  cursor: default;
 }
 
 td {
   padding: 0.5rem;
   text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 200px;
   border-left: 1px solid #DADADA;
   border-top: 1px solid #DADADA;
 }
@@ -144,6 +152,13 @@ a {
   text-decoration: none;
 }
 
+td p,
+a {
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 768px) {
   table {
     width: 100%;
@@ -152,8 +167,13 @@ a {
   }
 
   td {
-    white-space: nowrap;
-    max-width: 100px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .icon {
+    margin: 0 auto;
   }
 }
 </style>

@@ -9,7 +9,7 @@
           <Suspense>
             <ShortageTable />
             <template #fallback>
-              <p>Laddar...</p>
+              <SpinnerSimple color="#DADADA" />
             </template>
           </Suspense>
         </div>
@@ -23,7 +23,7 @@
         <Suspense>
           <StatsPanel />
           <template #fallback>
-            <p>Laddar...</p>
+            <SpinnerSimple color="#DADADA" />
           </template>
         </Suspense>
       </template>
@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import PanelTemplate from '@/components/PanelTemplate.vue'
 import ShortageTable from '@/components/ShortageTable.vue'
+import SpinnerSimple from '@/components/SpinnerSimple.vue'
 import StatsPanel from '@/components/StatsPanel.vue'
 import { BellAlertIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 
@@ -42,7 +43,7 @@ import { BellAlertIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 <style scoped>
 .main {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 12fr 4fr;
   gap: 1rem;
   padding: 4rem;
   padding-bottom: 0;

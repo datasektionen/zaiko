@@ -8,10 +8,10 @@
         <Suspense>
           <StockTable />
           <template #fallback>
-            <p>Laddar...</p>
+            <SpinnerSimple color="#DADADA" />
           </template>
         </Suspense>
-        <button @click="updateItems">
+        <button @click="updateItems" v-if="itemStore.items.length > 0">
           <ClipboardDocumentListIconSolid />
           <p>Inventera</p>
         </button>
@@ -31,6 +31,7 @@ import FilterPopup from '@/components/FilterPopup.vue'
 import { ArchiveBoxIcon, HomeIcon, ShoppingCartIcon, WalletIcon, InboxArrowDownIcon, ArrowsUpDownIcon, ClipboardDocumentListIcon as ClipboardDocumentListIconSolid } from '@heroicons/vue/16/solid'
 import type { FilterColumn } from '@/types'
 import { useStockStore } from '@/stores/stock'
+import { useItemStore } from '@/stores/items'
 
 const columns: Array<FilterColumn> = [
   { name: 'product', label: 'Produkt', icon: ArchiveBoxIcon },
@@ -42,6 +43,7 @@ const columns: Array<FilterColumn> = [
 ];
 
 const stockStore = useStockStore();
+const itemStore = useItemStore();
 
 const updateItems = async () => {
   stockStore.takeStock();
@@ -78,9 +80,9 @@ button svg {
   height: 1.5rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 940px) {
   .main {
-    padding: 0.3rem;
+    padding: 2rem 0.4rem;
   }
 }
 </style>

@@ -1,23 +1,17 @@
 <template>
-  <div class="statsContainer">
-    <div class="boxStats">
-      <TitleMedium title="Produkter">
-        <ArchiveBoxIcon />
-      </TitleMedium>
-      <TitleMedium title="Leverantörer" class="skip">
-        <ShoppingCartIcon />
-      </TitleMedium>
+  <div class="boxStats">
+    <TitleMedium title="Produkter">
+      <ArchiveBoxIcon />
+    </TitleMedium>
+    <div class="boxDiv">
       <BoxData class="box" title="Totalt" :amount="statsStore.stats.items" good />
       <BoxData class="box" title="Att köpa" :amount="statsStore.stats.shortages" />
-      <BoxData class="box" title="Totalt" :amount="statsStore.stats.suppliers" good />
     </div>
-    <div class="graphStats">
-      <TitleMedium title="Total Mängd">
-        <ArchiveBoxIcon />
-      </TitleMedium>
-      <div class="graphDiv">
-        <h6>WIP</h6>
-      </div>
+    <TitleMedium title="Leverantörer">
+      <ShoppingCartIcon />
+    </TitleMedium>
+    <div class="boxDiv">
+      <BoxData class="box" title="Totalt" :amount="statsStore.stats.suppliers" good />
     </div>
   </div>
 </template>
@@ -34,67 +28,37 @@ await statsStore.fetchStats();
 </script>
 
 <style scoped>
-.graphDiv {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 220px;
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-}
-
-.graphDiv h6 {
-  color: white;
-  font-size: 4rem;
-}
-
-.statsContainer {
+.boxStats {
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 20px;
+  margin: 1rem;
 }
 
-.boxStats {
-  display: grid;
+.boxDiv {
+  display: flex;
+  justify-content: flex-start;
   align-items: center;
-  grid-template-columns: repeat(3, 1fr);
-  margin-bottom: 20px;
+  gap: 20px;
 }
 
 .box {
-  margin-right: 20px;
   width: 150px;
-  margin: auto;
 }
 
-.skip {
-  grid-column: 3;
-}
-
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
   .boxStats {
-    grid-template-columns: 1fr 1fr;
     max-width: 100%;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .skip {
-    grid-column: 2;
-  }
-
-  .box {
-    margin-right: 0;
-    margin: 0;
-  }
-
-  .box:nth-last-child(2) {
-    grid-column: 1;
-  }
-
-  .box:last-child {
-    grid-column: 2;
-    grid-row: 2;
+@media (max-width: 600px) {
+  .boxStats {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
   }
 }
 </style>

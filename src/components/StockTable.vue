@@ -1,6 +1,6 @@
 <template>
   <div>
-    <table>
+    <table v-if="itemStore.items.length > 0">
       <thead>
         <tr>
           <th scope="col">
@@ -53,10 +53,14 @@
           <td>
             <input v-model.number="stockStore.output.items[idx][1]" type="number">
           </td>
-          <td :class="diffColor(stockStore.output.items[idx][1], item.current)">{{ diff(stockStore.output.items[idx][1], item.current) }}</td>
+          <td :class="diffColor(stockStore.output.items[idx][1], item.current)">{{ diff(stockStore.output.items[idx][1],
+            item.current) }}</td>
         </tr>
       </tbody>
     </table>
+    <div v-else>
+      <EmptyTable :compact="isMobile.value" text="Inga produkter" :icon="ArchiveBoxXMarkIcon" />
+    </div>
   </div>
 </template>
 
@@ -66,6 +70,8 @@ import { useStockStore } from '@/stores/stock';
 import { useSupplierStore } from '@/stores/suppliers';
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, InboxArrowDownIcon, WalletIcon, ArrowsUpDownIcon } from '@heroicons/vue/16/solid'
 import { useMediaQuery } from '@vueuse/core/index.cjs'
+import EmptyTable from './EmptyTable.vue';
+import { ArchiveBoxXMarkIcon } from '@heroicons/vue/24/outline';
 
 const supplierStore = useSupplierStore();
 const itemStore = useItemStore();
@@ -114,16 +120,24 @@ th[scope="col"] {
 td {
   padding: 0.5rem;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 200px;
   border-left: 1px solid #DADADA;
   border-top: 1px solid #DADADA;
 }
 
 input {
-  width: 3rem;
-  padding: 0.2rem;
-  border: 1px solid #DADADA;
-  border-radius: 0.5rem;
   text-overflow: ellipsis;
+  width: 100%;
+  font-size: 1rem;
+}
+
+td:nth-child(5) {
+  text-align: center;
+  max-width: 33px;
+  border: 3px solid #DADADA;
+  background-color: #F5F5F5;
 }
 
 .red {
@@ -145,7 +159,12 @@ a {
   text-decoration: none;
 }
 
-
+td p,
+a {
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 @media (max-width: 768px) {
   table {
@@ -155,8 +174,11 @@ a {
   }
 
   td {
-    white-space: nowrap;
-    max-width: 100px;
+    max-width: 92%;
+  }
+
+  .icon {
+    margin: 0 auto;
   }
 }
 </style>

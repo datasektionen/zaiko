@@ -80,7 +80,6 @@ import type { ItemUpdateRequest } from '@/types';
 const { id } = defineProps<{
   id: number,
 }>()
-console.log(id)
 
 const supplierStore = useSupplierStore();
 const itemStore = useItemStore();

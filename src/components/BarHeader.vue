@@ -19,10 +19,10 @@
         <NavLink to="/items" title="Produkter" :compact="!barOpen">
           <ArchiveBoxIcon />
         </NavLink>
-        <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen">
+        <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen" v-if="clubs.club.permission === 'rw'">
           <ShoppingCartIcon />
         </NavLink>
-        <NavLink to="/stock" title="Inventera" :compact="!barOpen">
+        <NavLink to="/stock" title="Inventera" :compact="!barOpen" v-if="clubs.club.permission === 'rw'">
           <ClipboardDocumentListIcon />
         </NavLink>
       </div>
@@ -55,6 +55,10 @@ import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, ArchiveBoxIcon, ShoppingC
 import { computed, ref } from 'vue';
 import NotificationList from '@/components/NotificationList.vue';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
+import { useClubsStore } from '@/stores/clubs';
+
+const clubStore = useClubsStore();
+const clubs = clubStore.clubs;
 
 const isMobile = useMediaQuery("(max-width: 768px)");
 const ShouldBarOpenStart = (): boolean => {
@@ -85,7 +89,7 @@ const isMobileClose = () => {
 <style scoped>
 .Main {
   display: grid;
-  grid-template-columns: 256px 1fr;
+  grid-template-columns: 220px 1fr;
   background-color: #DADADA;
   min-height: 100vh;
   max-height: 100vh;
