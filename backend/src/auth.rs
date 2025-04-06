@@ -1,7 +1,13 @@
-use actix_identity::Identity;
-use actix_session::Session;
-use actix_web::{get, web, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{
+    body::{EitherBody, MessageBody},
+    cookie::{Cookie, SameSite},
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    get, post, web, FromRequest, HttpMessage, HttpRequest, HttpResponse,
+};
 use derive_more::Display;
+use jsonwebtoken::{
+    decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation,
+};
 use openidconnect::{
     core::{
         CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
@@ -15,7 +21,12 @@ use openidconnect::{
     StandardTokenIntrospectionResponse, StandardTokenResponse, TokenResponse,
 };
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, env};
+use std::{
+    collections::HashMap,
+    env,
+    future::{ready, Future, Ready},
+    pin::Pin,
+};
 
 use crate::error::Error;
 
@@ -63,43 +74,6 @@ pub enum Permission {
     Read,
     #[serde(rename = "rw")]
     ReadWrite,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Club {
-    name: String,
-    permission: Permission,
-}
-
-#[derive(Deserialize)]
-struct Query {
-    code: String,
-    state: String,
-}
-
-pub fn check_auth(
-    session: &Session,
-    club: &String,
-    required_permission: Permission,
-) -> Result<(), Error> {
-    match get_permissions(session, club) {
-        Some(Permission::ReadWrite) => Ok(()),
-        Some(Permission::Read) => match required_permission {
-            Permission::Read => Ok(()),
-            Permission::ReadWrite => Err(Error::Unauthorized),
-        },
-        None => Err(Error::Unauthorized),
-    }
-}
-
-pub fn get_permissions(session: &Session, club: &String) -> Option<Permission> {
-    Some(
-        session
-            .get::<HashMap<String, Permission>>("privlages")
-            .ok()??
-            .get(club)?
-            .clone(),
-    )
 }
 
 pub async fn get_oidc() -> (OIDCData, String) {
@@ -151,14 +125,18 @@ pub async fn get_oidc() -> (OIDCData, String) {
     (oidc, auth_url.to_string())
 }
 
-#[get("/oidc/callback")]
+#[derive(Deserialize)]
+struct CallbackQuery {
+    code: String,
+    state: String,
+}
+
+#[get("/api/oidc/callback")]
 pub async fn auth_callback(
-    req: HttpRequest,
-    session: Session,
-    query: web::Query<Query>,
+    query: web::Query<CallbackQuery>,
     oidc: web::Data<OIDCData>,
 ) -> Result<HttpResponse, Error> {
-    let Query { code, state } = query.0;
+    let CallbackQuery { code, state } = query.0;
     let OIDCData {
         client,
         http_client,
@@ -185,14 +163,15 @@ pub async fn auth_callback(
 
     check_token_hash(claims, &token_respones, id_token, id_token_verifier)?;
 
-    Identity::login(&req.extensions(), claims.subject().to_string())?;
+    let permissions = get_pls_permissions(claims.subject().to_string()).await?;
 
-    let privlages = get_pls_permissions(claims.subject().to_string()).await?;
+    let token = Token::new(claims.subject().to_string(), permissions).unwrap();
 
-    session.insert("privlages", privlages)?;
+    let cookie = token.cookie()?;
 
     Ok(HttpResponse::TemporaryRedirect()
         .insert_header(("location", "/"))
+        .cookie(cookie)
         .finish())
 }
 
@@ -251,9 +230,6 @@ fn check_token_hash(
 async fn get_pls_permissions(subject: String) -> Result<HashMap<String, Permission>, Error> {
     let pls_url = env::var("PLS_URL")?;
 
-    log::debug!("{}", pls_url);
-    log::debug!("{}", subject.as_str());
-
     let res = reqwest::get(format!("{}/user/{}/zaiko", pls_url, subject.as_str()))
         .await?
         .text()
@@ -300,28 +276,229 @@ fn default_privlages() -> HashMap<String, Permission> {
 }
 
 #[get("/clubs")]
-pub async fn get_clubs(session: Session) -> Result<HttpResponse, Error> {
-    if env::var("APP_AUTH") == Ok(String::from("false")) {
-        log::warn!("fake auth");
-        let mut clubs = HashMap::new();
-        clubs.insert(String::from("metadorerna"), Permission::ReadWrite);
-        session.insert("privlages", clubs)?;
-
-        let clubs = vec![Club {
-            name: String::from("metadorerna"),
-            permission: Permission::ReadWrite,
-        }];
-        return Ok(HttpResponse::Ok().json(clubs));
-    }
-
-    let clubs: Vec<Club> = session
-        .get::<HashMap<String, Permission>>("privlages")?
-        .ok_or(Error::InternalServerError(String::from(
-            "Session contians no permissions",
-        )))?
-        .into_iter()
-        .map(|(name, permission)| Club { name, permission })
-        .collect();
+pub async fn get_clubs(token: Token) -> Result<HttpResponse, Error> {
+    let clubs: Vec<Club> = token.permissions.into_iter().map(Club::from).collect();
 
     Ok(HttpResponse::Ok().json(clubs))
+}
+
+#[derive(Deserialize)]
+struct ClubQuery {
+    club: String,
+}
+
+#[post("/club")]
+pub async fn set_club(
+    mut token: Token,
+    query: web::Query<ClubQuery>,
+) -> Result<HttpResponse, Error> {
+    let club = query.club.clone();
+    token.set_active_club(club)?;
+    let cookie = token.cookie()?;
+    Ok(HttpResponse::Ok().cookie(cookie).finish())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Club {
+    name: String,
+    permission: Permission,
+}
+
+impl From<(String, Permission)> for Club {
+    fn from(value: (String, Permission)) -> Self {
+        Club {
+            name: value.0,
+            permission: value.1,
+        }
+    }
+}
+
+impl From<(&String, &Permission)> for Club {
+    fn from(value: (&String, &Permission)) -> Self {
+        Club {
+            name: value.0.to_string(),
+            permission: value.1.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Token {
+    pub sub: String,
+    pub exp: u64,
+    pub permissions: HashMap<String, Permission>,
+    pub active_club: String,
+    pub active_permission: Permission,
+}
+
+impl Token {
+    fn new(sub: String, permissions: HashMap<String, Permission>) -> Option<Self> {
+        let active: Club = permissions.iter().next()?.into();
+
+        Some(Token {
+            sub,
+            exp: get_current_timestamp() + 7200,
+            permissions,
+            active_club: active.name,
+            active_permission: active.permission,
+        })
+    }
+
+    fn cookie(&self) -> Result<Cookie, Error> {
+        let secret = EncodingKey::from_secret(env::var("APP_SECRET")?.as_bytes());
+
+        let token = encode(&Header::new(Algorithm::HS256), &self, &secret).unwrap();
+
+        Ok(Cookie::build("token", token)
+            .same_site(SameSite::Lax)
+            .secure(true)
+            .http_only(true)
+            .path("/")
+            .finish())
+    }
+
+    fn set_active_club(&mut self, club: String) -> Result<(), Error> {
+        let permission = self.permissions.get(&club).ok_or(Error::Unauthorized)?;
+        self.active_club = club;
+        self.active_permission = permission.clone();
+        Ok(())
+    }
+}
+
+impl FromRequest for Token {
+    type Error = Error;
+    type Future = LocalBoxFuture<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
+        let cookie = req.cookie("token");
+        Box::pin(async move {
+            let token = extract_token(cookie).ok_or(Error::Unauthorized)?;
+            Ok(token)
+        })
+    }
+}
+
+pub struct AuthMiddleware {
+    permission: Permission,
+    auth_url: String,
+}
+
+impl AuthMiddleware {
+    pub fn new(auth_url: String, permission: Permission) -> Self {
+        AuthMiddleware {
+            auth_url,
+            permission,
+        }
+    }
+}
+
+pub struct InnerAuthMiddleware<S> {
+    permission: Permission,
+    auth_url: String,
+    service: S,
+}
+
+impl<S, B> Transform<S, ServiceRequest> for AuthMiddleware
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
+
+    S::Future: 'static,
+
+    B: MessageBody + 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+
+    type Error = actix_web::Error;
+
+    type Transform = InnerAuthMiddleware<S>;
+
+    type InitError = ();
+
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        ready(Ok(InnerAuthMiddleware {
+            service,
+            permission: self.permission.clone(),
+            auth_url: self.auth_url.clone(),
+        }))
+    }
+}
+
+type LocalBoxFuture<T> = Pin<Box<dyn Future<Output = T> + 'static>>;
+
+impl<S, B> Service<ServiceRequest> for InnerAuthMiddleware<S>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+    type Error = actix_web::Error;
+    type Future = LocalBoxFuture<Result<Self::Response, Self::Error>>;
+
+    forward_ready!(service);
+
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        let response = HttpResponse::TemporaryRedirect()
+            .insert_header(("location", self.auth_url.clone()))
+            .finish()
+            .map_into_right_body();
+
+        if req.path().contains("oidc") {
+            let res = self.service.call(req);
+
+            return Box::pin(async move { res.await.map(ServiceResponse::map_into_left_body) });
+        }
+
+        if let Some(mut token) = extract_token(req.cookie("token")) {
+            match self.permission {
+                Permission::Read => {
+                    if !matches!(
+                        token.active_permission,
+                        Permission::Read | Permission::ReadWrite
+                    ) {
+                        let (request, _pl) = req.into_parts();
+                        return Box::pin(
+                            async move { Ok(ServiceResponse::new(request, response)) },
+                        );
+                    }
+                }
+                Permission::ReadWrite => {
+                    if !matches!(token.active_permission, Permission::ReadWrite) {
+                        let (request, _pl) = req.into_parts();
+                        return Box::pin(
+                            async move { Ok(ServiceResponse::new(request, response)) },
+                        );
+                    }
+                }
+            }
+
+            req.extensions_mut().insert(token.active_club.clone());
+
+            let res = self.service.call(req);
+
+            Box::pin(async move {
+                token.exp = get_current_timestamp() + 7200;
+                let cookie = token.cookie().unwrap();
+                let mut res = res.await.unwrap();
+                res.response_mut().add_cookie(&cookie).unwrap();
+
+                Ok(res.map_into_left_body())
+            })
+        } else {
+            let (request, _pl) = req.into_parts();
+            Box::pin(async move { Ok(ServiceResponse::new(request, response)) })
+        }
+    }
+}
+
+fn extract_token(cookie: Option<Cookie>) -> Option<Token> {
+    let token = cookie?;
+
+    let secret = DecodingKey::from_secret(env::var("APP_SECRET").ok()?.as_bytes());
+
+    decode::<Token>(token.value(), &secret, &Validation::new(Algorithm::HS256))
+        .ok()
+        .map(|x| x.claims)
 }

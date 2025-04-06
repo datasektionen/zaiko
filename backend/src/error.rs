@@ -3,8 +3,6 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-use actix_identity::error::LoginError;
-use actix_session::{SessionGetError, SessionInsertError};
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 use derive_more::Display;
 use openidconnect::{
@@ -99,12 +97,6 @@ impl From<SigningError> for Error {
     }
 }
 
-impl From<LoginError> for Error {
-    fn from(value: LoginError) -> Self {
-        Error::InternalServerError(format!("fail to login error: {}", value))
-    }
-}
-
 impl From<VarError> for Error {
     fn from(value: VarError) -> Self {
         Error::InternalServerError(format!("getting pls url error: {}", value))
@@ -117,12 +109,6 @@ impl From<reqwest::Error> for Error {
     }
 }
 
-impl From<SessionInsertError> for Error {
-    fn from(value: SessionInsertError) -> Self {
-        Error::InternalServerError(format!("failed to add privlages to session: {}", value))
-    }
-}
-
 impl<ER> From<RequestTokenError<HttpClientError<ER>, StandardErrorResponse<CoreErrorResponseType>>>
     for Error
 where
@@ -132,11 +118,5 @@ where
         value: RequestTokenError<HttpClientError<ER>, StandardErrorResponse<CoreErrorResponseType>>,
     ) -> Self {
         Error::InternalServerError(format!("token request error: {}", value))
-    }
-}
-
-impl From<SessionGetError> for Error {
-    fn from(value: SessionGetError) -> Self {
-        Error::InternalServerError(format!("{}", value))
     }
 }
