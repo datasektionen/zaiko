@@ -75,6 +75,7 @@ export interface StockGetResponse {
   id: number,
   name: string,
   location: string,
+  supplier: string,
   min: number,
   current: number,
   order: number,

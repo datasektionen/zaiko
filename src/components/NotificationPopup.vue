@@ -105,4 +105,26 @@ svg {
 .red {
   color: #B62E3D;
 }
+
+@media (max-width: 768px) {
+  .notiMain {
+    width: 100%;
+    padding: 10px 5px;
+    gap: 0.5rem;
+  }
+
+  svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .notiText h6 {
+    font-size: 1.2rem;
+  }
+
+  .notiText p {
+    font-size: 11px;
+    margin-top: 0.3rem;
+  }
+}
 </style>

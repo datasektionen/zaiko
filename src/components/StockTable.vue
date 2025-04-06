@@ -181,4 +181,10 @@ a {
     margin: 0 auto;
   }
 }
+
+@media (max-width: 400px) {
+  td {
+    max-width: 55px;
+  }
+}
 </style>

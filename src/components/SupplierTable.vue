@@ -127,5 +127,14 @@ a {
     margin: 2rem 0;
     overflow-x: scroll;
   }
+  .icon {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 400px) {
+  td {
+    max-width: 55px;
+  }
 }
 </style>

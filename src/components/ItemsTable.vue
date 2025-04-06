@@ -176,4 +176,18 @@ a {
     margin: 0 auto;
   }
 }
+
+@media (max-width: 400px) {
+  table {
+    width: 100%;
+    margin: 2rem 0;
+    overflow-x: scroll;
+  }
+
+  td {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 55px;
+  }
+}
 </style>

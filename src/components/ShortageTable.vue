@@ -12,7 +12,13 @@
           <th scope="col">
             <span>
               <HomeIcon class="icon" />
-              <p v-if="!isMobile">Plats</p>
+              <p v-if="!isMobile">Leverantör</p>
+            </span>
+          </th>
+          <th scope="col">
+            <span>
+              <ShoppingCartIcon class="icon" />
+              <p v-if="!isMobile">Leverantör</p>
             </span>
           </th>
           <th scope="col">
@@ -33,6 +39,7 @@
         <tr v-for="item in stockStore.shortage" :key="item.id">
           <td scope="row">{{ item.name }}</td>
           <td>{{ item.location }}</td>
+          <td>{{ item.supplier }}</td>
           <td>{{ item.current }}</td>
           <td>{{ item.order }}</td>
         </tr>
@@ -45,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { ArchiveBoxIcon, HomeIcon, WalletIcon, CurrencyDollarIcon } from '@heroicons/vue/16/solid'
+import { ArchiveBoxIcon, HomeIcon, ShoppingCartIcon, WalletIcon, CurrencyDollarIcon } from '@heroicons/vue/16/solid'
 import { HandThumbUpIcon } from '@heroicons/vue/24/outline'
 import { useMediaQuery } from '@vueuse/core/index.cjs';
 import { useStockStore } from '@/stores/stock';
@@ -118,6 +125,14 @@ td {
 @media (max-width: 768px) {
   .icon {
     margin: 0 auto;
+  }
+}
+
+@media (max-width: 400px) {
+  td {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 80px;
   }
 }
 </style>
