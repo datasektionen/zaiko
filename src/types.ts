@@ -95,6 +95,12 @@ export interface SupplierListGetResponse {
     name: string,
 }
 
+export interface TableColumn {
+  value: string,
+  label: string,
+  icon: FunctionalComponent,
+}
+
 export interface Notification {
   id: number,
   title: string,

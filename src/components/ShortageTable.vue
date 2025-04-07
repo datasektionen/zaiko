@@ -1,50 +1,6 @@
 <template>
   <div>
-    <table v-if="stockStore.shortage.length > 0">
-      <thead>
-        <tr>
-          <th scope="col">
-            <span>
-              <ArchiveBoxIcon class="icon" />
-              <p v-if="!isMobile">Produkt</p>
-            </span>
-          </th>
-          <th scope="col">
-            <span>
-              <HomeIcon class="icon" />
-              <p v-if="!isMobile">Leverantör</p>
-            </span>
-          </th>
-          <th scope="col">
-            <span>
-              <ShoppingCartIcon class="icon" />
-              <p v-if="!isMobile">Leverantör</p>
-            </span>
-          </th>
-          <th scope="col">
-            <span>
-              <WalletIcon class="icon" />
-              <p v-if="!isMobile">Mängd</p>
-            </span>
-          </th>
-          <th scope="col">
-            <span>
-              <CurrencyDollarIcon class="icon" />
-              <p v-if="!isMobile">Att kopa</p>
-            </span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="item in stockStore.shortage" :key="item.id">
-          <td scope="row">{{ item.name }}</td>
-          <td>{{ item.location }}</td>
-          <td>{{ item.supplier }}</td>
-          <td>{{ item.current }}</td>
-          <td>{{ item.order }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <DynamicTable v-if="stockStore.shortage.length > 0" :columns="columns" :rows="stockStore.shortage" />
     <div v-else>
       <EmptyTable :compact="isMobile.value" text="Inga brister" :icon="HandThumbUpIcon" />
     </div>
@@ -57,12 +13,22 @@ import { HandThumbUpIcon } from '@heroicons/vue/24/outline'
 import { useMediaQuery } from '@vueuse/core/index.cjs';
 import { useStockStore } from '@/stores/stock';
 import EmptyTable from '@/components/EmptyTable.vue';
+import DynamicTable from '@/components/DynamicTable.vue';
+import type { TableColumn } from '@/types';
 
 const stockStore = useStockStore();
 
 if (stockStore.shortage.length == 0) {
   await stockStore.fetchShortage();
 }
+
+const columns: Array<TableColumn> = [
+  { label: 'Produkt', icon: ArchiveBoxIcon, value: 'name' },
+  { label: 'Plats', icon: HomeIcon, value: 'location' },
+  { label: 'Leverantör', icon: ShoppingCartIcon, value: 'supplier' },
+  { label: 'Mängd', icon: WalletIcon, value: 'current' },
+  { label: 'Att köpa', icon: CurrencyDollarIcon, value: 'order' }
+];
 
 
 const isMobile = useMediaQuery('(max-width: 768px)');
