@@ -1,164 +1,42 @@
-use actix_identity::Identity;
-use actix_session::Session;
-use actix_web::{get, web, HttpMessage, HttpRequest, HttpResponse};
-use derive_more::Display;
+use actix_web::{
+    body::{EitherBody, MessageBody},
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    get, post, web, HttpMessage, HttpResponse,
+};
+use jsonwebtoken::get_current_timestamp;
 use openidconnect::{
     core::{
-        CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
-        CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm,
-        CoreJwsSigningAlgorithm, CoreProviderMetadata, CoreRevocableToken, CoreTokenType,
+        CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreJwsSigningAlgorithm,
     },
-    reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
-    EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
-    IdToken, IdTokenClaims, IdTokenFields, IdTokenVerifier, IssuerUrl, Nonce, OAuth2TokenResponse,
-    RedirectUrl, RevocationErrorResponseType, StandardErrorResponse,
-    StandardTokenIntrospectionResponse, StandardTokenResponse, TokenResponse,
+    AccessTokenHash, AuthorizationCode, CsrfToken, EmptyAdditionalClaims, IdToken, IdTokenClaims,
+    IdTokenVerifier, OAuth2TokenResponse, TokenResponse,
 };
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, env};
+use serde::Deserialize;
+use std::{
+    env,
+    future::{ready, Ready},
+};
+use types::{
+    AuthMiddleware, AuthTokenResponse, Club, InnerAuthMiddleware, LocalBoxFuture, OIDCData,
+    Permission, Token,
+};
 
 use crate::error::Error;
 
-type OIDCClient = openidconnect::Client<
-    EmptyAdditionalClaims,
-    CoreAuthDisplay,
-    CoreGenderClaim,
-    CoreJweContentEncryptionAlgorithm,
-    CoreJsonWebKey,
-    CoreAuthPrompt,
-    StandardErrorResponse<CoreErrorResponseType>,
-    StandardTokenResponse<
-        IdTokenFields<
-            EmptyAdditionalClaims,
-            EmptyExtraTokenFields,
-            CoreGenderClaim,
-            CoreJweContentEncryptionAlgorithm,
-            CoreJwsSigningAlgorithm,
-        >,
-        CoreTokenType,
-    >,
-    StandardTokenIntrospectionResponse<EmptyExtraTokenFields, CoreTokenType>,
-    CoreRevocableToken,
-    StandardErrorResponse<RevocationErrorResponseType>,
-    EndpointSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointMaybeSet,
-    EndpointMaybeSet,
->;
-
-#[derive(Clone)]
-pub struct OIDCData {
-    client: OIDCClient,
-    http_client: reqwest::Client,
-    // pkce_verifier: PkceCodeVerifier,
-    nonce: Nonce,
-    csrf_token: CsrfToken,
-}
-
-#[derive(Debug, Display, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Permission {
-    #[serde(rename = "r")]
-    Read,
-    #[serde(rename = "rw")]
-    ReadWrite,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Club {
-    name: String,
-    permission: Permission,
-}
+pub mod types;
 
 #[derive(Deserialize)]
-struct Query {
+struct CallbackQuery {
     code: String,
     state: String,
 }
 
-pub fn check_auth(
-    session: &Session,
-    club: &String,
-    required_permission: Permission,
-) -> Result<(), Error> {
-    match get_permissions(session, club) {
-        Some(Permission::ReadWrite) => Ok(()),
-        Some(Permission::Read) => match required_permission {
-            Permission::Read => Ok(()),
-            Permission::ReadWrite => Err(Error::Unauthorized),
-        },
-        None => Err(Error::Unauthorized),
-    }
-}
-
-pub fn get_permissions(session: &Session, club: &String) -> Option<Permission> {
-    Some(
-        session
-            .get::<HashMap<String, Permission>>("privlages")
-            .ok()??
-            .get(club)?
-            .clone(),
-    )
-}
-
-pub async fn get_oidc() -> (OIDCData, String) {
-    let http_client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .expect("Client should build");
-
-    let provider_metadata = CoreProviderMetadata::discover_async(
-        IssuerUrl::new(env::var("OIDC_PROVIDER").expect("OIDC_PROVIDER in .env"))
-            .expect("OIDC_PROVIDER to be correctly formated"),
-        &http_client,
-    )
-    .await
-    .expect("to get metadata from oidc provider");
-
-    let client = Client::from_provider_metadata(
-        provider_metadata,
-        ClientId::new(env::var("OIDC_ID").expect("OIDC_ID in .env")),
-        Some(ClientSecret::new(
-            env::var("OIDC_SECRET").expect("OIDC_SECRET in .env"),
-        )),
-    )
-    .set_redirect_uri(
-        RedirectUrl::new(env::var("REDIRECT_URL").expect("REDIRECT_URL in .env"))
-            .expect("REDIRECT_URL to be correctly formated"),
-    );
-
-    // let (pkce_challange, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-
-    let (auth_url, csrf_token, nonce) = client
-        .authorize_url(
-            CoreAuthenticationFlow::AuthorizationCode,
-            CsrfToken::new_random,
-            Nonce::new_random,
-        )
-        // .add_scope(Scope::new(String::from("pls_zaiko")))
-        // .set_pkce_challenge(pkce_challange)
-        .url();
-
-    let oidc = OIDCData {
-        client,
-        http_client,
-        nonce,
-        // pkce_verifier,
-        csrf_token,
-    };
-
-    (oidc, auth_url.to_string())
-}
-
-#[get("/oidc/callback")]
+#[get("/api/oidc/callback")]
 pub async fn auth_callback(
-    req: HttpRequest,
-    session: Session,
-    query: web::Query<Query>,
+    query: web::Query<CallbackQuery>,
     oidc: web::Data<OIDCData>,
 ) -> Result<HttpResponse, Error> {
-    let Query { code, state } = query.0;
+    let CallbackQuery { code, state } = query.0;
     let OIDCData {
         client,
         http_client,
@@ -185,14 +63,15 @@ pub async fn auth_callback(
 
     check_token_hash(claims, &token_respones, id_token, id_token_verifier)?;
 
-    Identity::login(&req.extensions(), claims.subject().to_string())?;
+    let permissions = Permission::get_pls_permissions(claims.subject().to_string()).await?;
 
-    let privlages = get_pls_permissions(claims.subject().to_string()).await?;
+    let token = Token::new(claims.subject().to_string(), permissions).unwrap();
 
-    session.insert("privlages", privlages)?;
+    let cookie = token.cookie()?;
 
     Ok(HttpResponse::TemporaryRedirect()
         .insert_header(("location", "/"))
+        .cookie(cookie)
         .finish())
 }
 
@@ -207,16 +86,7 @@ fn check_csrf_token(token: &CsrfToken, state: String) -> Result<(), Error> {
 
 fn check_token_hash(
     claims: &IdTokenClaims<EmptyAdditionalClaims, CoreGenderClaim>,
-    token_respones: &StandardTokenResponse<
-        IdTokenFields<
-            EmptyAdditionalClaims,
-            EmptyExtraTokenFields,
-            CoreGenderClaim,
-            CoreJweContentEncryptionAlgorithm,
-            CoreJwsSigningAlgorithm,
-        >,
-        CoreTokenType,
-    >,
+    token_respones: &AuthTokenResponse,
     id_token: &IdToken<
         EmptyAdditionalClaims,
         CoreGenderClaim,
@@ -248,80 +118,152 @@ fn check_token_hash(
     Ok(())
 }
 
-async fn get_pls_permissions(subject: String) -> Result<HashMap<String, Permission>, Error> {
-    let pls_url = env::var("PLS_URL")?;
-
-    log::debug!("{}", pls_url);
-    log::debug!("{}", subject.as_str());
-
-    let res = reqwest::get(format!("{}/user/{}/zaiko", pls_url, subject.as_str()))
-        .await?
-        .text()
-        .await?;
-
-    let mut privlages: HashMap<String, Permission> = default_privlages();
-
-    let pls_permissions = serde_json::from_str::<Vec<String>>(&res)?;
-
-    for privlage in pls_permissions {
-        let mut permission = privlage.split("-");
-        let name = permission
-            .next()
-            .ok_or(Error::InternalServerError(String::from(
-                "Incorrect formating och pls permission",
-            )))?
-            .to_string();
-        let permission = match permission
-            .next()
-            .ok_or(Error::InternalServerError(String::from(
-                "Incorrect formatting of pls permission",
-            )))? {
-            "r" => Permission::Read,
-            "rw" => Permission::ReadWrite,
-            _ => {
-                return Err(Error::InternalServerError(String::from(
-                    "pls permission contains incorrect access type",
-                )))
-            }
-        };
-        log::debug!("{}:{}", name, permission);
-        privlages.insert(name, permission);
-    }
-
-    Ok(privlages)
-}
-
-fn default_privlages() -> HashMap<String, Permission> {
-    let mut privlages = HashMap::new();
-
-    privlages.insert(String::from("metadorerna"), Permission::Read);
-
-    privlages
-}
-
 #[get("/clubs")]
-pub async fn get_clubs(session: Session) -> Result<HttpResponse, Error> {
-    if env::var("APP_AUTH") == Ok(String::from("false")) {
-        log::warn!("fake auth");
-        let mut clubs = HashMap::new();
-        clubs.insert(String::from("metadorerna"), Permission::ReadWrite);
-        session.insert("privlages", clubs)?;
-
-        let clubs = vec![Club {
-            name: String::from("metadorerna"),
-            permission: Permission::ReadWrite,
-        }];
-        return Ok(HttpResponse::Ok().json(clubs));
-    }
-
-    let clubs: Vec<Club> = session
-        .get::<HashMap<String, Permission>>("privlages")?
-        .ok_or(Error::InternalServerError(String::from(
-            "Session contians no permissions",
-        )))?
-        .into_iter()
-        .map(|(name, permission)| Club { name, permission })
-        .collect();
+pub async fn get_clubs(token: Token) -> Result<HttpResponse, Error> {
+    let clubs: Vec<Club> = token.permissions.into_iter().map(Club::from).collect();
 
     Ok(HttpResponse::Ok().json(clubs))
+}
+
+#[derive(Deserialize)]
+struct ClubQuery {
+    club: String,
+}
+
+#[post("/club")]
+pub async fn set_club(
+    mut token: Token,
+    query: web::Query<ClubQuery>,
+) -> Result<HttpResponse, Error> {
+    let club = query.club.clone();
+    token.set_active_club(club)?;
+    let cookie = token.cookie()?;
+    Ok(HttpResponse::Ok().cookie(cookie).finish())
+}
+
+impl<S, B> Transform<S, ServiceRequest> for AuthMiddleware
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
+    S::Future: 'static,
+    B: MessageBody + 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+    type Error = actix_web::Error;
+    type Transform = InnerAuthMiddleware<S>;
+    type InitError = ();
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        ready(Ok(InnerAuthMiddleware {
+            service,
+            permission: self.permission.clone(),
+            auth_url: self.auth_url.clone(),
+        }))
+    }
+}
+
+impl<S, B> Service<ServiceRequest> for InnerAuthMiddleware<S>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+    type Error = actix_web::Error;
+    type Future = LocalBoxFuture<Result<Self::Response, Self::Error>>;
+
+    forward_ready!(service);
+
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        if env::var("APP_AUTH") == Ok(String::from("false")) {
+            return fake_auth(req, self);
+        }
+
+        if req.path().contains("oidc") {
+            let res = self.service.call(req);
+            return Box::pin(async move { res.await.map(ServiceResponse::map_into_left_body) });
+        }
+
+        if let Some(mut token) = Token::extract_token(req.cookie("token")) {
+            if check_permission(self.permission.clone(), token.clone()) {
+                return auth_error_response(req, self.auth_url.clone());
+            }
+
+            req.extensions_mut().insert(token.active_club.clone());
+
+            let res = self.service.call(req);
+
+            Box::pin(async move {
+                token.exp = get_current_timestamp() + 7200;
+                let cookie = token.cookie().unwrap();
+                let mut res = res.await.unwrap();
+                res.response_mut().add_cookie(&cookie).unwrap();
+
+                Ok(res.map_into_left_body())
+            })
+        } else {
+            auth_error_response(req, self.auth_url.clone())
+        }
+    }
+}
+
+fn check_permission(permission: Permission, token: Token) -> bool {
+    match permission {
+        Permission::Read => {
+            if !matches!(
+                token.active_permission,
+                Permission::Read | Permission::ReadWrite
+            ) {
+                return false;
+            }
+        }
+        Permission::ReadWrite => {
+            if !matches!(token.active_permission, Permission::ReadWrite) {
+                return false;
+            }
+        }
+    }
+
+    true
+}
+
+fn fake_auth<B, S>(
+    req: ServiceRequest,
+    auth: &InnerAuthMiddleware<S>,
+) -> LocalBoxFuture<Result<ServiceResponse<EitherBody<B>>, actix_web::Error>>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: 'static,
+{
+    let permissions = Permission::default_privlages();
+    let token = Token::new(String::from("ture"), permissions).unwrap();
+
+    req.extensions_mut().insert(token.active_club.clone());
+
+    let res = auth.service.call(req);
+
+    Box::pin(async move {
+        let cookie = token.cookie().unwrap();
+        let mut res = res.await.unwrap();
+        res.response_mut().add_cookie(&cookie).unwrap();
+
+        Ok(res.map_into_left_body())
+    })
+}
+
+fn auth_error_response<B>(
+    req: ServiceRequest,
+    auth_url: String,
+) -> LocalBoxFuture<Result<ServiceResponse<EitherBody<B>>, actix_web::Error>>
+where
+    B: 'static,
+{
+    let response = HttpResponse::TemporaryRedirect()
+        .insert_header(("location", auth_url))
+        .finish()
+        .map_into_right_body();
+
+    let (request, _pl) = req.into_parts();
+    Box::pin(async move { Ok(ServiceResponse::new(request, response)) })
 }

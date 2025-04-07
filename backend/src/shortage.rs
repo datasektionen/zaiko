@@ -19,12 +19,12 @@ struct StockUpdateRequest {
     items: Vec<(i32, f32)>,
 }
 
-#[get("/{club}/stock")]
+#[get("/stock")]
 pub(crate) async fn get_shortage(
-    club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let items = sqlx::query_as!(
@@ -56,13 +56,13 @@ pub(crate) async fn get_shortage(
     Ok(HttpResponse::Ok().json(items))
 }
 
-#[post("/{club}/stock")]
+#[post("/stock")]
 pub(crate) async fn take_stock(
-    club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
     body: String,
+    club: web::ReqData<String>
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let items: StockUpdateRequest = serde_json::from_str(&body)?;
