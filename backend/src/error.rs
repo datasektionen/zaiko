@@ -11,7 +11,7 @@ use openidconnect::{
     SignatureVerificationError, SigningError, StandardErrorResponse,
 };
 
-use crate::auth::Permission;
+use crate::auth::types::Permission;
 
 #[derive(Debug)]
 pub struct PermissionDifference {

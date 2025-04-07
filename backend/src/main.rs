@@ -7,7 +7,8 @@ use actix_web::{
     web::{self, scope, Data},
     App, HttpServer,
 };
-use auth::{auth_callback, get_clubs, get_oidc, set_club, AuthMiddleware, Permission};
+use auth::types::{AuthMiddleware, Permission};
+use auth::{auth_callback, get_clubs, set_club, types::OIDCData};
 use dotenv::dotenv;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use stats::get_stats;
@@ -44,7 +45,7 @@ async fn main() -> std::io::Result<()> {
 
     db_init(&pool).await.expect("to setup db");
 
-    let (oidc, auth_path) = get_oidc().await;
+    let (oidc, auth_path) = OIDCData::get_oidc().await;
     let oidc = Data::new(oidc);
     let auth_url = auth_path.clone();
 
@@ -70,6 +71,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(pool.clone())
             .app_data(oidc.clone())
             .service(auth_callback)
+            .service(serve_frontend)
+            .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
             .service(
                 scope("/api")
                     .service(get_item)
@@ -92,8 +95,6 @@ async fn main() -> std::io::Result<()> {
                             .service(take_stock),
                     ),
             )
-            .service(serve_frontend)
-            .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
     })
     .bind((
         env::var("APP_URL").expect("APP_URL in .env"),
