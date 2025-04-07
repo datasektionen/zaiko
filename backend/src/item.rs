@@ -51,13 +51,13 @@ struct ItemDeleteQuery {
     id: i32,
 }
 
-#[get("/{club}/item")]
+#[get("/item")]
 pub(crate) async fn get_item(
-    club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
     query: web::Query<ItemGetQuery>,
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let items = if let ItemGetQuery {
@@ -71,7 +71,7 @@ pub(crate) async fn get_item(
                 "SELECT id, name, location, min, max, current, link, supplier, updated 
                  FROM items
                  WHERE club = $1",
-                club,
+                club
             )
             .fetch_all(&mut *pool)
             .await?
@@ -110,13 +110,13 @@ pub(crate) async fn get_item(
     Ok(HttpResponse::Ok().json(items))
 }
 
-#[post("/{club}/item")]
+#[post("/item")]
 pub(crate) async fn add_item(
     body: String,
-    club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let item: ItemAddRequest = serde_json::from_str(&body)?;
@@ -135,7 +135,7 @@ pub(crate) async fn add_item(
         item.current,
         item.supplier,
         item.link,
-        club,
+        club
     )
     .execute(&mut *pool)
     .await?;
@@ -166,13 +166,13 @@ pub(crate) async fn add_item(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[patch("/{club}/item")]
+#[patch("/item")]
 pub(crate) async fn update_item(
-    club: web::Path<String>,
     body: String,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let item: ItemUpdateRequest = serde_json::from_str(&body)?;
@@ -214,7 +214,7 @@ pub(crate) async fn update_item(
         item.supplier,
         item.link,
         item.name,
-        club,
+        club
     )
     .execute(&mut *pool)
     .await?;
@@ -224,13 +224,13 @@ pub(crate) async fn update_item(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[delete("/{club}/item")]
+#[delete("/item")]
 pub(crate) async fn delete_item(
-    club: web::Path<String>,
     item_id: web::Query<ItemDeleteQuery>,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     sqlx::query!(

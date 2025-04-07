@@ -1,12 +1,8 @@
-use actix_session::Session;
 use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::{
-    auth::{check_auth, Permission},
-    error::Error,
-};
+use crate::error::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SupplierGetResponse {
@@ -56,14 +52,13 @@ struct SupplierDeleteQuery {
     id: i32,
 }
 
-#[get("/{club}/supplier")]
+#[get("/supplier")]
 pub(crate) async fn get_supplier(
-    club: web::Path<String>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
     query: web::Query<SupplierGetQuery>,
+    club: web::ReqData<String>
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     if let Some(id) = query.id {
@@ -85,7 +80,7 @@ pub(crate) async fn get_supplier(
         id: _,
     } = query.0
     {
-        let mut suppliers = if matches!(
+        let suppliers = if matches!(
             column.as_str(),
             "name" | "username" | "password" | "link" | "notes"
         ) {
@@ -94,7 +89,7 @@ pub(crate) async fn get_supplier(
                 "SELECT id, name, username, password, link, notes, updated 
                  FROM suppliers 
                  WHERE club = $1",
-                club,
+                club
             )
             .fetch_all(&mut *pool)
             .await?
@@ -114,17 +109,11 @@ pub(crate) async fn get_supplier(
             return Err(Error::BadRequest);
         };
 
-        if check_auth(&session, club, Permission::ReadWrite).is_ok() {
-            for supplier in suppliers.iter_mut() {
-                supplier.password = Some(String::from("Unauthorized"));
-            }
-        }
-
         pool.commit().await?;
 
         Ok(HttpResponse::Ok().json(suppliers))
     } else {
-        let mut suppliers = sqlx::query_as!(
+        let suppliers = sqlx::query_as!(
             SupplierGetResponse,
             "SELECT id, name, username, password, link, notes, updated 
              FROM suppliers 
@@ -134,24 +123,18 @@ pub(crate) async fn get_supplier(
         .fetch_all(&mut *pool)
         .await?;
 
-        if check_auth(&session, club, Permission::ReadWrite).is_ok() {
-            for supplier in suppliers.iter_mut() {
-                supplier.password = Some(String::from("Unauthorized"));
-            }
-        }
-
         pool.commit().await?;
 
         Ok(HttpResponse::Ok().json(suppliers))
     }
 }
 
-#[get("/{club}/suppliers")]
+#[get("/suppliers")]
 pub(crate) async fn get_suppliers(
-    club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let supplier = sqlx::query_as!(
@@ -169,13 +152,13 @@ pub(crate) async fn get_suppliers(
     Ok(HttpResponse::Ok().json(supplier))
 }
 
-#[post("/{club}/supplier")]
+#[post("/supplier")]
 pub(crate) async fn add_supplier(
     body: String,
-    club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let supplier: SupplierAddRequest = serde_json::from_str(&body)?;
@@ -192,7 +175,7 @@ pub(crate) async fn add_supplier(
         supplier.notes,
         supplier.username,
         supplier.password,
-        club,
+        club
     )
     .execute(&mut *pool)
     .await?;
@@ -202,13 +185,13 @@ pub(crate) async fn add_supplier(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[patch("/{club}/supplier")]
+#[patch("/supplier")]
 pub(crate) async fn update_supplier(
-    club: web::Path<String>,
     body: String,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let supplier: SupplierUpdateRequest = serde_json::from_str(&body)?;
@@ -227,7 +210,7 @@ pub(crate) async fn update_supplier(
         supplier.username,
         supplier.password,
         supplier.id,
-        club,
+        club
     )
     .execute(&mut *pool)
     .await?;
@@ -237,13 +220,13 @@ pub(crate) async fn update_supplier(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[delete("/{club}/supplier")]
+#[delete("/supplier")]
 pub(crate) async fn delete_supplier(
-    club: web::Path<String>,
     item_id: web::Query<SupplierDeleteQuery>,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     sqlx::query!(
