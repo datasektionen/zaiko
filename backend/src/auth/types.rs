@@ -169,9 +169,16 @@ impl Permission {
         let mut privlages = HashMap::new();
 
         privlages.insert(String::from("metadorerna"), Permission::Read);
+        privlages.insert(String::from("sjukvård"), Permission::ReadWrite);
 
         privlages
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClubGetResponse {
+    pub active: Club,
+    pub clubs: Vec<Club>
 }
 
 #[derive(Debug, Serialize, Deserialize)]

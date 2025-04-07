@@ -17,8 +17,7 @@ use std::{
     future::{ready, Ready},
 };
 use types::{
-    AuthMiddleware, AuthTokenResponse, Club, InnerAuthMiddleware, LocalBoxFuture, OIDCData,
-    Permission, Token,
+    AuthMiddleware, AuthTokenResponse, Club, ClubGetResponse, InnerAuthMiddleware, LocalBoxFuture, OIDCData, Permission, Token
 };
 
 use crate::error::Error;
@@ -122,7 +121,12 @@ fn check_token_hash(
 pub async fn get_clubs(token: Token) -> Result<HttpResponse, Error> {
     let clubs: Vec<Club> = token.permissions.into_iter().map(Club::from).collect();
 
-    Ok(HttpResponse::Ok().json(clubs))
+    let res = ClubGetResponse {
+        active: Club::from((token.active_club, token.active_permission)),
+        clubs
+    };
+
+    Ok(HttpResponse::Ok().json(res))
 }
 
 #[derive(Deserialize)]

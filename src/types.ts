@@ -109,9 +109,8 @@ export interface Notification {
 }
 
 export interface ClubStorage {
-  club: ClubGetRequest,
+  active: ClubGetRequest,
   clubs: Array<ClubGetRequest>,
-  timestamp: number,
 }
 
 export interface ClubGetRequest {
