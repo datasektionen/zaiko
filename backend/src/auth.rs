@@ -209,22 +209,12 @@ where
 
 fn check_permission(permission: Permission, token: Token) -> bool {
     match permission {
-        Permission::Read => {
-            if !matches!(
-                token.active_permission,
-                Permission::Read | Permission::ReadWrite
-            ) {
-                return false;
-            }
-        }
-        Permission::ReadWrite => {
-            if !matches!(token.active_permission, Permission::ReadWrite) {
-                return false;
-            }
-        }
+        Permission::Read => !matches!(
+            token.active_permission,
+            Permission::Read | Permission::ReadWrite
+        ),
+        Permission::ReadWrite => !matches!(token.active_permission, Permission::ReadWrite),
     }
-
-    true
 }
 
 fn fake_auth<B, S>(
