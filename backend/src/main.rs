@@ -71,13 +71,10 @@ async fn main() -> std::io::Result<()> {
             .app_data(pool.clone())
             .app_data(oidc.clone())
             .service(auth_callback)
-            .service(serve_frontend)
-            .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
             .service(
                 scope("/api")
                     .service(get_item)
                     .service(get_shortage)
-                    .service(get_suppliers)
                     .service(get_log)
                     .service(get_stats)
                     .service(get_clubs)
@@ -86,6 +83,7 @@ async fn main() -> std::io::Result<()> {
                         scope("/admin")
                             .wrap(AuthMiddleware::new(auth_url.clone(), Permission::ReadWrite))
                             .service(get_supplier)
+                            .service(get_suppliers)
                             .service(add_item)
                             .service(update_item)
                             .service(delete_item)
@@ -95,6 +93,8 @@ async fn main() -> std::io::Result<()> {
                             .service(take_stock),
                     ),
             )
+            .service(serve_frontend)
+            .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
     })
     .bind((
         env::var("APP_URL").expect("APP_URL in .env"),
