@@ -47,12 +47,13 @@
 </template>
 
 <script setup lang="ts">
-import { useClubsStore } from '@/stores/clubs';
-import { useNotificationsStore } from '@/stores/notifications';
-import type { SupplierAddRequest, Notification } from '@/types';
+import { useSupplierStore } from '@/stores/suppliers';
+import type { SupplierAddRequest } from '@/types';
 import { ShoppingCartIcon, LinkIcon, UserCircleIcon, LockClosedIcon, DocumentTextIcon, DocumentCheckIcon } from '@heroicons/vue/16/solid'
 import { ref } from 'vue';
-const HOST = import.meta.env.VITE_HOST;
+
+const supplierStore = useSupplierStore();
+
 
 const emit = defineEmits(["submit"]);
 
@@ -62,64 +63,15 @@ const password = ref()
 const link = ref()
 const note = ref()
 
-const notificationsStore = useNotificationsStore();
-const clubStore = useClubsStore();
-
 const addSupplier = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub().name;
-
   const supplier: SupplierAddRequest = {
     name: name.value,
     username: username.value,
     password: password.value,
     link: link.value,
-    notes: note.value,
-  }
-  if (!clubStore.checkClub()) {
-    const noti: Notification = {
-      id: Date.now(),
-      title: "Error",
-      message: "Ingen nämnd vald",
-      severity: "error",
-    }
-    notificationsStore.add(noti);
-    return;
+    notes: note.value
   };
-  await fetch(url + "/supplier", {
-    method: "POST",
-    body: JSON.stringify(supplier),
-  })
-    .then((res) => {
-      if (res.ok) {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Sparad",
-          message: "Leverantören lades till",
-          severity: "info",
-        }
-        notificationsStore.add(noti);
-      } else {
-        res.text().then((text) => {
-          const noti: Notification = {
-            id: Date.now(),
-            title: "Error",
-            message: text,
-            severity: "error",
-          }
-          notificationsStore.add(noti);
-        })
-      }
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-
+  await supplierStore.addSupplier(supplier);
   emit('submit')
 }
 </script>

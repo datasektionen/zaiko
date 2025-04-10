@@ -1,13 +1,16 @@
 use actix_web::{
     body::{EitherBody, MessageBody},
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    get, post, web, HttpMessage, HttpResponse,
+    get,
+    http::header,
+    post, web, HttpMessage, HttpResponse,
 };
 use jsonwebtoken::get_current_timestamp;
 use openidconnect::{
     core::{
         CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreJwsSigningAlgorithm,
     },
+    http::{request, response},
     AccessTokenHash, AuthorizationCode, CsrfToken, EmptyAdditionalClaims, IdToken, IdTokenClaims,
     IdTokenVerifier, OAuth2TokenResponse, TokenResponse,
 };
@@ -15,10 +18,11 @@ use serde::Deserialize;
 use std::{
     env,
     future::{ready, Ready},
+    path,
 };
 use types::{
-    AuthMiddleware, AuthTokenResponse, Club, InnerAuthMiddleware, LocalBoxFuture, OIDCData,
-    Permission, Token,
+    AuthMiddleware, AuthTokenResponse, Club, ClubGetResponse, InnerAuthMiddleware, LocalBoxFuture,
+    OIDCData, Permission, Token,
 };
 
 use crate::error::Error;
@@ -122,7 +126,12 @@ fn check_token_hash(
 pub async fn get_clubs(token: Token) -> Result<HttpResponse, Error> {
     let clubs: Vec<Club> = token.permissions.into_iter().map(Club::from).collect();
 
-    Ok(HttpResponse::Ok().json(clubs))
+    let res = ClubGetResponse {
+        active: Club::from((token.active_club, token.active_permission)),
+        clubs,
+    };
+
+    Ok(HttpResponse::Ok().json(res))
 }
 
 #[derive(Deserialize)]
@@ -175,7 +184,10 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        if env::var("APP_AUTH") == Ok(String::from("false")) {
+        let path = req.path().to_owned();
+        if env::var("APP_AUTH") == Ok(String::from("false"))
+            && Token::extract_token(req.cookie("token")).is_none()
+        {
             return fake_auth(req, self);
         }
 
@@ -194,10 +206,13 @@ where
             let res = self.service.call(req);
 
             Box::pin(async move {
-                token.exp = get_current_timestamp() + 7200;
-                let cookie = token.cookie().unwrap();
                 let mut res = res.await.unwrap();
-                res.response_mut().add_cookie(&cookie).unwrap();
+
+                if !path.contains("club") {
+                    token.exp = get_current_timestamp() + 7200;
+                    let cookie = token.cookie().unwrap();
+                    res.response_mut().add_cookie(&cookie).unwrap();
+                }
 
                 Ok(res.map_into_left_body())
             })
@@ -226,6 +241,7 @@ where
     S::Future: 'static,
     B: 'static,
 {
+    log::debug!("fake auth");
     let permissions = Permission::default_privlages();
     let token = Token::new(String::from("ture"), permissions).unwrap();
 
@@ -249,11 +265,17 @@ fn auth_error_response<B>(
 where
     B: 'static,
 {
-    let response = HttpResponse::TemporaryRedirect()
-        .insert_header(("location", auth_url))
-        .finish()
-        .map_into_right_body();
+    if env::var("APP_AUTH") == Ok(String::from("false")) {
+        let response = HttpResponse::Unauthorized().finish().map_into_right_body();
+        let (request, _pl) = req.into_parts();
+        Box::pin(async move { Ok(ServiceResponse::new(request, response)) })
+    } else {
+        let response = HttpResponse::TemporaryRedirect()
+            .insert_header(("location", auth_url))
+            .finish()
+            .map_into_right_body();
 
-    let (request, _pl) = req.into_parts();
-    Box::pin(async move { Ok(ServiceResponse::new(request, response)) })
+        let (request, _pl) = req.into_parts();
+        Box::pin(async move { Ok(ServiceResponse::new(request, response)) })
+    }
 }

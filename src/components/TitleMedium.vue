@@ -27,6 +27,7 @@ defineProps<{
   padding-right: 12px;
   border-bottom: 2px solid #26A69A;
   width: fit-content;
+  max-height: 55px;
 }
 
 .icon {

@@ -10,22 +10,22 @@ use actix_web::{
 use auth::types::{AuthMiddleware, Permission};
 use auth::{auth_callback, get_clubs, set_club, types::OIDCData};
 use dotenv::dotenv;
+use serve::serve_frontend;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use stats::get_stats;
 use supplier::get_suppliers;
 
 mod auth;
 mod error;
+mod serve;
 mod item;
 mod loging;
-mod serve;
 mod shortage;
 mod stats;
 mod supplier;
 
 use crate::item::{add_item, delete_item, get_item, update_item};
 use crate::loging::get_log;
-use crate::serve::serve_frontend;
 use crate::shortage::{get_shortage, take_stock};
 use crate::supplier::{add_supplier, delete_supplier, get_supplier, update_supplier};
 
@@ -71,13 +71,10 @@ async fn main() -> std::io::Result<()> {
             .app_data(pool.clone())
             .app_data(oidc.clone())
             .service(auth_callback)
-            .service(serve_frontend)
-            .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
             .service(
                 scope("/api")
                     .service(get_item)
                     .service(get_shortage)
-                    .service(get_suppliers)
                     .service(get_log)
                     .service(get_stats)
                     .service(get_clubs)
@@ -86,6 +83,7 @@ async fn main() -> std::io::Result<()> {
                         scope("/admin")
                             .wrap(AuthMiddleware::new(auth_url.clone(), Permission::ReadWrite))
                             .service(get_supplier)
+                            .service(get_suppliers)
                             .service(add_item)
                             .service(update_item)
                             .service(delete_item)
@@ -95,6 +93,8 @@ async fn main() -> std::io::Result<()> {
                             .service(take_stock),
                     ),
             )
+            .service(serve_frontend)
+            .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
     })
     .bind((
         env::var("APP_URL").expect("APP_URL in .env"),

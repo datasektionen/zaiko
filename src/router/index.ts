@@ -13,11 +13,6 @@ const router = createRouter({
       component: MainPage,
     },
     {
-      path: '/search',
-      name: 'Sök',
-      component: MainPage,
-    },
-    {
       path: '/items',
       name: 'Produkter',
       component: ItemsPage,

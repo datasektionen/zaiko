@@ -2,16 +2,30 @@ use actix_web::{get, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::{error::Error, item::ItemGetResponse};
+use crate::error::Error;
 
 #[derive(Serialize)]
-struct ShortageItem {
+struct ShortageGetResponse {
     id: i32,
     name: String,
     location: String,
     min: f32,
     current: f32,
     order: f32,
+    supplier: Option<String>,
+    link: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ShortageItem {
+    id: i32,
+    name: String,
+    location: String,
+    min: Option<f32>,
+    max: Option<f32>,
+    link: Option<String>,
+    current: f32,
+    supplier: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -22,31 +36,34 @@ struct StockUpdateRequest {
 #[get("/stock")]
 pub(crate) async fn get_shortage(
     pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
 
     let items = sqlx::query_as!(
-        ItemGetResponse,
-        "SELECT id, name, location, min, max, current, link, supplier, updated 
+        ShortageItem,
+        r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name as "supplier?"
          FROM items 
-         WHERE current <= min AND club = $1",
+         LEFT JOIN suppliers ON items.supplier=suppliers.id
+         WHERE current <= min AND items.club = $1"#,
         club
     )
     .fetch_all(&mut *pool)
     .await?;
 
-    let items: Vec<ShortageItem> = items
+    let items: Vec<ShortageGetResponse> = items
         .iter()
         .filter_map(|item| {
-            Some(ShortageItem {
+            Some(ShortageGetResponse {
                 id: item.id,
                 name: item.name.clone(),
                 location: item.location.clone(),
                 current: item.current,
                 order: item.max? - item.current,
                 min: item.min?,
+                supplier: item.supplier.clone(),
+                link: item.link.clone(),
             })
         })
         .collect();
@@ -60,7 +77,7 @@ pub(crate) async fn get_shortage(
 pub(crate) async fn take_stock(
     pool: web::Data<Pool<Postgres>>,
     body: String,
-    club: web::ReqData<String>
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;

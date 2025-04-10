@@ -12,7 +12,7 @@ pub(crate) struct ItemGetResponse {
     pub(crate) min: Option<f32>,
     pub(crate) max: Option<f32>,
     pub(crate) current: f32,
-    pub(crate) supplier: Option<i32>,
+    pub(crate) supplier: Option<String>,
     pub(crate) updated: i32,
     pub(crate) link: Option<String>,
 }
@@ -68,9 +68,10 @@ pub(crate) async fn get_item(
         if matches!(column.as_str(), "name" | "location" | "link") {
             sqlx::query_as!(
                 ItemGetResponse,
-                "SELECT id, name, location, min, max, current, link, supplier, updated 
+                r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
                  FROM items
-                 WHERE club = $1",
+                 LEFT JOIN suppliers ON items.supplier=suppliers.id
+                 WHERE items.club = $1"#,
                 club
             )
             .fetch_all(&mut *pool)
@@ -81,9 +82,10 @@ pub(crate) async fn get_item(
         ) {
             sqlx::query_as!(
                 ItemGetResponse,
-                "SELECT id, name, location, min, max, current, link, supplier, updated 
+                r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
                  FROM items 
-                 WHERE club = $1 AND $2 = $3",
+                 LEFT JOIN suppliers ON items.supplier=suppliers.id
+                 WHERE items.club = $1 AND $2 = $3"#,
                 club,
                 column,
                 search
@@ -96,9 +98,10 @@ pub(crate) async fn get_item(
     } else {
         sqlx::query_as!(
             ItemGetResponse,
-            "SELECT id, name, location, min, max, current, link, supplier, updated 
+            r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
              FROM items 
-             WHERE club = $1",
+             LEFT JOIN suppliers ON items.supplier=suppliers.id
+             WHERE items.club = $1"#,
             club
         )
         .fetch_all(&mut *pool)

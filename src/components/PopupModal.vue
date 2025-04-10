@@ -33,7 +33,7 @@ const emit = defineEmits(["exit"]);
 <style scoped>
 .modal {
   position: absolute;
-  top: 8rem;
+  top: 3rem;
   right: 0;
   width: 550px;
   z-index: 3;

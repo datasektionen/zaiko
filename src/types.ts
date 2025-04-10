@@ -7,7 +7,7 @@ export interface ItemGetResponse {
   min?: number,
   max?: number,
   current: number,
-  supplier?: number,
+  supplier?: string,
   updated: number,
   link?: string,
 }
@@ -75,9 +75,11 @@ export interface StockGetResponse {
   id: number,
   name: string,
   location: string,
+  supplier?: string,
   min: number,
   current: number,
   order: number,
+  link?: string,
 }
 
 export interface StockUpdateRequest {
@@ -94,17 +96,22 @@ export interface SupplierListGetResponse {
     name: string,
 }
 
+export interface TableColumn {
+  value: string,
+  label: string,
+  icon: FunctionalComponent,
+}
+
 export interface Notification {
   id: number,
   title: string,
   message: string,
-  severity: string,
+  severity: "error" | "warning" | "info",
 }
 
 export interface ClubStorage {
-  club: ClubGetRequest,
+  active: ClubGetRequest,
   clubs: Array<ClubGetRequest>,
-  timestamp: number,
 }
 
 export interface ClubGetRequest {

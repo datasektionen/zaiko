@@ -5,7 +5,9 @@ use actix_web::{
     FromRequest, HttpRequest,
 };
 use derive_more::Display;
-use jsonwebtoken::{decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{
+    decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation,
+};
 use openidconnect::{
     core::{
         CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
@@ -173,6 +175,12 @@ impl Permission {
 
         privlages
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClubGetResponse {
+    pub active: Club,
+    pub clubs: Vec<Club>
 }
 
 #[derive(Debug, Serialize, Deserialize)]

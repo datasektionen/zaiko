@@ -1,6 +1,6 @@
 <template>
   <div>
-    <table>
+    <table v-if="itemStore.items.length > 0">
       <thead>
         <tr>
           <th scope="col">
@@ -48,13 +48,13 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="item, idx in items" :key="item.id" @click="emit('select', idx)">
+        <tr v-for="item in itemStore.items" :key="item.id" @click="emit('select', item.id)">
           <td scope="row">
             <a :href="item.link" target="_blank" @click.stop="" v-if="item.link">{{ item.name }}</a>
             <p v-else>{{ item.name }}</p>
           </td>
           <td>{{ item.location }}</td>
-          <td>{{ supplier(item.supplier) }}</td>
+          <td>{{ item.supplier }}</td>
           <td>{{ item.current }}</td>
           <td>{{ item.min }}</td>
           <td>{{ item.max }}</td>
@@ -62,28 +62,26 @@
         </tr>
       </tbody>
     </table>
+    <div v-else>
+      <EmptyTable :compact="isMobile.value" text="Inga produkter" :icon="ArchiveBoxXMarkIcon" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineProps, ref } from 'vue'
-import type { ItemGetResponse, SupplierListGetResponse, Notification } from '@/types'
-import { ArchiveBoxIcon, ShoppingCartIcon, Battery0Icon, Battery100Icon, HomeIcon, WalletIcon, InformationCircleIcon } from '@heroicons/vue/16/solid'
+import { useItemStore } from '@/stores/items';
+import { useSupplierStore } from '@/stores/suppliers';
 import { useClubsStore } from '@/stores/clubs';
-import { useNotificationsStore } from '@/stores/notifications';
+import { ArchiveBoxIcon, ShoppingCartIcon, Battery0Icon, Battery100Icon, HomeIcon, WalletIcon, InformationCircleIcon } from '@heroicons/vue/16/solid'
+import { ArchiveBoxXMarkIcon } from '@heroicons/vue/24/outline';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
-const HOST = import.meta.env.VITE_HOST;
-const suppliers = ref<Array<SupplierListGetResponse>>([])
-
-defineProps<{
-  items: Array<ItemGetResponse>
-}>()
+import EmptyTable from './EmptyTable.vue';
 
 const isMobile = useMediaQuery('(max-width: 768px)');
 
-const status = (min?: number, current?: number) => {
-  if (!min || !current) {
-    return ' '
+const status = (min?: number, current: number) => {
+  if (!min) {
+    return '✅'
   } else if (current < min) {
     return '🛑'
   } else {
@@ -91,34 +89,20 @@ const status = (min?: number, current?: number) => {
   }
 }
 
-const supplier = (id?: number) => {
-  return suppliers.value.find((s) => s.id === id)?.name ?? ' '
+const supplierStore = useSupplierStore();
+const itemStore = useItemStore();
+const clubStore = useClubsStore();
+
+if (supplierStore.suppliers.length === 0 && clubStore.clubs.active.permission === "rw") {
+  await supplierStore.fetchSuppliers();
+  await supplierStore.fetchSupplierNames();
+}
+if (itemStore.items.length === 0) {
+  await itemStore.fetchItems();
 }
 
-const clubStore = useClubsStore()
-const notificationsStore = useNotificationsStore()
 const emit = defineEmits(['select'])
 
-const GetSuppliers = () => {
-  if (!clubStore.checkClub()) return
-  const url: string = HOST + "/api/" + clubStore.getClub().name + "/suppliers";
-  fetch(url, {
-    method: "GET",
-  }).then((r) => r.json())
-    .then((json) => {
-      suppliers.value = json
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-}
-GetSuppliers();
 </script>
 
 <style scoped>
@@ -143,11 +127,14 @@ th[scope="col"] {
   padding: 0.5rem;
   border-left: 1px solid #DADADA;
   color: #DADADA;
+  cursor: default;
 }
 
 td {
   padding: 0.5rem;
   text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 200px;
   border-left: 1px solid #DADADA;
   border-top: 1px solid #DADADA;
 }
@@ -167,6 +154,13 @@ a {
   text-decoration: none;
 }
 
+td p,
+a {
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 768px) {
   table {
     width: 100%;
@@ -175,8 +169,27 @@ a {
   }
 
   td {
-    white-space: nowrap;
-    max-width: 100px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .icon {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 400px) {
+  table {
+    width: 100%;
+    margin: 2rem 0;
+    overflow-x: scroll;
+  }
+
+  td {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 55px;
   }
 }
 </style>

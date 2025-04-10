@@ -45,7 +45,8 @@
         </div>
         <select class="input" v-model="supplier" placeholder="Leverantör">
           <option value="-1" selected>Leverantör</option>
-          <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">{{ supplier.name }}</option>
+          <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.id">{{ supplier.name
+            }}</option>
         </select>
       </div>
       <div class="item">
@@ -67,43 +68,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ItemAddRequest, SupplierListGetResponse, Notification } from '@/types';
+import type { ItemAddRequest } from '@/types';
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
-import { useClubsStore } from '@/stores/clubs';
-import { useNotificationsStore } from '@/stores/notifications';
-const HOST = import.meta.env.VITE_HOST;
+import { useSupplierStore } from '@/stores/suppliers';
+import { useItemStore } from '@/stores/items';
 
-const notificationsStore = useNotificationsStore();
-const clubStore = useClubsStore();
-
-const suppliers = ref<Array<SupplierListGetResponse>>([])
-
-const GetSuppliers = async () => {
-  if (!clubStore.checkClub()) {
-    const noti: Notification = {
-      id: Date.now(),
-      title: "Warning",
-      message: "Nämnden har inga leverantörer",
-      severity: "warning",
-    }
-    notificationsStore.add(noti);
-    return;
-  };
-  const url: string = HOST + "/api/" + clubStore.getClub().name + "/suppliers";
-  suppliers.value = await fetch(url, {
-    method: "GET",
-  }).then((r) => r.json())
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-}
-GetSuppliers();
+const supplierStore = useSupplierStore();
+const itemStore = useItemStore();
 
 const name = ref<string>("")
 const location = ref<string>("")
@@ -116,61 +87,16 @@ const link = ref<string>()
 const emit = defineEmits(["submit"]);
 
 const addItem = async () => {
-  const supplierId = supplier.value === -1 ? undefined : supplier.value;
-  const res: ItemAddRequest = {
+  const item: ItemAddRequest = {
     name: name.value,
     location: location.value,
     min: min.value,
     max: max.value,
     current: current.value,
-    supplier: supplierId,
-    link: link.value,
-  }
-  if (!clubStore.checkClub()) {
-    const noti: Notification = {
-      id: Date.now(),
-      title: "Error",
-      message: "Ingen nämnd vald",
-      severity: "error",
-    }
-    notificationsStore.add(noti);
-    return;
+    supplier: supplier.value == -1 ? undefined : supplier.value,
+    link: link.value
   };
-  const url: string = HOST + "/api/" + clubStore.getClub().name + "/item";
-  await fetch(url, {
-    method: "POST",
-    body: JSON.stringify(res),
-  })
-    .then((res) => {
-      if (res.ok) {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Success",
-          message: "Produkten lades till",
-          severity: "info",
-        }
-        notificationsStore.add(noti);
-      } else {
-        res.text().then((text) => {
-          const noti: Notification = {
-            id: Date.now(),
-            title: "Error",
-            message: text,
-            severity: "error",
-          }
-          notificationsStore.add(noti);
-        })
-      }
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
+  await itemStore.addItem(item);
   emit('submit')
 }
 
