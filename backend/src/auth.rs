@@ -17,7 +17,8 @@ use std::{
     future::{ready, Ready},
 };
 use types::{
-    AuthMiddleware, AuthTokenResponse, Club, ClubGetResponse, InnerAuthMiddleware, LocalBoxFuture, OIDCData, Permission, Token
+    AuthMiddleware, AuthTokenResponse, Club, ClubGetResponse, InnerAuthMiddleware, LocalBoxFuture,
+    OIDCData, Permission, Token,
 };
 
 use crate::error::Error;
@@ -123,7 +124,7 @@ pub async fn get_clubs(token: Token) -> Result<HttpResponse, Error> {
 
     let res = ClubGetResponse {
         active: Club::from((token.active_club, token.active_permission)),
-        clubs
+        clubs,
     };
 
     Ok(HttpResponse::Ok().json(res))
@@ -179,7 +180,9 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        if env::var("APP_AUTH") == Ok(String::from("false")) {
+        if env::var("APP_AUTH") == Ok(String::from("false"))
+            && Token::extract_token(req.cookie("token")).is_none()
+        {
             return fake_auth(req, self);
         }
 
