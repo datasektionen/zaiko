@@ -63,7 +63,7 @@ impl ResponseError for Error {
 impl From<sqlx::Error> for Error {
     fn from(_value: sqlx::Error) -> Self {
         // TODO: FIX
-        Error::InternalServerError(String::new())
+        Error::InternalServerError(String::from("sql"))
     }
 }
 

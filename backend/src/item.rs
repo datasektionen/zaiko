@@ -58,6 +58,7 @@ pub(crate) async fn get_item(
     club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_str();
+    log::debug!("club: {}", club);
     let mut pool = pool.get_ref().begin().await?;
 
     let items = if let ItemGetQuery {
@@ -68,10 +69,10 @@ pub(crate) async fn get_item(
         if matches!(column.as_str(), "name" | "location" | "link") {
             sqlx::query_as!(
                 ItemGetResponse,
-                "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS supplier, items.updated 
+                r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
                  FROM items
                  LEFT JOIN suppliers ON items.supplier=suppliers.id
-                 WHERE items.club = $1",
+                 WHERE items.club = $1"#,
                 club
             )
             .fetch_all(&mut *pool)
@@ -82,10 +83,10 @@ pub(crate) async fn get_item(
         ) {
             sqlx::query_as!(
                 ItemGetResponse,
-                "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS supplier, items.updated 
+                r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
                  FROM items 
                  LEFT JOIN suppliers ON items.supplier=suppliers.id
-                 WHERE items.club = $1 AND $2 = $3",
+                 WHERE items.club = $1 AND $2 = $3"#,
                 club,
                 column,
                 search
@@ -98,10 +99,10 @@ pub(crate) async fn get_item(
     } else {
         sqlx::query_as!(
             ItemGetResponse,
-            "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS supplier, items.updated 
+            r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
              FROM items 
              LEFT JOIN suppliers ON items.supplier=suppliers.id
-             WHERE items.club = $1",
+             WHERE items.club = $1"#,
             club
         )
         .fetch_all(&mut *pool)

@@ -18,7 +18,6 @@ mod auth;
 mod error;
 mod item;
 mod loging;
-mod serve;
 mod shortage;
 mod stats;
 mod supplier;
