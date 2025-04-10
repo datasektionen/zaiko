@@ -43,10 +43,10 @@ pub(crate) async fn get_shortage(
 
     let items = sqlx::query_as!(
         ShortageItem,
-        "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name as supplier
+        r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name as "supplier?"
          FROM items 
          LEFT JOIN suppliers ON items.supplier=suppliers.id
-         WHERE current <= min AND items.club = $1",
+         WHERE current <= min AND items.club = $1"#,
         club
     )
     .fetch_all(&mut *pool)
