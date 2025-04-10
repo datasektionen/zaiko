@@ -58,7 +58,6 @@ pub(crate) async fn get_item(
     club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
     let club = club.as_str();
-    log::debug!("club: {}", club);
     let mut pool = pool.get_ref().begin().await?;
 
     let items = if let ItemGetQuery {
