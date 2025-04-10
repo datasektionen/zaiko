@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS supplier, items.updated \n             FROM items \n             LEFT JOIN suppliers ON items.supplier=suppliers.id\n             WHERE items.club = $1",
+  "query": "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS \"supplier?\", items.updated \n                 FROM items \n                 LEFT JOIN suppliers ON items.supplier=suppliers.id\n                 WHERE items.club = $1 AND $2 = $3",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       },
       {
         "ordinal": 7,
-        "name": "supplier",
+        "name": "supplier?",
         "type_info": "Text"
       },
       {
@@ -51,6 +51,8 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
+        "Text",
         "Text"
       ]
     },
@@ -66,5 +68,5 @@
       false
     ]
   },
-  "hash": "eda29f34c3db488dd03c8b10c519bbafe840500452f82fe0650717b9628bcd9f"
+  "hash": "b6642167a8a301ade4005c4757ebb87e6e35d4ba36d11ba6b62f38e6ccf80cb9"
 }
