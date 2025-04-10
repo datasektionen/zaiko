@@ -2,22 +2,18 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ItemAddRequest, ItemGetResponse, ItemUpdateRequest, Notification } from "@/types";
 import { useNotificationsStore } from '@/stores/notifications';
-import { useClubsStore } from '@/stores/clubs';
 import { useStockStore } from '@/stores/stock';
 
 export const useItemStore = defineStore('items', () => {
   const HOST: string = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
-  const clubsStore = useClubsStore();
   const stockStore = useStockStore();
 
   const items = ref<Array<ItemGetResponse>>([]);
 
   async function fetchItems(): Promise<Array<ItemGetResponse>> {
-    const club = await clubsStore.getClub();
-
-    return fetch(HOST + "/api/" + club.name + "/item", {
+    return fetch(HOST + "/api/item", {
       method: "GET",
     })
       .then((res) => res.json())
@@ -38,20 +34,7 @@ export const useItemStore = defineStore('items', () => {
   }
 
   async function addItem(item: ItemAddRequest): Promise<ItemAddRequest> {
-    const club = await clubsStore.getClub();
-
-    if (club.permission !== "rw") {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Icke behörig",
-        message: "Du har inte behörighet att lägga till produkter",
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-      return {} as ItemAddRequest;
-    }
-
-    return fetch(HOST + "/api/" + club.name + "/item", {
+    return fetch(HOST + "/api/admin/item", {
       method: "POST",
       body: JSON.stringify(item)
     })
@@ -83,20 +66,7 @@ export const useItemStore = defineStore('items', () => {
   }
 
   async function updateItem(item: ItemUpdateRequest): Promise<ItemUpdateRequest> {
-    const club = await clubsStore.getClub();
-
-    if (club.permission !== "rw") {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Icke behörig",
-        message: "Du har inte behörighet att uppdatera produkter",
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-      return {} as ItemUpdateRequest;
-    }
-
-    return fetch(HOST + "/api/" + club.name + "/item", {
+    return fetch(HOST + "/api/admin/item", {
       method: "PATCH",
       body: JSON.stringify(item)
     })
@@ -128,21 +98,8 @@ export const useItemStore = defineStore('items', () => {
   }
 
   async function deleteItem(id: number): Promise<ItemGetResponse> {
-    const club = await clubsStore.getClub();
-
-    if (club.permission !== "rw") {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Icke behörig",
-        message: "Du har inte behörighet att ta bort produkter",
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-      return {} as ItemGetResponse;
-    }
-
     const query = new URLSearchParams({ id: id.toString() }).toString();
-    return fetch(HOST + "/api/" + club.name + "/item?" + query, {
+    return fetch(HOST + "/api/admin/item?" + query, {
       method: "DELETE"
     })
       .then(() => fetchItems())

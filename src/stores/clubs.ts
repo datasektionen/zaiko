@@ -7,28 +7,18 @@ export const useClubsStore = defineStore('clubs', () => {
   const HOST = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
-  const clubs = ref<ClubStorage>({ club: { name: "Nämnd", permission: "r" }, clubs: [], timestamp: 0 });
+  const clubs = ref<ClubStorage>({ active: { name: "Nämnd", permission: "r" }, clubs: [] });
 
-  const clubsStore = localStorage.getItem('clubs');
-  if (clubsStore && Date.now() - JSON.parse(clubsStore).timestamp < 1000 * 60 * 60) {
-    const parsed = JSON.parse(clubsStore);
-    clubs.value = parsed;
-  } else {
-    fetchClubs();
-  }
-
-  async function fetchClubs(): Promise<Array<ClubGetRequest>> {
-    console.log("Fetching clubs");
+  async function fetchClubs(): Promise<ClubStorage> {
+    // clubs.value = { active: { name: "metadorerna", permission: "rw" }, clubs: [{ name: "metadorerna", permission: "rw" }, { name: "sjukvård", permission: "r" }] };
+    // return Promise.resolve(clubs.value);
     return await fetch(HOST + "/api/clubs", {
       method: "GET",
     })
       .then((res) => res.json())
-      .then((json: Array<ClubGetRequest>) => {
-        clubs.value.clubs = json;
-        clubs.value.timestamp = Date.now();
-        clubs.value.club = clubs.value.clubs[0];
-        localStorage.setItem('clubs', JSON.stringify(clubs.value));
-        return clubs.value.clubs;
+      .then((json: ClubStorage) => {
+        clubs.value = json;
+        return clubs.value;
       })
       .catch((error) => {
         const noti: Notification = {
@@ -38,25 +28,34 @@ export const useClubsStore = defineStore('clubs', () => {
           severity: "error",
         }
         notificationsStore.add(noti);
-        return [];
+        return {} as ClubStorage;
       });
   }
 
   async function setClub(club: ClubGetRequest) {
-    if (clubs.value.club.name === "Nämnd") {
-      await fetchClubs();
-    }
-    clubs.value.club = club;
-    localStorage.setItem('clubs', JSON.stringify(clubs.value));
-    console.log(clubs.value);
+    const query = new URLSearchParams({ club: club.name });
+    await fetch(HOST + "/api/club?" + query.toString(), {
+      method: "POST",
+    })
+      .then(() => fetchClubs())
+      .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
+        }
+        notificationsStore.add(noti);
+      })
+
   }
 
-  async function getClub() {
-    if (clubs.value.club.name === "Nämnd") {
+  async function getClub(): Promise<ClubStorage> {
+    if (clubs.value) {
       await fetchClubs();
     }
-    return clubs.value.club;
+    return clubs.value;
   }
 
-  return { clubs, setClub, getClub, fetchClubs }
+  return { clubs, setClub, fetchClubs, getClub }
 })

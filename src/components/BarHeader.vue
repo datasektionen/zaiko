@@ -19,12 +19,14 @@
         <NavLink to="/items" title="Produkter" :compact="!barOpen">
           <ArchiveBoxIcon />
         </NavLink>
-        <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen" v-if="clubs.club.permission === 'rw'">
-          <ShoppingCartIcon />
-        </NavLink>
-        <NavLink to="/stock" title="Inventera" :compact="!barOpen" v-if="clubs.club.permission === 'rw'">
-          <ClipboardDocumentListIcon />
-        </NavLink>
+        <div v-if="clubs" class="navLinks">
+          <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen" v-if="clubs.active.permission === 'rw'">
+            <ShoppingCartIcon />
+          </NavLink>
+          <NavLink to="/stock" title="Inventera" :compact="!barOpen" v-if="clubs.active.permission === 'rw'">
+            <ClipboardDocumentListIcon />
+          </NavLink>
+        </div>
       </div>
     </div>
     <div class="barPanel">
@@ -35,10 +37,12 @@
           </button>
           <h1>{{ $route.name }}</h1>
         </div>
-        <div class="clubMenu">
-          <ArrowsUpDownIcon class="icon" v-if="!isMobile" />
-          <ClubSelect />
-        </div>
+        <Suspense>
+          <div class="clubMenu">
+            <ArrowsUpDownIcon class="icon" v-if="!isMobile" />
+            <ClubSelect />
+          </div>
+        </Suspense>
       </div>
       <div class="mainContent">
         <slot />
@@ -56,19 +60,18 @@ import { computed, ref } from 'vue';
 import NotificationList from '@/components/NotificationList.vue';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
 import { useClubsStore } from '@/stores/clubs';
+import type { ClubStorage } from '@/types';
 
 const clubStore = useClubsStore();
-const clubs = clubStore.clubs;
+const clubs = ref<ClubStorage | null>(null);
+clubStore.getClub().then((club) => {
+  clubs.value = club;
+});
 
 const isMobile = useMediaQuery("(max-width: 768px)");
-const ShouldBarOpenStart = (): boolean => {
-  const isSmallScreen = useMediaQuery("(max-width: 1250px)");
-  if (isSmallScreen.value || isMobile.value) {
-    return false;
-  }
-  return true;
-}
-const barOpen = ref<boolean>(ShouldBarOpenStart());
+const isSmallScreen = useMediaQuery("(max-width: 1250px)");
+
+const barOpen = ref<boolean>(isSmallScreen || isMobile.value ? true : false);
 
 const barSidePanel = computed<string>(() => {
   return barOpen.value ? "barSidePanel" : "barSidePanel closed";

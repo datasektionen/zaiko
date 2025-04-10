@@ -9,7 +9,7 @@
 import type { FunctionalComponent } from 'vue';
 
 defineProps<{
-  compact: boolean,
+  compact?: boolean,
   text: string,
   icon: FunctionalComponent,
 }>()

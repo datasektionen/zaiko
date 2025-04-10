@@ -7,7 +7,7 @@ export interface ItemGetResponse {
   min?: number,
   max?: number,
   current: number,
-  supplier?: number,
+  supplier?: string,
   updated: number,
   link?: string,
 }
@@ -75,10 +75,11 @@ export interface StockGetResponse {
   id: number,
   name: string,
   location: string,
-  supplier: string,
+  supplier?: string,
   min: number,
   current: number,
   order: number,
+  link?: string,
 }
 
 export interface StockUpdateRequest {

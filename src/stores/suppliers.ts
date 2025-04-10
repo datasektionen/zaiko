@@ -2,32 +2,17 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { Notification, SupplierAddRequest, SupplierGetResponse, SupplierListGetResponse, SupplierUpdateRequest } from "@/types";
 import { useNotificationsStore } from '@/stores/notifications';
-import { useClubsStore } from '@/stores/clubs';
 
 export const useSupplierStore = defineStore('supplier', () => {
   const HOST: string = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
-  const clubsStore = useClubsStore();
 
   const suppliers = ref<Array<SupplierGetResponse>>([]);
   const supplierNames = ref<Map<number, string>>(new Map<number, string>());
 
   async function fetchSuppliers(): Promise<Array<SupplierGetResponse>> {
-    const club = await clubsStore.getClub();
-
-    if (club.permission !== "rw") {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Icke behörig",
-        message: "Du har inte behörighet att se leverantörer",
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-      return [];
-    }
-
-    return fetch(HOST + "/api/" + club.name + "/supplier", {
+    return fetch(HOST + "/api/admin/supplier", {
       method: "GET",
     })
       .then((res) => res.json())
@@ -48,20 +33,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   }
 
   async function addSupplier(supplier: SupplierAddRequest): Promise<SupplierAddRequest> {
-    const club = await clubsStore.getClub();
-
-    if (club.permission !== "rw") {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Icke behörig",
-        message: "Du har inte behörighet att lägga till leverantörer",
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-      return {} as SupplierAddRequest;
-    }
-
-    return fetch(HOST + "/api/" + club.name + "/supplier", {
+    return fetch(HOST + "/api/admin/supplier", {
       method: "POST",
       body: JSON.stringify(supplier)
     })
@@ -89,20 +61,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   }
 
   async function updateSupplier(supplier: SupplierUpdateRequest): Promise<SupplierUpdateRequest> {
-    const club = await clubsStore.getClub();
-
-    if (club.permission !== "rw") {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Icke behörig",
-        message: "Du har inte behörighet att uppdatera leverantörer",
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-      return {} as SupplierUpdateRequest;
-    }
-
-    return fetch(HOST + "/api/" + club.name + "/supplier", {
+    return fetch(HOST + "/api/admin/supplier", {
       method: "PATCH",
       body: JSON.stringify(supplier)
     })
@@ -130,21 +89,8 @@ export const useSupplierStore = defineStore('supplier', () => {
   }
 
   async function deleteSupplier(id: number): Promise<SupplierGetResponse> {
-    const club = await clubsStore.getClub();
-
-    if (club.permission !== "rw") {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Icke behörig",
-        message: "Du har inte behörighet att ta bort leverantörer",
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-      return {} as SupplierGetResponse;
-    }
-
     const query = new URLSearchParams({ id: id.toString() }).toString();
-    return fetch(HOST + "/api/" + club.name + "/supplier?" + query, {
+    return fetch(HOST + "/api/admin/supplier?" + query, {
       method: "DELETE"
     })
       .then(() => fetchSuppliers())
@@ -171,9 +117,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   }
 
   async function fetchSupplierNames(): Promise<Map<number, string>> {
-    const club = await clubsStore.getClub();
-
-    return fetch(HOST + "/api/" + club.name + "/suppliers", {
+    return fetch(HOST + "/api/admin/suppliers", {
       method: "GET",
     })
       .then((res) => res.json())
@@ -206,6 +150,15 @@ export const useSupplierStore = defineStore('supplier', () => {
     return name;
   }
 
+  function getSupplierId(name?: string): number {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const id = Array.from(supplierNames.value.entries()).find(([_, value]) => value === name)?.[0];
+    if (id === undefined) {
+      return -1;
+    }
+    return id;
+  }
+
   async function getSupplier(id: number): Promise<SupplierGetResponse> {
     if (suppliers.value.length === 0) {
       await fetchSuppliers();
@@ -224,6 +177,6 @@ export const useSupplierStore = defineStore('supplier', () => {
     return {} as SupplierGetResponse;
   }
 
-  return { fetchSuppliers, addSupplier, updateSupplier, deleteSupplier, fetchSupplierNames, getSupplierName, getSupplier, suppliers, supplierNames }
+  return { fetchSuppliers, addSupplier, updateSupplier, deleteSupplier, fetchSupplierNames, getSupplierName, getSupplier, suppliers, supplierNames, getSupplierId }
 })
 

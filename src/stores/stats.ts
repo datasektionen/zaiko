@@ -2,20 +2,16 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { Notification, Stats } from "@/types";
 import { useNotificationsStore } from '@/stores/notifications';
-import { useClubsStore } from '@/stores/clubs';
 
 export const useStatsStore = defineStore('stats', () => {
   const HOST: string = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
-  const clubsStore = useClubsStore();
 
   const stats = ref<Stats>({ items: 0, shortages: 0, suppliers: 0 });
 
   async function fetchStats(): Promise<Stats> {
-    const club = await clubsStore.getClub();
-
-    return fetch(HOST + "/api/" + club.name + "/stats", {
+    return fetch(HOST + "/api/stats", {
       method: "GET",
     })
       .then((res) => res.json())

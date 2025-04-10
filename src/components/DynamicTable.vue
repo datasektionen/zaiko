@@ -14,7 +14,8 @@
       <tbody>
         <tr v-for="(row, rowIndex) in rows" :key="rowIndex">
           <td v-for="(column, colIndex) in columns" :key="colIndex">
-            {{ row[column.value] }}
+            <a v-if="row.link && column.value == 'name'" :href="row.link" target="_blank">{{ row.name }}</a>
+            <p v-else>{{ row[column.value] }}</p>
           </td>
         </tr>
       </tbody>
@@ -54,6 +55,11 @@ span {
   display: flex;
   align-items: center;
   justify-content: start;
+}
+
+a {
+  color: #2984BA;
+  text-decoration: none;
 }
 
 th[scope="col"] {

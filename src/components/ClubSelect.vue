@@ -1,10 +1,10 @@
 <template>
   <div class="ClubSelect">
-    <select class="dropdown" v-model="clubs.club">
+    <select class="dropdown" v-model="clubs.active" @change="clubsStore.setClub(clubs.active)">
       <option v-for="club in clubs.clubs" :key="club.name" :value="club">{{ clubName(club.name) }}</option>
     </select>
     <div class="permission">
-      <PencilIcon class="icon" v-if="clubs.club.permission == 'rw'" />
+      <PencilIcon class="icon" v-if="clubs.active.permission == 'rw'" />
       <EyeIcon class="icon" v-else />
     </div>
   </div>
@@ -16,7 +16,7 @@ import { PencilIcon, EyeIcon } from '@heroicons/vue/24/outline'
 import { useMediaQuery } from '@vueuse/core/index.cjs';
 
 const clubsStore = useClubsStore();
-const clubs = clubsStore.clubs;
+const clubs = await clubsStore.getClub();
 const isMobile = useMediaQuery("(max-width: 550px)");
 
 const clubName = (name: string) => {
@@ -50,7 +50,7 @@ p {
 }
 
 .selected {
-  margin: 0;
+  margin: auto;
   padding: 0;
   font-weight: semi-bold;
 }

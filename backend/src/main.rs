@@ -25,7 +25,6 @@ mod supplier;
 
 use crate::item::{add_item, delete_item, get_item, update_item};
 use crate::loging::get_log;
-use crate::serve::serve_frontend;
 use crate::shortage::{get_shortage, take_stock};
 use crate::supplier::{add_supplier, delete_supplier, get_supplier, update_supplier};
 
@@ -93,7 +92,6 @@ async fn main() -> std::io::Result<()> {
                             .service(take_stock),
                     ),
             )
-            .service(serve_frontend)
             .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
     })
     .bind((

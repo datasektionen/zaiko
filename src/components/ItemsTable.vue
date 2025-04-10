@@ -54,7 +54,7 @@
             <p v-else>{{ item.name }}</p>
           </td>
           <td>{{ item.location }}</td>
-          <td>{{ supplierStore.getSupplierName(item.supplier) }}</td>
+          <td>{{ item.supplier }}</td>
           <td>{{ item.current }}</td>
           <td>{{ item.min }}</td>
           <td>{{ item.max }}</td>

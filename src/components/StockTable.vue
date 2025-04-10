@@ -48,7 +48,7 @@
             <p v-else>{{ item.name }}</p>
           </td>
           <td>{{ item.location }}</td>
-          <td>{{ supplierStore.getSupplierName(item.supplier) }}</td>
+          <td>{{ item.supplier }}</td>
           <td>{{ item.current }}</td>
           <td>
             <input v-model.number="stockStore.output.items[idx][1]" type="number">
@@ -67,13 +67,11 @@
 <script setup lang="ts">
 import { useItemStore } from '@/stores/items';
 import { useStockStore } from '@/stores/stock';
-import { useSupplierStore } from '@/stores/suppliers';
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, InboxArrowDownIcon, WalletIcon, ArrowsUpDownIcon } from '@heroicons/vue/16/solid'
 import { useMediaQuery } from '@vueuse/core/index.cjs'
 import EmptyTable from './EmptyTable.vue';
 import { ArchiveBoxXMarkIcon } from '@heroicons/vue/24/outline';
 
-const supplierStore = useSupplierStore();
 const itemStore = useItemStore();
 const stockStore = useStockStore();
 
