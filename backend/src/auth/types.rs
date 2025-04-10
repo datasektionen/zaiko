@@ -171,7 +171,7 @@ impl Permission {
         let mut privlages = HashMap::new();
 
         privlages.insert(String::from("metadorerna"), Permission::Read);
-        privlages.insert(String::from("sjukvård"), Permission::ReadWrite);
+        privlages.insert(String::from("sjukvård"), Permission::Read);
 
         privlages
     }

@@ -52,8 +52,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let cors = if env::var("APP_ENV") == Ok(String::from("development")) {
             Cors::permissive()
-                .supports_credentials()
-                .allowed_origin("http://localhost:5173")
         } else {
             Cors::default()
                 .allowed_methods(vec![
