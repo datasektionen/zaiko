@@ -14,6 +14,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   async function fetchSuppliers(): Promise<Array<SupplierGetResponse>> {
     return fetch(HOST + "/api/admin/supplier", {
       method: "GET",
+      credentials: "include",
     })
       .then((res) => res.json())
       .then((json: Array<SupplierGetResponse>) => {
@@ -35,7 +36,8 @@ export const useSupplierStore = defineStore('supplier', () => {
   async function addSupplier(supplier: SupplierAddRequest): Promise<SupplierAddRequest> {
     return fetch(HOST + "/api/admin/supplier", {
       method: "POST",
-      body: JSON.stringify(supplier)
+      body: JSON.stringify(supplier),
+      credentials: "include",
     })
       .then(() => fetchSuppliers())
       .then(() => {
@@ -63,7 +65,8 @@ export const useSupplierStore = defineStore('supplier', () => {
   async function updateSupplier(supplier: SupplierUpdateRequest): Promise<SupplierUpdateRequest> {
     return fetch(HOST + "/api/admin/supplier", {
       method: "PATCH",
-      body: JSON.stringify(supplier)
+      body: JSON.stringify(supplier),
+      credentials: "include",
     })
       .then(() => fetchSuppliers())
       .then(() => {
@@ -91,7 +94,8 @@ export const useSupplierStore = defineStore('supplier', () => {
   async function deleteSupplier(id: number): Promise<SupplierGetResponse> {
     const query = new URLSearchParams({ id: id.toString() }).toString();
     return fetch(HOST + "/api/admin/supplier?" + query, {
-      method: "DELETE"
+      method: "DELETE",
+      credentials: "include",
     })
       .then(() => fetchSuppliers())
       .then(() => {
@@ -119,6 +123,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   async function fetchSupplierNames(): Promise<Map<number, string>> {
     return fetch(HOST + "/api/admin/suppliers", {
       method: "GET",
+      credentials: "include",
     })
       .then((res) => res.json())
       .then((json: Array<SupplierListGetResponse>) => {

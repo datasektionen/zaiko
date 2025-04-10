@@ -15,6 +15,7 @@ export const useItemStore = defineStore('items', () => {
   async function fetchItems(): Promise<Array<ItemGetResponse>> {
     return fetch(HOST + "/api/item", {
       method: "GET",
+      credentials: "include",
     })
       .then((res) => res.json())
       .then((json: Array<ItemGetResponse>) => {
@@ -36,7 +37,8 @@ export const useItemStore = defineStore('items', () => {
   async function addItem(item: ItemAddRequest): Promise<ItemAddRequest> {
     return fetch(HOST + "/api/admin/item", {
       method: "POST",
-      body: JSON.stringify(item)
+      body: JSON.stringify(item),
+      credentials: "include",
     })
       .then(() => fetchItems())
       .then(() => {
@@ -68,7 +70,8 @@ export const useItemStore = defineStore('items', () => {
   async function updateItem(item: ItemUpdateRequest): Promise<ItemUpdateRequest> {
     return fetch(HOST + "/api/admin/item", {
       method: "PATCH",
-      body: JSON.stringify(item)
+      body: JSON.stringify(item),
+      credentials: "include",
     })
       .then(() => fetchItems())
       .then(() => {
@@ -100,7 +103,8 @@ export const useItemStore = defineStore('items', () => {
   async function deleteItem(id: number): Promise<ItemGetResponse> {
     const query = new URLSearchParams({ id: id.toString() }).toString();
     return fetch(HOST + "/api/admin/item?" + query, {
-      method: "DELETE"
+      method: "DELETE",
+      credentials: "include",
     })
       .then(() => fetchItems())
       .then(() => {

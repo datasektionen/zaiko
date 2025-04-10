@@ -10,12 +10,14 @@ use actix_web::{
 use auth::types::{AuthMiddleware, Permission};
 use auth::{auth_callback, get_clubs, set_club, types::OIDCData};
 use dotenv::dotenv;
+use serve::serve_frontend;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use stats::get_stats;
 use supplier::get_suppliers;
 
 mod auth;
 mod error;
+mod serve;
 mod item;
 mod loging;
 mod shortage;
@@ -50,6 +52,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let cors = if env::var("APP_ENV") == Ok(String::from("development")) {
             Cors::permissive()
+                .supports_credentials()
+                .allowed_origin("http://localhost:5173")
         } else {
             Cors::default()
                 .allowed_methods(vec![
@@ -91,6 +95,7 @@ async fn main() -> std::io::Result<()> {
                             .service(take_stock),
                     ),
             )
+            .service(serve_frontend)
             .service(actix_files::Files::new("/", "../dist/").index_file("index.html"))
     })
     .bind((

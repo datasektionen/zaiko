@@ -16,6 +16,7 @@ export const useStockStore = defineStore('stock', () => {
   async function fetchShortage(): Promise<Array<StockGetResponse>> {
     return fetch(HOST + "/api/stock", {
       method: "GET",
+      credentials: "include",
     })
       .then((res) => res.json())
       .then((json: Array<StockGetResponse>) => {
@@ -49,7 +50,8 @@ export const useStockStore = defineStore('stock', () => {
   async function takeStock(): Promise<Array<ItemGetResponse>> {
     return fetch(HOST + "/api/admin/stock", {
       method: "POST",
-      body: JSON.stringify(output.value)
+      body: JSON.stringify(output.value),
+      credentials: "include",
     })
       .then(() => fetchShortage())
       .then(() => itemStore.fetchItems())
