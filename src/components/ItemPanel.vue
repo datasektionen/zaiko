@@ -35,7 +35,7 @@
             <Battery50Icon class="buttonIcon" />
             <p>Nuvarande</p>
           </div>
-          <input v-model="current" placeholder="Nuvarande">
+          <input type="number" v-model="current" placeholder="Nuvarande">
         </div>
       </fieldset>
       <div class="item">
@@ -44,8 +44,8 @@
           <p>Leverantör</p>
         </div>
         <select class="input" v-model="supplier" placeholder="Leverantör">
-          <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id"
-            :selected="item.supplier == supplier.id">{{ supplier.name }}</option>
+          <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.id"
+            :selected="item.supplier == supplier.name">{{ supplier.name }}</option>
         </select>
       </div>
       <div class="item">
@@ -71,147 +71,48 @@
 
 <script setup lang="ts">
 import { ref, defineProps } from 'vue'
-import type { ItemUpdateRequest, ItemGetResponse, SupplierListGetResponse, Notification } from '@/types';
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, BackspaceIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
-import { useClubsStore } from '@/stores/clubs';
-import { useNotificationsStore } from '@/stores/notifications';
-const HOST = import.meta.env.VITE_HOST;
+import { useSupplierStore } from '@/stores/suppliers';
+import { useItemStore } from '@/stores/items';
+import type { ItemUpdateRequest } from '@/types';
 
-const { item } = defineProps<{
-  item: ItemGetResponse,
+
+const { id } = defineProps<{
+  id: number,
 }>()
 
-
-const notificationsStore = useNotificationsStore();
-const clubStore = useClubsStore();
-
-const suppliers = ref<Array<SupplierListGetResponse>>([])
-
-const GetSuppliers = () => {
-  if (!clubStore.checkClub()) {
-    const noti: Notification = {
-      id: Date.now(),
-      title: "Error",
-      message: "Nämnd har ingen leverantör",
-      severity: "error",
-    }
-    notificationsStore.add(noti);
-    return;
-  };
-  const url: string = HOST + "/api/" + clubStore.getClub().name + "/suppliers";
-  fetch(url, {
-    method: "GET",
-  }).then((r) => r.json())
-    .then((json) => {
-      suppliers.value = json
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
-}
-GetSuppliers();
+const supplierStore = useSupplierStore();
+const itemStore = useItemStore();
+const item = await itemStore.getItem(id);
 
 const name = ref<string>(item.name)
 const location = ref<string>(item.location)
 const min = ref<number | undefined>(item.min)
 const max = ref<number | undefined>(item.max)
 const current = ref<number>(item.current)
-const supplier = ref<number | undefined>(item.supplier)
+const supplier = ref<string | undefined>(item.supplier)
 const link = ref<string | undefined>(item.link)
 
 const emit = defineEmits(["submit", "delete"]);
 
 const updateItem = async () => {
-  const res: ItemUpdateRequest = {
+  const updatedItem: ItemUpdateRequest = {
     id: item.id,
     name: name.value,
     location: location.value,
     min: min.value,
     max: max.value,
     current: current.value,
-    supplier: supplier.value,
-    link: link.value,
-  }
-  const url: string = HOST + "/api/" + clubStore.getClub().name;
-  await fetch(url + "/item", {
-    method: "PATCH",
-    body: JSON.stringify(res),
-  })
-    .then((res) => {
-      if (res.ok) {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Updaterad",
-          message: "Produkten har uppdaterats",
-          severity: "info",
-        }
-        notificationsStore.add(noti);
-      } else {
-        res.text().then((text) => text).then((text) => {
-          const noti: Notification = {
-            id: Date.now(),
-            title: "Error",
-            message: text,
-            severity: "error",
-          }
-          notificationsStore.add(noti);
-        })
-      }
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
+    supplier: supplierStore.getSupplierId(supplier.value),
+    link: link.value
+  };
+  await itemStore.updateItem(updatedItem);
+
   emit("submit")
 }
 
 const Delete = async () => {
-  const url: string = HOST + "/api/" + clubStore.getClub().name;
-  const query = new URLSearchParams({ id: item.id.toString() }).toString();
-  await fetch(url + "/item?" + query, {
-    method: "DELETE",
-  })
-    .then((res) => {
-      if (res.ok) {
-        const noti: Notification = {
-          id: Date.now(),
-          title: "Raderad",
-          message: "Produkten har tagits bort",
-          severity: "info",
-        }
-        notificationsStore.add(noti);
-      } else {
-        res.text().then((text) => text).then((text) => {
-          const noti: Notification = {
-            id: Date.now(),
-            title: "Error",
-            message: text,
-            severity: "error",
-          }
-          notificationsStore.add(noti);
-        })
-      }
-    })
-    .catch((error) => {
-      const noti: Notification = {
-        id: Date.now(),
-        title: "Error",
-        message: error.toString(),
-        severity: "error",
-      }
-      notificationsStore.add(noti);
-    })
+  await itemStore.deleteItem(item.id);
   emit("delete")
 }
 

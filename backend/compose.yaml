@@ -1,4 +1,31 @@
 services:
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile.backend
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    environment:
+      VITE_HOST: http://localhost:8080
+      VITE_HOST_FRONTEND: http://localhost:8080
+      APP_SECRET: ${APP_SECRET}
+      OIDC_SECRET: ${OIDC_SECRET}
+      DATABASE_URL: postgresql://postgres:postgres@db/db
+      PORT: 8080
+      OIDC_PROVIDER: https://sso.datasektionen.se/op
+      OIDC_ID: zaiko
+      REDIRECT_URL: http://localhost:8080/api/oidc/callback
+      PLS_URL: https://pls.datasektionen.se/api
+      APP_URL: 0.0.0.0
+      APP_ENV: development
+      APP_AUTH: true
+      RUST_LOG: debug
+    volumes:
+      - type: bind
+        source: ./src
+        target: /build/src
   db:
     image: 'postgres:latest'
     ports:
@@ -6,4 +33,4 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DATABASE: db
+      POSTGRES_DB: db

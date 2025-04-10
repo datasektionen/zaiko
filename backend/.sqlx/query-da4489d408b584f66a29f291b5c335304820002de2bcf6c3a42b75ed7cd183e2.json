@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, username, password, link, notes, updated \n                 FROM suppliers \n                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
+  "query": "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS \"supplier?\", items.updated \n             FROM items \n             LEFT JOIN suppliers ON items.supplier=suppliers.id\n             WHERE items.club = $1",
   "describe": {
     "columns": [
       {
@@ -15,46 +15,56 @@
       },
       {
         "ordinal": 2,
-        "name": "username",
+        "name": "location",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
-        "name": "password",
-        "type_info": "Text"
+        "name": "min",
+        "type_info": "Float4"
       },
       {
         "ordinal": 4,
+        "name": "max",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 5,
+        "name": "current",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 6,
         "name": "link",
         "type_info": "Text"
       },
       {
-        "ordinal": 5,
-        "name": "notes",
+        "ordinal": 7,
+        "name": "supplier?",
         "type_info": "Text"
       },
       {
-        "ordinal": 6,
+        "ordinal": 8,
         "name": "updated",
         "type_info": "Int4"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Text",
         "Text"
       ]
     },
     "nullable": [
       false,
       false,
+      false,
       true,
       true,
+      false,
       true,
-      true,
+      false,
       false
     ]
   },
-  "hash": "37efde880f0834f408dc517035dfaabcb3d741b7f2cc8bae335a3767e1191af4"
+  "hash": "da4489d408b584f66a29f291b5c335304820002de2bcf6c3a42b75ed7cd183e2"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, location, min, max, current, link, supplier, updated \n                 FROM items\n                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
+  "query": "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name as supplier\n         FROM items \n         LEFT JOIN suppliers ON items.supplier=suppliers.id\n         WHERE current <= min AND items.club = $1",
   "describe": {
     "columns": [
       {
@@ -41,18 +41,11 @@
       {
         "ordinal": 7,
         "name": "supplier",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 8,
-        "name": "updated",
-        "type_info": "Int4"
+        "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Text",
         "Text"
       ]
     },
@@ -64,9 +57,8 @@
       true,
       false,
       true,
-      true,
       false
     ]
   },
-  "hash": "22dae281d141c6034932b9075507ea685654d265e0ae33fb07c8816126a805a6"
+  "hash": "4626595555f374baf5c4b756586085d0fbae70477c87827802cecd414734d491"
 }

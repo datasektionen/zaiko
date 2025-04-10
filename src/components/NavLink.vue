@@ -53,7 +53,7 @@ a {
 
 h3 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: medium;
   opacity: 1;
   transition: all 0.3s ease-in;

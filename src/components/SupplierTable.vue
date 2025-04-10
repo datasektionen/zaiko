@@ -1,6 +1,6 @@
 <template>
   <div>
-    <table>
+    <table v-if="supplierStore.suppliers.length > 0">
       <thead>
         <tr>
           <th scope="col">
@@ -30,7 +30,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="item, idx in items" :key="item.id" @click="emit('select', idx)">
+        <tr v-for="item in supplierStore.suppliers" :key="item.id" @click="emit('select', item.id)">
           <td scope="row">
             <a :href="item.link" target="_blank" @click.stop="" v-if="item.link">{{ item.name }}</a>
             <p v-else>{{ item.name }}</p>
@@ -41,21 +41,27 @@
         </tr>
       </tbody>
     </table>
+    <div v-else>
+      <EmptyTable :compact="isMobile.value" text="Inga leverantörer" :icon="ReceiptPercentIcon" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue'
-import type { SupplierGetResponse } from '@/types'
 import { LockClosedIcon, ShoppingCartIcon, UserCircleIcon, DocumentTextIcon } from '@heroicons/vue/16/solid'
+import { ReceiptPercentIcon } from '@heroicons/vue/24/outline';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
+import { useSupplierStore } from '@/stores/suppliers';
+import EmptyTable from './EmptyTable.vue';
 
-defineProps<{
-  items: Array<SupplierGetResponse>
-}>()
+const supplierStore = useSupplierStore();
 
 const emit = defineEmits(['select'])
 const isMobile = useMediaQuery('(max-width: 768px)');
+
+if (supplierStore.suppliers.length == 0) {
+  await supplierStore.fetchSuppliers();
+}
 
 </script>
 
@@ -86,6 +92,9 @@ th[scope="col"] {
 td {
   padding: 0.5rem;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 200px;
   border-left: 1px solid #DADADA;
   border-top: 1px solid #DADADA;
 }
@@ -105,16 +114,27 @@ a {
   text-decoration: none;
 }
 
+td p,
+a {
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 768px) {
   table {
     width: 96%;
     margin: 2rem 0;
     overflow-x: scroll;
   }
+  .icon {
+    margin: 0 auto;
+  }
+}
 
+@media (max-width: 400px) {
   td {
-    white-space: nowrap;
-    max-width: 100px;
+    max-width: 55px;
   }
 }
 </style>

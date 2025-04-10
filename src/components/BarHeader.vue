@@ -13,21 +13,20 @@
         <h1 v-if="barOpen">Zaiko</h1>
       </RouterLink>
       <div class="navLinks" @click="isMobileClose()">
-        <NavLink to="/search" title="Sök" :compact="!barOpen">
-          <MagnifyingGlassIcon />
-        </NavLink>
         <NavLink to="/" title="Dashboard" :compact="!barOpen">
           <CommandLineIcon />
         </NavLink>
         <NavLink to="/items" title="Produkter" :compact="!barOpen">
           <ArchiveBoxIcon />
         </NavLink>
-        <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen">
-          <ShoppingCartIcon />
-        </NavLink>
-        <NavLink to="/stock" title="Inventera" :compact="!barOpen">
-          <ClipboardDocumentListIcon />
-        </NavLink>
+        <div v-if="clubs" class="navLinks">
+          <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen" v-if="clubs.active.permission === 'rw'">
+            <ShoppingCartIcon />
+          </NavLink>
+          <NavLink to="/stock" title="Inventera" :compact="!barOpen" v-if="clubs.active.permission === 'rw'">
+            <ClipboardDocumentListIcon />
+          </NavLink>
+        </div>
       </div>
     </div>
     <div class="barPanel">
@@ -38,10 +37,12 @@
           </button>
           <h1>{{ $route.name }}</h1>
         </div>
-        <div class="clubMenu">
-          <ArrowsUpDownIcon class="icon" v-if="!isMobile" />
-          <ClubSelect />
-        </div>
+        <Suspense>
+          <div class="clubMenu">
+            <ArrowsUpDownIcon class="icon" v-if="!isMobile" />
+            <ClubSelect />
+          </div>
+        </Suspense>
       </div>
       <div class="mainContent">
         <slot />
@@ -54,20 +55,23 @@
 <script setup lang="ts">
 import NavLink from '@/components/NavLink.vue'
 import ClubSelect from '@/components/ClubSelect.vue'
-import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, MagnifyingGlassIcon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
+import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
 import { computed, ref } from 'vue';
 import NotificationList from '@/components/NotificationList.vue';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
+import { useClubsStore } from '@/stores/clubs';
+import type { ClubStorage } from '@/types';
+
+const clubStore = useClubsStore();
+const clubs = ref<ClubStorage | null>(null);
+clubStore.getClub().then((club) => {
+  clubs.value = club;
+});
 
 const isMobile = useMediaQuery("(max-width: 768px)");
-const ShouldBarOpenStart = (): boolean => {
-  const isSmallScreen = useMediaQuery("(max-width: 1250px)");
-  if (isSmallScreen.value || isMobile.value) {
-    return false;
-  }
-  return true;
-}
-const barOpen = ref<boolean>(ShouldBarOpenStart());
+const isSmallScreen = useMediaQuery("(max-width: 1250px)");
+
+const barOpen = ref<boolean>(isSmallScreen || isMobile.value ? true : false);
 
 const barSidePanel = computed<string>(() => {
   return barOpen.value ? "barSidePanel" : "barSidePanel closed";
@@ -88,7 +92,7 @@ const isMobileClose = () => {
 <style scoped>
 .Main {
   display: grid;
-  grid-template-columns: 256px 1fr;
+  grid-template-columns: 220px 1fr;
   background-color: #DADADA;
   min-height: 100vh;
   max-height: 100vh;

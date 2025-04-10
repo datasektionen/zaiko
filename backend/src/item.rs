@@ -1,13 +1,8 @@
-use actix_identity::Identity;
-use actix_session::Session;
 use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 
-use crate::{
-    auth::{check_auth, Permission},
-    error::Error,
-};
+use crate::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ItemGetResponse {
@@ -17,7 +12,7 @@ pub(crate) struct ItemGetResponse {
     pub(crate) min: Option<f32>,
     pub(crate) max: Option<f32>,
     pub(crate) current: f32,
-    pub(crate) supplier: Option<i32>,
+    pub(crate) supplier: Option<String>,
     pub(crate) updated: i32,
     pub(crate) link: Option<String>,
 }
@@ -53,21 +48,17 @@ struct ItemGetQuery {
 
 #[derive(Debug, Deserialize)]
 struct ItemDeleteQuery {
-    id: i32
+    id: i32,
 }
 
-#[get("/{club}/item")]
+#[get("/item")]
 pub(crate) async fn get_item(
-    club: web::Path<String>,
     pool: web::Data<Pool<Postgres>>,
     query: web::Query<ItemGetQuery>,
-    id: Option<Identity>,
-    session: Session,
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
-
-    check_auth(&id, &session, club).await?;
 
     let items = if let ItemGetQuery {
         column: Some(column),
@@ -77,12 +68,11 @@ pub(crate) async fn get_item(
         if matches!(column.as_str(), "name" | "location" | "link") {
             sqlx::query_as!(
                 ItemGetResponse,
-                "SELECT id, name, location, min, max, current, link, supplier, updated 
+                r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
                  FROM items
-                 WHERE club = $1 AND levenshtein($2, $3) <= 10",
-                club,
-                column,
-                search
+                 LEFT JOIN suppliers ON items.supplier=suppliers.id
+                 WHERE items.club = $1"#,
+                club
             )
             .fetch_all(&mut *pool)
             .await?
@@ -92,9 +82,10 @@ pub(crate) async fn get_item(
         ) {
             sqlx::query_as!(
                 ItemGetResponse,
-                "SELECT id, name, location, min, max, current, link, supplier, updated 
+                r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
                  FROM items 
-                 WHERE club = $1 AND $2 = $3",
+                 LEFT JOIN suppliers ON items.supplier=suppliers.id
+                 WHERE items.club = $1 AND $2 = $3"#,
                 club,
                 column,
                 search
@@ -107,9 +98,10 @@ pub(crate) async fn get_item(
     } else {
         sqlx::query_as!(
             ItemGetResponse,
-            "SELECT id, name, location, min, max, current, link, supplier, updated 
+            r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
              FROM items 
-             WHERE club = $1",
+             LEFT JOIN suppliers ON items.supplier=suppliers.id
+             WHERE items.club = $1"#,
             club
         )
         .fetch_all(&mut *pool)
@@ -121,20 +113,14 @@ pub(crate) async fn get_item(
     Ok(HttpResponse::Ok().json(items))
 }
 
-#[post("/{club}/item")]
+#[post("/item")]
 pub(crate) async fn add_item(
     body: String,
-    club: web::Path<String>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
-
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
 
     let item: ItemAddRequest = serde_json::from_str(&body)?;
 
@@ -152,7 +138,7 @@ pub(crate) async fn add_item(
         item.current,
         item.supplier,
         item.link,
-        club,
+        club
     )
     .execute(&mut *pool)
     .await?;
@@ -183,20 +169,14 @@ pub(crate) async fn add_item(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[patch("/{club}/item")]
+#[patch("/item")]
 pub(crate) async fn update_item(
-    club: web::Path<String>,
     body: String,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
-
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
 
     let item: ItemUpdateRequest = serde_json::from_str(&body)?;
 
@@ -237,7 +217,7 @@ pub(crate) async fn update_item(
         item.supplier,
         item.link,
         item.name,
-        club,
+        club
     )
     .execute(&mut *pool)
     .await?;
@@ -247,20 +227,14 @@ pub(crate) async fn update_item(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[delete("/{club}/item")]
+#[delete("/item")]
 pub(crate) async fn delete_item(
-    club: web::Path<String>,
     item_id: web::Query<ItemDeleteQuery>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
-
-    if !matches!(check_auth(&id, &session, club).await?, Permission::Write) {
-        return Err(Error::Unauthorized);
-    }
 
     sqlx::query!(
         "DELETE FROM items 

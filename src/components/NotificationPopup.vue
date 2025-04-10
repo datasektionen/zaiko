@@ -2,7 +2,7 @@
   <div @click="emit('close')" class="notiMain" :class="getColor">
     <div>
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-        class="size-6" v-if="iconType == 0">
+        class="size-6" v-if="iconType == 3">
         <path stroke-linecap="round" stroke-linejoin="round"
           d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
       </svg>
@@ -104,5 +104,27 @@ svg {
 
 .red {
   color: #B62E3D;
+}
+
+@media (max-width: 768px) {
+  .notiMain {
+    width: 100%;
+    padding: 10px 5px;
+    gap: 0.5rem;
+  }
+
+  svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .notiText h6 {
+    font-size: 1.2rem;
+  }
+
+  .notiText p {
+    font-size: 11px;
+    margin-top: 0.3rem;
+  }
 }
 </style>

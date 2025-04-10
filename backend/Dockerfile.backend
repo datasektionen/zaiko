@@ -5,6 +5,9 @@
 FROM oven/bun:1 AS base
 WORKDIR /usr/src/app
 
+ENV VITE_HOST=http://localhost:8080
+ENV VITE_HOST_FRONTEND=http://localhost:8080
+
 RUN apt update -y && apt upgrade -y && apt install -y unzip
 
 FROM base AS install
@@ -18,9 +21,15 @@ RUN cd /temp/prod && bun install --frozen-lockfile --production
 
 FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
-COPY package.json bun.lock cypress.config.ts index.html tsconfig.app.json tsconfig.node.json vite.config.ts cypress dist env.d.ts eslint.config.js public src tsconfig.json tsconfig.vitest.json vitest.config.ts .
 
-ENV NODE_ENV=production
+COPY package.json bun.lock cypress.config.ts index.html tsconfig.app.json tsconfig.node.json vite.config.ts env.d.ts eslint.config.js public tsconfig.json tsconfig.vitest.json vitest.config.ts .
+COPY src src
+COPY cypress cypress
+COPY dist dist
+COPY public public
+
+
+ENV NODE_ENV=development
 RUN bun test
 RUN bun run build-only # FIXME
 
@@ -28,40 +37,33 @@ RUN bun run build-only # FIXME
 ## -------------build backend-------------------------
 ##
 
-ENV SQLX_OFFLINE=true
-ENV RUST_LOG=info
-
 FROM rust:1.84-alpine AS build
 WORKDIR /build
 
 RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash postgresql
+RUN cargo install cargo-watch
+
+COPY --from=prerelease /usr/src/app/dist ../dist
 
 COPY backend/Cargo.lock backend/Cargo.toml .
-COPY backend/.sqlx .sqlx
 
 RUN mkdir src
 RUN echo "pub fn test() {}" > src/lib.rs
 
-RUN cargo build --locked --release
+ENV SQLX_OFFLINE=true
+
+COPY backend/.sqlx .sqlx
+
+RUN cargo build
 
 RUN rm -r src
 
 COPY backend/src src
-RUN cargo build --locked --release
-RUN cp ./target/release/backend /bin/server
-
-##
-## -------------deploy-----------------------------
-##
-
-FROM alpine:3.18 AS final
-
-RUN mkdir /var/zaiko
-
-COPY --from=prerelease /usr/src/app/dist dist
-
-COPY --from=build /bin/server /bin/
 
 EXPOSE 8000
 
-CMD ["/bin/server"]
+ENV SQLX_OFFLINE=false
+
+ENV RUST_LOG=debug
+
+CMD ["cargo", "watch", "--why", "-x", "run"]

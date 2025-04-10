@@ -2,46 +2,56 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { ClubGetRequest, ClubStorage, Notification } from "@/types";
 import { useNotificationsStore } from './notifications';
+import { useItemStore } from './items';
+import { useSupplierStore } from './suppliers';
+import { useStockStore } from './stock';
 
 export const useClubsStore = defineStore('clubs', () => {
   const HOST = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
-  const clubs = ref<ClubStorage>({ club: { name: "Nämnd", permission: "r" }, clubs: [], timestamp: 0 });
+  const itemsStore = useItemStore();
+  const suppliersStore = useSupplierStore();
+  const stockStore = useStockStore();
+  const clubs = ref<ClubStorage>({ active: { name: "Nämnd", permission: "r" }, clubs: [] });
 
-  const clubsStore = localStorage.getItem('clubs');
-  if (clubsStore && Date.now() - JSON.parse(clubsStore).timestamp < 1000 * 60 * 60 * 24) {
-    const parsed = JSON.parse(clubsStore);
-    clubs.value = parsed;
-  } else {
-    fetch(HOST + "/api/clubs", {
+  async function fetchClubs(): Promise<ClubStorage> {
+    // clubs.value = { active: { name: "metadorerna", permission: "rw" }, clubs: [{ name: "metadorerna", permission: "rw" }, { name: "sjukvård", permission: "r" }] };
+    // return Promise.resolve(clubs.value);
+    return await fetch(HOST + "/api/clubs", {
       method: "GET",
+      credentials: "include",
     })
       .then((res) => res.json())
-      .then((json) => clubs.value.clubs = json)
-      .then(() => {
-        if (clubs.value.clubs.length > 0) {
-          clubs.value.timestamp = Date.now();
-          clubs.value.club = clubs.value.clubs[0];
-        } else {
-          const noti: Notification = {
-            id: Date.now(),
-            title: "Nämnd",
-            message: "Ingen nämnd hittades",
-            severity: "error",
-          }
-          notificationsStore.add(noti);
-          clubs.value.club = {
-            name: "Nämnd",
-            permission: "r",
-          };
-          clubs.value.clubs = [{
-            name: "Nämnd",
-            permission: "r",
-          }];
-          clubs.value.timestamp = 0;
+      .then((json: ClubStorage) => {
+        clubs.value = json;
+        return clubs.value;
+      })
+      .catch((error) => {
+        const noti: Notification = {
+          id: Date.now(),
+          title: "Error",
+          message: error.toString(),
+          severity: "error",
         }
-        localStorage.setItem('clubs', JSON.stringify(clubs.value));
+        notificationsStore.add(noti);
+        return {} as ClubStorage;
+      });
+  }
+
+  async function setClub(club: ClubGetRequest) {
+    const query = new URLSearchParams({ club: club.name });
+    await fetch(HOST + "/api/club?" + query.toString(), {
+      method: "POST",
+      credentials: "include",
+    })
+      .then(() => fetchClubs())
+      .then(() => itemsStore.fetchItems())
+      .then(() => stockStore.fetchShortage())
+      .then(() => {
+        if (club.permission === "rw") {
+          suppliersStore.fetchSuppliers();
+        }
       })
       .catch((error) => {
         const noti: Notification = {
@@ -52,28 +62,15 @@ export const useClubsStore = defineStore('clubs', () => {
         }
         notificationsStore.add(noti);
       })
+
   }
 
-  function setClub(club: ClubGetRequest) {
-    clubs.value.club = club;
-    localStorage.setItem('clubs', JSON.stringify(clubs.value));
-    console.log(clubs.value);
-  }
-
-  function getClub() {
-    if (!clubs.value.club) {
-      return { name: "Nämnd", permission: "r" };
+  async function getClub(): Promise<ClubStorage> {
+    if (clubs.value) {
+      await fetchClubs();
     }
-    return clubs.value.club;
+    return clubs.value;
   }
 
-  function checkClub() {
-    const club = getClub();
-    if (club.name === "Nämnd") {
-      return false;
-    }
-    return true;
-  }
-
-  return { clubs, setClub, getClub, checkClub }
+  return { clubs, setClub, fetchClubs, getClub }
 })

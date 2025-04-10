@@ -1,10 +1,8 @@
-use actix_identity::Identity;
-use actix_session::Session;
 use actix_web::{get, web, HttpResponse};
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 
-use crate::{auth::check_auth, error::Error};
+use crate::error::Error;
 
 #[derive(Debug, Serialize)]
 struct Log {
@@ -12,18 +10,14 @@ struct Log {
     time: i32,
 }
 
-#[get("/{club}/log")]
+#[get("/log")]
 pub(crate) async fn get_log(
-    club: web::Path<String>,
     item: web::Query<i32>,
-    id: Option<Identity>,
-    session: Session,
     pool: web::Data<Pool<Postgres>>,
+    club: web::ReqData<String>
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_ref();
+    let club = club.as_str();
     let mut pool = pool.get_ref().begin().await?;
-
-    check_auth(&id, &session, club).await?;
 
     let logs = sqlx::query_as!(
         Log,

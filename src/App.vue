@@ -1,9 +1,9 @@
 <template>
   <BarHeader>
     <main>
+      <div id="popup"></div>
       <RouterView />
     </main>
-    <div id="popup"></div>
   </BarHeader>
   <NotificationList />
 </template>
@@ -17,7 +17,7 @@ import BarHeader from '@/components/BarHeader.vue';
 
 <style scoped>
 main {
-  max-width: 1440px;
+  max-width: 1728px;
   margin: auto;
   position: relative;
   z-index: 0;

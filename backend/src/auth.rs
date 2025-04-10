@@ -1,307 +1,281 @@
-use actix_identity::Identity;
-use actix_session::Session;
-use actix_web::{get, web, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{
+    body::{EitherBody, MessageBody},
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    get,
+    http::header,
+    post, web, HttpMessage, HttpResponse,
+};
+use jsonwebtoken::get_current_timestamp;
 use openidconnect::{
     core::{
-        CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreErrorResponseType,
-        CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm,
-        CoreJwsSigningAlgorithm, CoreProviderMetadata, CoreRevocableToken, CoreTokenType,
+        CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreJwsSigningAlgorithm,
     },
-    reqwest, AccessTokenHash, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
-    EmptyAdditionalClaims, EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet,
-    IdTokenFields, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, RevocationErrorResponseType,
-    StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
-    TokenResponse,
+    http::{request, response},
+    AccessTokenHash, AuthorizationCode, CsrfToken, EmptyAdditionalClaims, IdToken, IdTokenClaims,
+    IdTokenVerifier, OAuth2TokenResponse, TokenResponse,
 };
-use serde::{Deserialize, Serialize};
-use std::env;
+use serde::Deserialize;
+use std::{
+    env,
+    future::{ready, Ready},
+    path,
+};
+use types::{
+    AuthMiddleware, AuthTokenResponse, Club, ClubGetResponse, InnerAuthMiddleware, LocalBoxFuture,
+    OIDCData, Permission, Token,
+};
 
 use crate::error::Error;
 
-type OIDCClient = openidconnect::Client<
-    EmptyAdditionalClaims,
-    CoreAuthDisplay,
-    CoreGenderClaim,
-    CoreJweContentEncryptionAlgorithm,
-    CoreJsonWebKey,
-    CoreAuthPrompt,
-    StandardErrorResponse<CoreErrorResponseType>,
-    StandardTokenResponse<
-        IdTokenFields<
-            EmptyAdditionalClaims,
-            EmptyExtraTokenFields,
-            CoreGenderClaim,
-            CoreJweContentEncryptionAlgorithm,
-            CoreJwsSigningAlgorithm,
-        >,
-        CoreTokenType,
-    >,
-    StandardTokenIntrospectionResponse<EmptyExtraTokenFields, CoreTokenType>,
-    CoreRevocableToken,
-    StandardErrorResponse<RevocationErrorResponseType>,
-    EndpointSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointMaybeSet,
-    EndpointMaybeSet,
->;
-
-#[derive(Clone)]
-pub struct OIDCData {
-    client: OIDCClient,
-    http_client: reqwest::Client,
-    // pkce_verifier: PkceCodeVerifier,
-    nonce: Nonce,
-    csrf_token: CsrfToken,
-}
-
-pub enum Permission {
-    Read,
-    Write,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Club {
-    name: String,
-    permission: String,
-}
+pub mod types;
 
 #[derive(Deserialize)]
-struct Query {
+struct CallbackQuery {
     code: String,
     state: String,
 }
 
-pub async fn check_auth(
-    id: &Option<Identity>,
-    session: &Session,
-    club: &String,
-) -> Result<Permission, Error> {
-    if id.is_some() {
-        if let Ok(Some(privlages)) = session.get::<Vec<Club>>("privlages") {
-            if privlages
-                .iter()
-                .any(|privlage| privlage.name == *club && privlage.permission == "r")
-            {
-                return Ok(Permission::Read);
-            } else if privlages
-                .iter()
-                .any(|privlage| privlage.name == *club && privlage.permission == "rw")
-            {
-                return Ok(Permission::Write);
-            } else if matches!(club.as_str(), "metadorerna" | "sjukvård") {
-                return Ok(Permission::Read);
-            }
-        }
-    }
-
-    Err(Error::Unauthorized)
-}
-
-pub async fn get_oidc() -> (OIDCData, String) {
-    let http_client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .expect("Client should build");
-
-    let provider_metadata = CoreProviderMetadata::discover_async(
-        IssuerUrl::new(env::var("OIDC_PROVIDER").expect("OIDC_PROVIDER in .env"))
-            .expect("OIDC_PROVIDER to be correctly formated"),
-        &http_client,
-    )
-    .await
-    .expect("to get metadata from oidc provider");
-
-    let client = Client::from_provider_metadata(
-        provider_metadata,
-        ClientId::new(env::var("OIDC_ID").expect("OIDC_ID in .env")),
-        Some(ClientSecret::new(
-            env::var("OIDC_SECRET").expect("OIDC_SECRET in .env"),
-        )),
-    )
-    .set_redirect_uri(
-        RedirectUrl::new(env::var("REDIRECT_URL").expect("REDIRECT_URL in .env"))
-            .expect("REDIRECT_URL to be correctly formated"),
-    );
-
-    // let (pkce_challange, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-
-    let (auth_url, csrf_token, nonce) = client
-        .authorize_url(
-            CoreAuthenticationFlow::AuthorizationCode,
-            CsrfToken::new_random,
-            Nonce::new_random,
-        )
-        // .add_scope(Scope::new(String::from("pls_zaiko")))
-        // .set_pkce_challenge(pkce_challange)
-        .url();
-
-    let oidc = OIDCData {
+#[get("/api/oidc/callback")]
+pub async fn auth_callback(
+    query: web::Query<CallbackQuery>,
+    oidc: web::Data<OIDCData>,
+) -> Result<HttpResponse, Error> {
+    let CallbackQuery { code, state } = query.0;
+    let OIDCData {
         client,
         http_client,
         nonce,
-        // pkce_verifier,
         csrf_token,
-    };
+    } = oidc.get_ref();
 
-    (oidc, auth_url.to_string())
+    check_csrf_token(csrf_token, state)?;
+
+    let token_respones = client
+        .exchange_code(AuthorizationCode::new(code))?
+        .request_async(http_client)
+        .await?;
+
+    let id_token = token_respones
+        .id_token()
+        .ok_or(Error::InternalServerError(String::from(
+            "oidc server returned no id",
+        )))?;
+
+    let id_token_verifier = client.id_token_verifier();
+
+    let claims = id_token.claims(&id_token_verifier, nonce)?;
+
+    check_token_hash(claims, &token_respones, id_token, id_token_verifier)?;
+
+    let permissions = Permission::get_pls_permissions(claims.subject().to_string()).await?;
+
+    let token = Token::new(claims.subject().to_string(), permissions).unwrap();
+
+    let cookie = token.cookie()?;
+
+    Ok(HttpResponse::TemporaryRedirect()
+        .insert_header(("location", "/"))
+        .cookie(cookie)
+        .finish())
 }
 
-#[get("/oidc/callback")]
-pub async fn auth_callback(
-    req: HttpRequest,
-    session: Session,
-    query: web::Query<Query>,
-    oidc: web::Data<OIDCData>,
-) -> HttpResponse {
-    if *oidc.csrf_token.secret() != query.state {
+fn check_csrf_token(token: &CsrfToken, state: String) -> Result<(), Error> {
+    if *token.secret() != state {
         log::error!("Invalid CSRF token on oidc callback");
-        return HttpResponse::BadRequest().finish();
+        return Err(Error::BadRequest);
     }
 
-    let token_respones = match oidc
-        .client
-        .exchange_code(AuthorizationCode::new(query.code.to_string()))
-    {
-        Ok(request) => match request.request_async(&oidc.http_client).await {
-            Ok(token) => token,
-            Err(err) => {
-                log::error!("token request error: {}", err);
-                return HttpResponse::InternalServerError().finish();
-            }
-        },
-        Err(err) => {
-            log::error!("token clinet request config error: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
+    Ok(())
+}
 
-    let id_token = match token_respones.id_token() {
-        Some(token) => token,
-        None => {
-            log::error!("oidc server returned no id");
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
+fn check_token_hash(
+    claims: &IdTokenClaims<EmptyAdditionalClaims, CoreGenderClaim>,
+    token_respones: &AuthTokenResponse,
+    id_token: &IdToken<
+        EmptyAdditionalClaims,
+        CoreGenderClaim,
+        CoreJweContentEncryptionAlgorithm,
+        CoreJwsSigningAlgorithm,
+    >,
+    id_token_verifier: IdTokenVerifier<'_, CoreJsonWebKey>,
+) -> Result<(), Error> {
+    let expected_access_token_hash =
+        claims
+            .access_token_hash()
+            .ok_or(Error::InternalServerError(String::from(
+                "Missing access token hash",
+            )))?;
 
-    let id_token_verifier = oidc.client.id_token_verifier();
+    let actual_access_token_hash = AccessTokenHash::from_token(
+        token_respones.access_token(),
+        id_token.signing_alg()?,
+        id_token.signing_key(&id_token_verifier)?,
+    )?;
 
-    let claims = match id_token.claims(&id_token_verifier, &oidc.nonce) {
-        Ok(claims) => claims,
-        Err(err) => {
-            log::error!("aquireing claims error: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
-
-    if let Some(expected_access_token_hash) = claims.access_token_hash() {
-        let actual_access_token_hash = match AccessTokenHash::from_token(
-            token_respones.access_token(),
-            match id_token.signing_alg() {
-                Ok(alg) => alg,
-                Err(err) => {
-                    log::error!("aquireing signing algorithm: {}", err);
-                    return HttpResponse::InternalServerError().finish();
-                }
-            },
-            match id_token.signing_key(&id_token_verifier) {
-                Ok(key) => key,
-                Err(err) => {
-                    log::error!("aquireing signing key: {}", err);
-                    return HttpResponse::InternalServerError().finish();
-                }
-            },
-        ) {
-            Ok(hash) => hash,
-            Err(err) => {
-                log::error!("checking hash error: {}", err);
-                return HttpResponse::InternalServerError().finish();
-            }
-        };
-        if actual_access_token_hash != *expected_access_token_hash {
-            log::error!(
-                "Hashes did not mach for subject {}",
-                claims.subject().to_string()
-            );
-            return HttpResponse::InternalServerError().finish();
-        }
+    if actual_access_token_hash != *expected_access_token_hash {
+        return Err(Error::InternalServerError(format!(
+            "Hashes did not mach for subject {}",
+            **claims.subject()
+        )));
     }
 
-    if let Err(err) = Identity::login(&req.extensions(), claims.subject().to_string()) {
-        log::error!("fail to login error: {}", err);
-        return HttpResponse::InternalServerError().finish();
-    }
-
-    let pls_url = match env::var("PLS_URL") {
-        Ok(url) => url,
-        Err(err) => {
-            log::error!("getting pls url error: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
-
-    log::debug!("{}", pls_url);
-    log::debug!("{}", claims.subject().as_str());
-
-    let res = match reqwest::get(format!(
-        "{}/user/{}/zaiko",
-        pls_url,
-        claims.subject().as_str()
-    ))
-    .await
-    {
-        Ok(res) => match res.text().await {
-            Ok(res) => res,
-            Err(err) => {
-                log::error!("failed to get data from pls: {}", err);
-                return HttpResponse::InternalServerError().finish();
-            }
-        },
-        Err(err) => {
-            log::error!("failed to query pls: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
-
-    let privlages: Vec<Club> = match serde_json::from_str::<Vec<String>>(&res) {
-        Ok(privlages) => privlages
-            .iter()
-            .filter_map(|privlage| {
-                let mut permission = privlage.split("-");
-                let name = permission.next()?.to_string();
-                let permission = permission.next()?.to_string();
-                Some(Club { name, permission })
-            })
-            .collect(),
-        Err(err) => {
-            log::error!("failed to parse data from pls: {}", err);
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
-
-    if let Err(err) = session.insert("privlages", privlages) {
-        log::error!("failed to add privlages to session: {}", err);
-        return HttpResponse::InternalServerError().finish();
-    }
-
-    HttpResponse::TemporaryRedirect()
-        .insert_header(("location", "/"))
-        .finish()
+    Ok(())
 }
 
 #[get("/clubs")]
-pub async fn get_clubs(id: Option<Identity>, session: Session) -> HttpResponse {
-    if id.is_some() {
-        let clubs = match session.get::<Vec<Club>>("privlages") {
-            Ok(clubs) => clubs,
-            Err(err) => {
-                log::error!("{}", err);
-                return HttpResponse::InternalServerError().finish();
-            }
-        };
-        return HttpResponse::Ok().json(clubs);
-    }
+pub async fn get_clubs(token: Token) -> Result<HttpResponse, Error> {
+    let clubs: Vec<Club> = token.permissions.into_iter().map(Club::from).collect();
 
-    HttpResponse::Unauthorized().finish()
+    let res = ClubGetResponse {
+        active: Club::from((token.active_club, token.active_permission)),
+        clubs,
+    };
+
+    Ok(HttpResponse::Ok().json(res))
+}
+
+#[derive(Deserialize)]
+struct ClubQuery {
+    club: String,
+}
+
+#[post("/club")]
+pub async fn set_club(
+    mut token: Token,
+    query: web::Query<ClubQuery>,
+) -> Result<HttpResponse, Error> {
+    let club = query.club.clone();
+    token.set_active_club(club)?;
+    let cookie = token.cookie()?;
+    Ok(HttpResponse::Ok().cookie(cookie).finish())
+}
+
+impl<S, B> Transform<S, ServiceRequest> for AuthMiddleware
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
+    S::Future: 'static,
+    B: MessageBody + 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+    type Error = actix_web::Error;
+    type Transform = InnerAuthMiddleware<S>;
+    type InitError = ();
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        ready(Ok(InnerAuthMiddleware {
+            service,
+            permission: self.permission.clone(),
+            auth_url: self.auth_url.clone(),
+        }))
+    }
+}
+
+impl<S, B> Service<ServiceRequest> for InnerAuthMiddleware<S>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+    type Error = actix_web::Error;
+    type Future = LocalBoxFuture<Result<Self::Response, Self::Error>>;
+
+    forward_ready!(service);
+
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        let path = req.path().to_owned();
+        if env::var("APP_AUTH") == Ok(String::from("false"))
+            && Token::extract_token(req.cookie("token")).is_none()
+        {
+            return fake_auth(req, self);
+        }
+
+        if req.path().contains("oidc") {
+            let res = self.service.call(req);
+            return Box::pin(async move { res.await.map(ServiceResponse::map_into_left_body) });
+        }
+
+        if let Some(mut token) = Token::extract_token(req.cookie("token")) {
+            if check_permission(self.permission.clone(), token.clone()) {
+                return auth_error_response(req, self.auth_url.clone());
+            }
+
+            req.extensions_mut().insert(token.active_club.clone());
+
+            let res = self.service.call(req);
+
+            Box::pin(async move {
+                let mut res = res.await.unwrap();
+
+                if !path.contains("club") {
+                    token.exp = get_current_timestamp() + 7200;
+                    let cookie = token.cookie().unwrap();
+                    res.response_mut().add_cookie(&cookie).unwrap();
+                }
+
+                Ok(res.map_into_left_body())
+            })
+        } else {
+            auth_error_response(req, self.auth_url.clone())
+        }
+    }
+}
+
+fn check_permission(permission: Permission, token: Token) -> bool {
+    match permission {
+        Permission::Read => !matches!(
+            token.active_permission,
+            Permission::Read | Permission::ReadWrite
+        ),
+        Permission::ReadWrite => !matches!(token.active_permission, Permission::ReadWrite),
+    }
+}
+
+fn fake_auth<B, S>(
+    req: ServiceRequest,
+    auth: &InnerAuthMiddleware<S>,
+) -> LocalBoxFuture<Result<ServiceResponse<EitherBody<B>>, actix_web::Error>>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: 'static,
+{
+    log::debug!("fake auth");
+    let permissions = Permission::default_privlages();
+    let token = Token::new(String::from("ture"), permissions).unwrap();
+
+    req.extensions_mut().insert(token.active_club.clone());
+
+    let res = auth.service.call(req);
+
+    Box::pin(async move {
+        let cookie = token.cookie().unwrap();
+        let mut res = res.await.unwrap();
+        res.response_mut().add_cookie(&cookie).unwrap();
+
+        Ok(res.map_into_left_body())
+    })
+}
+
+fn auth_error_response<B>(
+    req: ServiceRequest,
+    auth_url: String,
+) -> LocalBoxFuture<Result<ServiceResponse<EitherBody<B>>, actix_web::Error>>
+where
+    B: 'static,
+{
+    if env::var("APP_AUTH") == Ok(String::from("false")) {
+        let response = HttpResponse::Unauthorized().finish().map_into_right_body();
+        let (request, _pl) = req.into_parts();
+        Box::pin(async move { Ok(ServiceResponse::new(request, response)) })
+    } else {
+        let response = HttpResponse::TemporaryRedirect()
+            .insert_header(("location", auth_url))
+            .finish()
+            .map_into_right_body();
+
+        let (request, _pl) = req.into_parts();
+        Box::pin(async move { Ok(ServiceResponse::new(request, response)) })
+    }
 }
