@@ -4,8 +4,6 @@ import type { Notification, SupplierAddRequest, SupplierGetResponse, SupplierLis
 import { useNotificationsStore } from '@/stores/notifications';
 
 export const useSupplierStore = defineStore('supplier', () => {
-  // const HOST: string = import.meta.env.VITE_HOST;
-
   const notificationsStore = useNotificationsStore();
 
   const suppliers = ref<Array<SupplierGetResponse>>([]);

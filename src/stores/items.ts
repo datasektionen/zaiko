@@ -5,8 +5,6 @@ import { useNotificationsStore } from '@/stores/notifications';
 import { useStockStore } from '@/stores/stock';
 
 export const useItemStore = defineStore('items', () => {
-  // const HOST: string = import.meta.env.VITE_HOST;
-
   const notificationsStore = useNotificationsStore();
   const stockStore = useStockStore();
 

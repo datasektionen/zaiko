@@ -9,8 +9,6 @@ import { useStatsStore } from './stats';
 import router from '@/router';
 
 export const useClubsStore = defineStore('clubs', () => {
-  // const HOST = import.meta.env.VITE_HOST;
-
   const notificationsStore = useNotificationsStore();
   const itemsStore = useItemStore();
   const suppliersStore = useSupplierStore();
@@ -19,8 +17,6 @@ export const useClubsStore = defineStore('clubs', () => {
   const clubs = ref<ClubStorage>({ active: { name: "Nämnd", permission: "r" }, clubs: [] });
 
   async function fetchClubs(): Promise<ClubStorage> {
-    // clubs.value = { active: { name: "metadorerna", permission: "rw" }, clubs: [{ name: "metadorerna", permission: "rw" }, { name: "sjukvård", permission: "r" }] };
-    // return Promise.resolve(clubs.value);
     return await fetch("/api/clubs", {
       method: "GET",
       credentials: "include",

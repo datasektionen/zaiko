@@ -4,8 +4,6 @@ import type { Notification, Stats } from "@/types";
 import { useNotificationsStore } from '@/stores/notifications';
 
 export const useStatsStore = defineStore('stats', () => {
-  // const HOST: string = import.meta.env.VITE_HOST;
-
   const notificationsStore = useNotificationsStore();
 
   const stats = ref<Stats>({ items: 0, shortages: 0, suppliers: 0 });
