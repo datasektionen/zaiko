@@ -61,7 +61,6 @@ async fn main() -> std::io::Result<()> {
                     Method::DELETE,
                 ])
                 .allow_any_header()
-                .block_on_origin_mismatch(true)
         };
 
         App::new()

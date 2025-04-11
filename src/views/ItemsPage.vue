@@ -1,6 +1,6 @@
 <template>
   <div class="main">
-    <PanelTemplate title="Produkter" button @button="SelectItem(-1)">
+    <PanelTemplate title="Produkter" :button="permission" @button="SelectItem(-1)">
       <template #icon>
         <ArchiveBoxIcon />
       </template>
@@ -40,7 +40,12 @@ import { ArchiveBoxIcon } from '@heroicons/vue/24/outline';
 import ItemPanel from '@/components/ItemPanel.vue';
 import { HomeIcon, ShoppingCartIcon, WalletIcon, Battery0Icon, Battery100Icon, InformationCircleIcon } from '@heroicons/vue/16/solid';
 import SpinnerSimple from '@/components/SpinnerSimple.vue';
+import { useClubsStore } from '@/stores/clubs';
+const clubsStore = useClubsStore();
 
+const permission = computed(() => {
+  return clubsStore.clubs.active.permission == "rw"
+});
 const isModal = ref<boolean>(false);
 const selected = ref<number>(-1);
 

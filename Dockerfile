@@ -5,6 +5,9 @@
 FROM oven/bun:1 AS base
 WORKDIR /usr/src/app
 
+ENV VITE_HOST=https://zaiko.datasektionen.se
+ENV VITE_HOST_FRONTEND=https://zaiko.datasektionen.se
+
 RUN apt update -y && apt upgrade -y && apt install -y unzip
 
 FROM base AS install
@@ -18,7 +21,10 @@ RUN cd /temp/prod && bun install --frozen-lockfile --production
 
 FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
-COPY package.json bun.lock cypress.config.ts index.html tsconfig.app.json tsconfig.node.json vite.config.ts cypress dist env.d.ts eslint.config.js public src tsconfig.json tsconfig.vitest.json vitest.config.ts .
+COPY package.json bun.lock cypress.config.ts index.html tsconfig.app.json tsconfig.node.json vite.config.ts env.d.ts eslint.config.js tsconfig.json tsconfig.vitest.json vitest.config.ts ./
+COPY public  public
+COPY cypress  cypress
+COPY src src
 
 ENV NODE_ENV=production
 RUN bun test
@@ -36,7 +42,7 @@ WORKDIR /build
 
 RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash postgresql
 
-COPY backend/Cargo.lock backend/Cargo.toml .
+COPY backend/Cargo.lock backend/Cargo.toml ./
 COPY backend/.sqlx .sqlx
 
 RUN mkdir src

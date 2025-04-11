@@ -19,11 +19,11 @@
         <NavLink to="/items" title="Produkter" :compact="!barOpen">
           <ArchiveBoxIcon />
         </NavLink>
-        <div v-if="clubs" class="navLinks">
-          <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen" v-if="clubs.active.permission === 'rw'">
+        <div v-if="clubStore.clubs" class="navLinks">
+          <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen" v-if="permission">
             <ShoppingCartIcon />
           </NavLink>
-          <NavLink to="/stock" title="Inventera" :compact="!barOpen" v-if="clubs.active.permission === 'rw'">
+          <NavLink to="/stock" title="Inventera" :compact="!barOpen" v-if="permission">
             <ClipboardDocumentListIcon />
           </NavLink>
         </div>
@@ -60,12 +60,12 @@ import { computed, ref } from 'vue';
 import NotificationList from '@/components/NotificationList.vue';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
 import { useClubsStore } from '@/stores/clubs';
-import type { ClubStorage } from '@/types';
 
 const clubStore = useClubsStore();
-const clubs = ref<ClubStorage | null>(null);
-clubStore.getClub().then((club) => {
-  clubs.value = club;
+clubStore.fetchClubs();
+
+const permission = computed(() => {
+  return clubStore.clubs.active.permission == "rw";
 });
 
 const isMobile = useMediaQuery("(max-width: 768px)");

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name as supplier\n         FROM items \n         LEFT JOIN suppliers ON items.supplier=suppliers.id\n         WHERE current <= min AND items.club = $1",
+  "query": "SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name as \"supplier?\"\n         FROM items \n         LEFT JOIN suppliers ON items.supplier=suppliers.id\n         WHERE current <= min AND items.club = $1",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       },
       {
         "ordinal": 7,
-        "name": "supplier",
+        "name": "supplier?",
         "type_info": "Text"
       }
     ],
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "4626595555f374baf5c4b756586085d0fbae70477c87827802cecd414734d491"
+  "hash": "acd336589b2d0521c6ea250550c92092e12399b4a80d9cdb11e1ead6f3504967"
 }
