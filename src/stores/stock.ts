@@ -5,7 +5,7 @@ import { useNotificationsStore } from '@/stores/notifications';
 import { useItemStore } from '@/stores/items';
 
 export const useStockStore = defineStore('stock', () => {
-  const HOST: string = import.meta.env.VITE_HOST;
+  // const HOST: string = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
   const itemStore = useItemStore();
@@ -14,7 +14,7 @@ export const useStockStore = defineStore('stock', () => {
   const shortage = ref<Array<StockGetResponse>>([]);
 
   async function fetchShortage(): Promise<Array<StockGetResponse>> {
-    return fetch(HOST + "/api/stock", {
+    return fetch("/api/stock", {
       method: "GET",
       credentials: "include",
     })
@@ -48,7 +48,7 @@ export const useStockStore = defineStore('stock', () => {
   }
 
   async function takeStock(): Promise<Array<ItemGetResponse>> {
-    return fetch(HOST + "/api/admin/stock", {
+    return fetch("/api/admin/stock", {
       method: "POST",
       body: JSON.stringify(output.value),
       credentials: "include",

@@ -4,7 +4,7 @@ import type { Notification, SupplierAddRequest, SupplierGetResponse, SupplierLis
 import { useNotificationsStore } from '@/stores/notifications';
 
 export const useSupplierStore = defineStore('supplier', () => {
-  const HOST: string = import.meta.env.VITE_HOST;
+  // const HOST: string = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
 
@@ -12,7 +12,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   const supplierNames = ref<Map<number, string>>(new Map<number, string>());
 
   async function fetchSuppliers(): Promise<Array<SupplierGetResponse>> {
-    return fetch(HOST + "/api/admin/supplier", {
+    return fetch("/api/admin/supplier", {
       method: "GET",
       credentials: "include",
     })
@@ -34,7 +34,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   }
 
   async function addSupplier(supplier: SupplierAddRequest): Promise<SupplierAddRequest> {
-    return fetch(HOST + "/api/admin/supplier", {
+    return fetch("/api/admin/supplier", {
       method: "POST",
       body: JSON.stringify(supplier),
       credentials: "include",
@@ -63,7 +63,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   }
 
   async function updateSupplier(supplier: SupplierUpdateRequest): Promise<SupplierUpdateRequest> {
-    return fetch(HOST + "/api/admin/supplier", {
+    return fetch("/api/admin/supplier", {
       method: "PATCH",
       body: JSON.stringify(supplier),
       credentials: "include",
@@ -93,7 +93,7 @@ export const useSupplierStore = defineStore('supplier', () => {
 
   async function deleteSupplier(id: number): Promise<SupplierGetResponse> {
     const query = new URLSearchParams({ id: id.toString() }).toString();
-    return fetch(HOST + "/api/admin/supplier?" + query, {
+    return fetch("/api/admin/supplier?" + query, {
       method: "DELETE",
       credentials: "include",
     })
@@ -121,7 +121,7 @@ export const useSupplierStore = defineStore('supplier', () => {
   }
 
   async function fetchSupplierNames(): Promise<Map<number, string>> {
-    return fetch(HOST + "/api/admin/suppliers", {
+    return fetch("/api/admin/suppliers", {
       method: "GET",
       credentials: "include",
     })

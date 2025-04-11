@@ -5,7 +5,7 @@ import { useNotificationsStore } from '@/stores/notifications';
 import { useStockStore } from '@/stores/stock';
 
 export const useItemStore = defineStore('items', () => {
-  const HOST: string = import.meta.env.VITE_HOST;
+  // const HOST: string = import.meta.env.VITE_HOST;
 
   const notificationsStore = useNotificationsStore();
   const stockStore = useStockStore();
@@ -13,7 +13,7 @@ export const useItemStore = defineStore('items', () => {
   const items = ref<Array<ItemGetResponse>>([]);
 
   async function fetchItems(): Promise<Array<ItemGetResponse>> {
-    return fetch(HOST + "/api/item", {
+    return fetch("/api/item", {
       method: "GET",
       credentials: "include",
     })
@@ -35,7 +35,7 @@ export const useItemStore = defineStore('items', () => {
   }
 
   async function addItem(item: ItemAddRequest): Promise<ItemAddRequest> {
-    return fetch(HOST + "/api/admin/item", {
+    return fetch("/api/admin/item", {
       method: "POST",
       body: JSON.stringify(item),
       credentials: "include",
@@ -68,7 +68,7 @@ export const useItemStore = defineStore('items', () => {
   }
 
   async function updateItem(item: ItemUpdateRequest): Promise<ItemUpdateRequest> {
-    return fetch(HOST + "/api/admin/item", {
+    return fetch("/api/admin/item", {
       method: "PATCH",
       body: JSON.stringify(item),
       credentials: "include",
@@ -102,7 +102,7 @@ export const useItemStore = defineStore('items', () => {
 
   async function deleteItem(id: number): Promise<ItemGetResponse> {
     const query = new URLSearchParams({ id: id.toString() }).toString();
-    return fetch(HOST + "/api/admin/item?" + query, {
+    return fetch("/api/admin/item?" + query, {
       method: "DELETE",
       credentials: "include",
     })
