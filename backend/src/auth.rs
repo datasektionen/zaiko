@@ -1,16 +1,13 @@
 use actix_web::{
     body::{EitherBody, MessageBody},
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    get,
-    http::header,
-    post, web, HttpMessage, HttpResponse,
+    get, post, web, HttpMessage, HttpResponse,
 };
 use jsonwebtoken::get_current_timestamp;
 use openidconnect::{
     core::{
         CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreJwsSigningAlgorithm,
     },
-    http::{request, response},
     AccessTokenHash, AuthorizationCode, CsrfToken, EmptyAdditionalClaims, IdToken, IdTokenClaims,
     IdTokenVerifier, OAuth2TokenResponse, TokenResponse,
 };
@@ -18,7 +15,6 @@ use serde::Deserialize;
 use std::{
     env,
     future::{ready, Ready},
-    path,
 };
 use types::{
     AuthMiddleware, AuthTokenResponse, Club, ClubGetResponse, InnerAuthMiddleware, LocalBoxFuture,
@@ -191,7 +187,7 @@ where
             return fake_auth(req, self);
         }
 
-        if req.path().contains("oidc") {
+        if req.path().contains("oidc") || req.path().contains("static") {
             let res = self.service.call(req);
             return Box::pin(async move { res.await.map(ServiceResponse::map_into_left_body) });
         }
