@@ -238,7 +238,8 @@ where
     B: 'static,
 {
     log::debug!("fake auth");
-    let permissions = Permission::default_privlages();
+    let mut permissions = Permission::default_privlages();
+    permissions.insert(String::from("metadorerna"), Permission::ReadWrite);
     let token = Token::new(String::from("ture"), permissions).unwrap();
 
     req.extensions_mut().insert(token.active_club.clone());
