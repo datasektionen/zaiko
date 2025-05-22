@@ -60,7 +60,13 @@ const columns: Array<FilterColumn> = [
 ];
 
 const ModalTitle = computed(() => {
-  return selected.value != -1 ? 'Redigera' : 'Lägg till';
+  if (selected.value == -1) {
+    return 'Lägg till';
+  };
+  if (!permission.value) {
+    return 'Produkt';
+  }
+  return 'Redigera';
 })
 
 const UnSelect = () => {

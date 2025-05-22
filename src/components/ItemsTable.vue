@@ -54,7 +54,7 @@
             <p v-else>{{ item.name }}</p>
           </td>
           <td>{{ item.location }}</td>
-          <td>{{ item.supplier }}</td>
+          <td>{{ item.supplier == undefined ? "-" : item.supplier }}</td>
           <td>{{ item.current }}</td>
           <td>{{ item.min }}</td>
           <td>{{ item.max }}</td>
@@ -71,11 +71,12 @@
 <script setup lang="ts">
 import { useItemStore } from '@/stores/items';
 import { useSupplierStore } from '@/stores/suppliers';
-import { useClubsStore } from '@/stores/clubs';
+// import { useClubsStore } from '@/stores/clubs';
 import { ArchiveBoxIcon, ShoppingCartIcon, Battery0Icon, Battery100Icon, HomeIcon, WalletIcon, InformationCircleIcon } from '@heroicons/vue/16/solid'
 import { ArchiveBoxXMarkIcon } from '@heroicons/vue/24/outline';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
 import EmptyTable from './EmptyTable.vue';
+import { useClubsStore } from '@/stores/clubs';
 
 const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -92,8 +93,9 @@ const status = (min?: number, current: number) => {
 const supplierStore = useSupplierStore();
 const itemStore = useItemStore();
 const clubStore = useClubsStore();
+const club = (await clubStore.getClub()).active;
 
-if (supplierStore.suppliers.length === 0 && clubStore.clubs.active.permission === "rw") {
+if (supplierStore.suppliers.length === 0 && club.permission == "rw") {
   await supplierStore.fetchSuppliers();
   await supplierStore.fetchSupplierNames();
 }

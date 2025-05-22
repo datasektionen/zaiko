@@ -44,9 +44,10 @@
           <p>Leverantör</p>
         </div>
         <select class="input" v-model="supplier" placeholder="Leverantör">
-          <option value="-1" selected>Leverantör</option>
+          <option selected disabled>Leverantör</option>
+          <option value="-1" selected>Ingen</option>
           <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.id">{{ supplier.name
-            }}</option>
+          }}</option>
         </select>
       </div>
       <div class="item">

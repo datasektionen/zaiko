@@ -6,14 +6,14 @@
           <ArchiveBoxIcon class="buttonIcon" />
           <p>Produkt</p>
         </div>
-        <input v-model="name" placeholder="Produkt" required minlength=1>
+        <input v-model="name" placeholder="Produkt" required minlength=1 :disabled="clubPerm != 'rw'">
       </div>
       <div class="item">
         <div class="itemHeader">
           <HomeIcon class="buttonIcon" />
           <p>Plats</p>
         </div>
-        <input v-model="location" placeholder="Plats" required minlength=1>
+        <input v-model="location" placeholder="Plats" required minlength=1 :disabled="clubPerm != 'rw'">
       </div>
       <fieldset>
         <div class="item">
@@ -21,21 +21,21 @@
             <Battery0Icon class="buttonIcon" />
             <p>Min</p>
           </div>
-          <input type="number" v-model="min" placeholder="Min">
+          <input type="number" v-model="min" placeholder="Min" :disabled="clubPerm != 'rw'">
         </div>
         <div class="item">
           <div class="itemHeader">
             <Battery100Icon class="buttonIcon" />
             <p>Max</p>
           </div>
-          <input type="number" v-model="max" placeholder="Max">
+          <input type="number" v-model="max" placeholder="Max" :disabled="clubPerm != 'rw'">
         </div>
         <div class="item">
           <div class="itemHeader">
             <Battery50Icon class="buttonIcon" />
             <p>Nuvarande</p>
           </div>
-          <input type="number" v-model="current" placeholder="Nuvarande">
+          <input type="number" v-model="current" placeholder="Nuvarande" :disabled="clubPerm != 'rw'">
         </div>
       </fieldset>
       <div class="item">
@@ -43,19 +43,22 @@
           <ShoppingCartIcon class="buttonIcon" />
           <p>Leverantör</p>
         </div>
-        <select class="input" v-model="supplier" placeholder="Leverantör">
-          <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.id"
+        <select class="input" v-model="supplier" placeholder="Leverantör" v-if="clubPerm == 'rw'">
+          <option selected disabled>Leverantör</option>
+          <option value="Ingen">Ingen</option>
+          <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.name"
             :selected="item.supplier == supplier.name">{{ supplier.name }}</option>
         </select>
+        <p v-else>{{supplier}}</p>
       </div>
       <div class="item">
         <div class="itemHeader">
           <LinkIcon class="buttonIcon" />
           <p>Länk</p>
         </div>
-        <input type="url" v-model="link" placeholder="Länk">
+        <input type="url" v-model="link" placeholder="Länk" :disabled="clubPerm != 'rw'">
       </div>
-      <div class="submitEdit">
+      <div class="submitEdit" v-if="clubPerm == 'rw'">
         <button type="submit">
           <DocumentCheckIcon class="buttonIcon" />
           <p>Spara</p>
@@ -75,11 +78,17 @@ import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, BackspaceIcon, Do
 import { useSupplierStore } from '@/stores/suppliers';
 import { useItemStore } from '@/stores/items';
 import type { ItemUpdateRequest } from '@/types';
+import { useClubsStore } from '@/stores/clubs';
+
 
 
 const { id } = defineProps<{
   id: number,
 }>()
+
+const clubStore = useClubsStore();
+const club = await clubStore.getClub();
+const clubPerm = club.active.permission;
 
 const supplierStore = useSupplierStore();
 const itemStore = useItemStore();
@@ -90,7 +99,7 @@ const location = ref<string>(item.location)
 const min = ref<number | undefined>(item.min)
 const max = ref<number | undefined>(item.max)
 const current = ref<number>(item.current)
-const supplier = ref<string | undefined>(item.supplier)
+const supplier = ref<string | undefined>(item.supplier == undefined ? "Ingen" : item.supplier)
 const link = ref<string | undefined>(item.link)
 
 const emit = defineEmits(["submit", "delete"]);
@@ -103,7 +112,7 @@ const updateItem = async () => {
     min: min.value,
     max: max.value,
     current: current.value,
-    supplier: supplierStore.getSupplierId(supplier.value),
+    supplier: supplier.value == "Ingen" ? undefined : await supplierStore.getSupplierId(supplier.value),
     link: link.value
   };
   await itemStore.updateItem(updatedItem);
