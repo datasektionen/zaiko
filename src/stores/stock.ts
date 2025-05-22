@@ -18,6 +18,12 @@ export const useStockStore = defineStore('stock', () => {
       .then((res) => res.json())
       .then((json: Array<StockGetResponse>) => {
         shortage.value = json;
+        // if item.supplier is null, set it to "Ingen"
+        shortage.value.forEach((item) => {
+          if (item.supplier === null) {
+            item.supplier = "-";
+          }
+        });
         return shortage.value;
       })
       .catch((error) => {

@@ -44,9 +44,12 @@
           <p>Leverantör</p>
         </div>
         <select class="input" v-model="supplier" placeholder="Leverantör">
-          <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.id"
+          <option selected disabled>Leverantör</option>
+          <option value="Ingen">Ingen</option>
+          <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.name"
             :selected="item.supplier == supplier.name">{{ supplier.name }}</option>
         </select>
+        <p>{{supplier}}</p>
       </div>
       <div class="item">
         <div class="itemHeader">
@@ -90,7 +93,7 @@ const location = ref<string>(item.location)
 const min = ref<number | undefined>(item.min)
 const max = ref<number | undefined>(item.max)
 const current = ref<number>(item.current)
-const supplier = ref<string | undefined>(item.supplier)
+const supplier = ref<string | undefined>(item.supplier == undefined ? "Ingen" : item.supplier)
 const link = ref<string | undefined>(item.link)
 
 const emit = defineEmits(["submit", "delete"]);
@@ -103,7 +106,7 @@ const updateItem = async () => {
     min: min.value,
     max: max.value,
     current: current.value,
-    supplier: supplierStore.getSupplierId(supplier.value),
+    supplier: supplier.value == "Ingen" ? undefined : await supplierStore.getSupplierId(supplier.value),
     link: link.value
   };
   await itemStore.updateItem(updatedItem);

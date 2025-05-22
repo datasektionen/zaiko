@@ -148,7 +148,11 @@ export const useSupplierStore = defineStore('supplier', () => {
     return name;
   }
 
-  function getSupplierId(name?: string): number {
+  async function getSupplierId(name?: string): Promise<number> {
+    if (supplierNames.value.size === 0) {
+      await fetchSupplierNames();
+      await fetchSuppliers();
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const id = Array.from(supplierNames.value.entries()).find(([_, value]) => value === name)?.[0];
     if (id === undefined) {
