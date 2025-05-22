@@ -76,6 +76,7 @@ import { ArchiveBoxIcon, ShoppingCartIcon, Battery0Icon, Battery100Icon, HomeIco
 import { ArchiveBoxXMarkIcon } from '@heroicons/vue/24/outline';
 import { useMediaQuery } from '@vueuse/core/index.cjs';
 import EmptyTable from './EmptyTable.vue';
+import { useClubsStore } from '@/stores/clubs';
 
 const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -91,9 +92,10 @@ const status = (min?: number, current: number) => {
 
 const supplierStore = useSupplierStore();
 const itemStore = useItemStore();
-// const clubStore = useClubsStore();
+const clubStore = useClubsStore();
+const club = (await clubStore.getClub()).active;
 
-if (supplierStore.suppliers.length === 0) {
+if (supplierStore.suppliers.length === 0 && club.permission == "rw") {
   await supplierStore.fetchSuppliers();
   await supplierStore.fetchSupplierNames();
 }
