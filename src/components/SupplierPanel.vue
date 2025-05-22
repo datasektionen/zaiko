@@ -36,7 +36,7 @@
         </div>
         <textarea v-model="note" placeholder="Anteckningar"></textarea>
       </div>
-      <div class="submitEdit">
+      <div class="submitEdit" v-if="clubPerm == 'rw'">
         <button type="submit">
           <DocumentCheckIcon class="buttonIcon" />
           <p>Spara</p>
@@ -51,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+import { useClubsStore } from '@/stores/clubs';
 import { useSupplierStore } from '@/stores/suppliers';
 import { BackspaceIcon, ShoppingCartIcon, LinkIcon, UserCircleIcon, LockClosedIcon, DocumentTextIcon, DocumentCheckIcon } from '@heroicons/vue/16/solid'
 import { ref } from 'vue';
@@ -59,6 +60,9 @@ const emit = defineEmits(["submit", "delete"]);
 const { id } = defineProps<{
   id: number,
 }>()
+
+const clubStore = useClubsStore();
+const clubPerm = (await clubStore.getClub()).active.permission;
 
 const supplierStore = useSupplierStore();
 const item = await supplierStore.getSupplier(id);
