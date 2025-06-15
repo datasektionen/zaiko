@@ -26,6 +26,9 @@
           <NavLink to="/stock" title="Inventera" :compact="!barOpen" v-if="permission">
             <ClipboardDocumentListIcon />
           </NavLink>
+          <NavLink to="/import" title="Importera" :compact="!barOpen" v-if="permission">
+            <TableCellsIcon />
+          </NavLink>
         </div>
       </div>
     </div>
@@ -55,7 +58,7 @@
 <script setup lang="ts">
 import NavLink from '@/components/NavLink.vue'
 import ClubSelect from '@/components/ClubSelect.vue'
-import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
+import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon, TableCellsIcon } from '@heroicons/vue/24/outline'
 import { computed, ref } from 'vue';
 import NotificationList from '@/components/NotificationList.vue';
 import { useMediaQuery } from '@vueuse/core/index.cjs';

@@ -3,6 +3,7 @@ import MainPage from '@/views/MainPage.vue';
 import SupplierPage from '@/views/SupplierPage.vue';
 import ItemsPage from '@/views/ItemsPage.vue';
 import StockPage from '@/views/StockPage.vue';
+import ImportPage from '@/views/ImportPage.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/stock',
       name: 'Inventering',
       component: StockPage,
+    },
+    {
+      path: '/import',
+      name: 'Importera',
+      component: ImportPage,
     },
   ],
 })

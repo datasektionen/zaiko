@@ -124,3 +124,9 @@ export interface Stats {
   suppliers: number,
   shortages: number,
 }
+
+export interface ImportColumn {
+  name: string,
+  icon: FunctionalComponent,
+  items: Array<String>,
+}
