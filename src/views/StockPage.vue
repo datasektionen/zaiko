@@ -11,7 +11,7 @@
             <SpinnerSimple color="#DADADA" />
           </template>
         </Suspense>
-        <button @click="updateItems" v-if="itemStore.items.length > 0">
+        <button @click="updateItems" v-if="itemStore.items.length > 0" class="goodButton">
           <ClipboardDocumentListIconSolid />
           <p>Inventera</p>
         </button>
@@ -57,25 +57,12 @@ const updateItems = async () => {
   padding-bottom: 0;
 }
 
-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  background-color: #2EB563;
-  color: #FAFAFA;
-  cursor: pointer;
-}
-
-button p {
+.goodButton p {
   margin: 0;
   font-size: 1.1rem;
 }
 
-button svg {
+.goodButton svg {
   width: 1.5rem;
   height: 1.5rem;
 }

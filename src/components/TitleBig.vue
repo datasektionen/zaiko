@@ -21,10 +21,9 @@ defineProps<{
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 1rem;
   padding: 4px 0;
   padding-right: 8px;
-  border-bottom: 2px solid #26A69A;
+  border-bottom: 2px solid var(--zaiko-main-color);
   width: fit-content;
 }
 
@@ -34,12 +33,14 @@ defineProps<{
   align-items: center;
   min-width: 30px;
   min-height: 30px;
+  color: var(--zaiko-text);
 }
 
 h2 {
   margin: 0;
   font-size: 1.8rem;
   font-weight: semi-bold;
+  color: var(--zaiko-text);
 }
 
 </style>

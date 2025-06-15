@@ -1,64 +1,20 @@
 <template>
   <div>
     <form v-on:submit.prevent="addItem">
-      <div class="item">
-        <div class="itemHeader">
-          <ArchiveBoxIcon class="buttonIcon" />
-          <p>Produkt</p>
-        </div>
-        <input v-model="name" placeholder="Produkt" required minlength=1>
-      </div>
-      <div class="item">
-        <div class="itemHeader">
-          <HomeIcon class="buttonIcon" />
-          <p>Plats</p>
-        </div>
-        <input v-model="location" placeholder="Plats" required minlength=1>
+      <div class="groupHeader">
+        <InputText name="Produkt" :icon="ArchiveBoxIcon" v-model="name" club-perm="rw" required />
+        <InputText name="Plats" :icon="HomeIcon" v-model="location" club-perm="rw" />
       </div>
       <fieldset>
-        <div class="item">
-          <div class="itemHeader">
-            <Battery0Icon class="buttonIcon" />
-            <p>Min</p>
-          </div>
-          <input type="number" v-model="min" placeholder="Min">
-        </div>
-        <div class="item">
-          <div class="itemHeader">
-            <Battery100Icon class="buttonIcon" />
-            <p>Max</p>
-          </div>
-          <input type="number" v-model="max" placeholder="Max">
-        </div>
-        <div class="item">
-          <div class="itemHeader">
-            <Battery50Icon class="buttonIcon" />
-            <p>Nuvarande</p>
-          </div>
-          <input type="number" v-model="current" placeholder="Nuvarande" required>
-        </div>
+        <InputNumber name="Min" :icon="Battery0Icon" v-model="min" club-perm="rw" />
+        <InputNumber name="Max" :icon="Battery100Icon" v-model="max" club-perm="rw" />
+        <InputNumber name="Nuvarande" :icon="Battery50Icon" v-model="current" club-perm="rw" required />
       </fieldset>
-      <div class="item">
-        <div class="itemHeader">
-          <ShoppingCartIcon class="buttonIcon" />
-          <p>Leverantör</p>
-        </div>
-        <select class="input" v-model="supplier" placeholder="Leverantör">
-          <option selected disabled>Leverantör</option>
-          <option value="-1" selected>Ingen</option>
-          <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.id">{{ supplier.name
-          }}</option>
-        </select>
-      </div>
-      <div class="item">
-        <div class="itemHeader">
-          <LinkIcon class="buttonIcon" />
-          <p>Länk</p>
-        </div>
-        <input type="url" v-model="link" placeholder="Länk">
-      </div>
+      <InputSelect name="Leverantör" :icon="ShoppingCartIcon" v-model="supplier" club-perm="rw"
+        :items="supplierStore.suppliers" />
+      <InputText name="Länk" :icon="LinkIcon" v-model="link" club-perm="rw" />
       <div class="submit">
-        <button type="submit">
+        <button type="submit" class="goodButton">
           <DocumentCheckIcon class="buttonIcon" />
           <p>Lägg till</p>
         </button>
@@ -73,6 +29,9 @@ import type { ItemAddRequest } from '@/types';
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
 import { useSupplierStore } from '@/stores/suppliers';
 import { useItemStore } from '@/stores/items';
+import InputText from '@/components/InputText.vue';
+import InputNumber from '@/components/InputNumber.vue';
+import InputSelect from '@/components/InputSelect.vue';
 
 const supplierStore = useSupplierStore();
 const itemStore = useItemStore();
@@ -109,19 +68,15 @@ const addItem = async () => {
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 2rem;
+  gap: 1rem;
   margin: 2rem auto;
-}
-
-p {
-  margin: 0;
 }
 
 form {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2rem;
+  gap: 0.5rem;
   width: 100%;
 }
 
@@ -133,19 +88,6 @@ fieldset {
   width: 100%;
 }
 
-fieldset .item input {
-  max-width: 100px;
-}
-
-select {
-  all: unset;
-  padding: 0.5rem;
-  appearance: auto;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-}
-
 .submit {
   display: flex;
   align-items: center;
@@ -153,77 +95,26 @@ select {
   gap: 1rem;
 }
 
-button[type="submit"] {
+.groupHeader {
   display: flex;
   align-items: center;
-  flex-direction: row;
   gap: 0.5rem;
-  font-size: 1.1rem;
-  padding: 0.6rem;
-  background-color: #2EB563;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-input[type="number"] {
-  -moz-appearance: textfield;
-  -webkit-appearance: textfield;
-}
-
-input::placeholder {
-  font-size: 0.9rem;
-}
-
-.buttonIcon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.itemHeader {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.itemHeader svg {
-  color: rgba(0, 0, 0, 0.33);
-}
-
-.item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.33);
-  padding: 8px 0;
-  margin-bottom: 8px;
-  max-width: 100%;
-}
-
-.item input {
-  border: none;
-  background-color: inherit;
-  text-align: right;
-  width: 100%;
-}
-
-.submit {
-  display: flex;
-  align-items: flex-end;
-  flex-direction: column;
 }
 
 @media (max-width: 700px) {
   .main-content {
     margin: 0;
-    gap: 0.5rem;
+    gap: 0.25rem;
     max-width: 90vw;
+  }
+
+  form {
+    gap: 0.5rem;
   }
 
   fieldset {
     grid-template-columns: 1fr;
-    gap: 0.7rem;
+    gap: 0.5rem;
   }
 }
 </style>

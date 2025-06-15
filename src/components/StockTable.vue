@@ -1,41 +1,41 @@
 <template>
   <div>
-    <table v-if="itemStore.items.length > 0">
+    <table v-if="itemStore.items.length > 0" class="table">
       <thead>
         <tr>
           <th scope="col">
             <span>
-              <ArchiveBoxIcon class="icon" />
+              <ArchiveBoxIcon class="tableIcon" />
               <p v-if="!isMobile">Produkt</p>
             </span>
           </th>
           <th scope="col">
             <span>
-              <HomeIcon class="icon" />
+              <HomeIcon class="tableIcon" />
               <p v-if="!isMobile">Plats</p>
             </span>
           </th>
           <th scope="col">
             <span>
-              <ShoppingCartIcon class="icon" />
+              <ShoppingCartIcon class="tableIcon" />
               <p v-if="!isMobile">Leverantör</p>
             </span>
           </th>
           <th scope="col">
             <span>
-              <WalletIcon class="icon" />
+              <WalletIcon class="tableIcon" />
               <p v-if="!isMobile">Mängd</p>
             </span>
           </th>
           <th scope="col">
             <span>
-              <InboxArrowDownIcon class="icon" />
+              <InboxArrowDownIcon class="tableIcon" />
               <p v-if="!isMobile">Nya</p>
             </span>
           </th>
           <th scope="col">
             <span>
-              <ArrowsUpDownIcon class="icon" />
+              <ArrowsUpDownIcon class="tableIcon" />
               <p v-if="!isMobile">Differens</p>
             </span>
           </th>
@@ -92,97 +92,29 @@ if (stockStore.output.items.length === 0) {
 </script>
 
 <style scoped>
-table {
-  width: calc(100% - 2rem);
-  border-collapse: collapse;
-  margin: 3rem 1rem;
-}
-
-thead tr th:first-child,
-td:first-child {
-  border-left: none;
-}
-
-span {
-  display: flex;
-  align-items: center;
-  justify-content: start;
-}
-
-th[scope="col"] {
-  padding: 0.5rem;
-  border-left: 1px solid #DADADA;
-  color: #DADADA;
-}
-
-td {
-  padding: 0.5rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  max-width: 200px;
-  border-left: 1px solid #DADADA;
-  border-top: 1px solid #DADADA;
-}
-
 input {
   text-overflow: ellipsis;
   width: 100%;
   font-size: 1rem;
+  color: var(--zaiko-text);
 }
 
 td:nth-child(5) {
   text-align: center;
   max-width: 33px;
-  border: 3px solid #DADADA;
-  background-color: #F5F5F5;
+  background-color: var(--zaiko-bg-2);
+  border-bottom: 2px solid var(--zaiko-bg-0);
 }
 
+/* tr:nth-child(odd) td:nth-child(5) { */
+/*   background-color: var(--zaiko-bg-1); */
+/* } */
+
 .red {
-  color: #B62E3D;
+  color: var(--zaiko-bad-color);
 }
 
 .green {
-  color: #2EB563;
-}
-
-.icon {
-  margin-right: 0.5rem;
-  width: 20px;
-  height: 20px;
-}
-
-a {
-  color: #2984BA;
-  text-decoration: none;
-}
-
-td p,
-a {
-  max-width: 92%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 768px) {
-  table {
-    width: 100%;
-    margin: 2rem 0;
-    overflow-x: scroll;
-  }
-
-  td {
-    max-width: 92%;
-  }
-
-  .icon {
-    margin: 0 auto;
-  }
-}
-
-@media (max-width: 400px) {
-  td {
-    max-width: 55px;
-  }
+  color: var(--zaiko-main-color);
 }
 </style>

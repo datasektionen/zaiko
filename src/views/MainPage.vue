@@ -9,7 +9,7 @@
           <Suspense>
             <ShortageTable />
             <template #fallback>
-              <SpinnerSimple color="#DADADA" />
+              <SpinnerSimple color="var(--zaiko-text)" />
             </template>
           </Suspense>
         </div>
@@ -23,7 +23,7 @@
         <Suspense>
           <StatsPanel />
           <template #fallback>
-            <SpinnerSimple color="#DADADA" />
+            <SpinnerSimple color="var(--zaiko-text)" />
           </template>
         </Suspense>
       </template>

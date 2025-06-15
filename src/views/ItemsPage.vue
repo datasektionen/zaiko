@@ -8,7 +8,7 @@
         <Suspense>
           <ItemsTable @select="SelectItem" />
           <template #fallback>
-            <SpinnerSimple color="#DADADA" />
+            <SpinnerSimple color="var(--zaiko-text)" />
           </template>
         </Suspense>
       </template>
@@ -21,7 +21,7 @@
         <ItemPanel :id="selected" @submit="UnSelect()" @delete="UnSelect()" v-if="selected != -1" />
         <ItemForm v-else @submit="UnSelect()" />
         <template #fallback>
-          <SpinnerSimple color="#DADADA" />
+          <SpinnerSimple color="var(--zaiko-text)" />
         </template>
       </Suspense>
     </PopupModal>

@@ -1,11 +1,11 @@
 <template>
   <div>
-    <table>
+    <table class="table">
       <thead>
         <tr>
           <th v-for="column in columns" :key="column.label" scope="col">
             <span>
-              <component :is="column.icon" class="icon" />
+              <component :is="column.icon" class="tableIcon" />
               <p v-if="!isMobile">{{ column.label }}</p>
             </span>
           </th>
@@ -39,11 +39,15 @@ defineProps<{
 </script>
 
 <style scoped>
-table {
-  width: 95%;
+.table {
+  width: 100%;
   max-width: 100vw;
   border-collapse: collapse;
-  margin: 2.5rem 1rem;
+  margin: 0 auto;
+  background-color: var(--zaiko-bg-0);
+  padding: 2rem;
+  border-radius: 8px;
+  color: var(--zaiko-text);
 }
 
 thead tr th:first-child,
@@ -51,44 +55,43 @@ td:first-child {
   border-left: none;
 }
 
-span {
+.table span {
   display: flex;
   align-items: center;
   justify-content: start;
 }
 
-a {
-  color: #2984BA;
+.table a {
+  color: var(--zaiko-link-color);
   text-decoration: none;
 }
 
-th[scope="col"] {
+.table th[scope="col"] {
   padding: 0.5rem;
-  border-left: 1px solid #DADADA;
-  color: #DADADA;
+  color: var(--zaiko-bg-2);
+  border-bottom: 2px solid var(--zaiko-bg-1);
 }
 
-td {
+.table td {
   padding: 0.5rem;
   text-overflow: ellipsis;
-  border-left: 1px solid #DADADA;
-  border-top: 1px solid #DADADA;
+  border-top: 1px solid var(--zaiko-border-color);
 }
 
-.icon {
+.tableIcon {
   margin-right: 0.5rem;
   width: 20px;
   height: 20px;
 }
 
 @media (max-width: 1200px) {
-  table {
+  .table {
     width: 100%;
     margin: 2rem 0;
     overflow-x: scroll;
   }
 
-  td {
+  .table td {
     text-overflow: ellipsis;
     overflow: hidden;
     max-width: 100px;
@@ -97,13 +100,13 @@ td {
 }
 
 @media (max-width: 768px) {
-  .icon {
+  .tableIcon {
     margin: 0 auto;
   }
 }
 
 @media (max-width: 400px) {
-  td {
+  .table td {
     text-overflow: ellipsis;
     overflow: hidden;
     max-width: 80px;

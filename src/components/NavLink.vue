@@ -32,7 +32,7 @@ a {
   display: flex;
   align-items: center;
   text-decoration: none;
-  color: black;
+  color: var(--zaiko-text);
   gap: 12px;
   cursor: pointer;
   text-overflow: ellipsis;
