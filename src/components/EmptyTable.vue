@@ -23,7 +23,7 @@ defineProps<{
   justify-content: center;
   height: 100%;
   min-height: 7rem;
-  color: #DADADA;
+  color: var(--zaiko-text);
 }
 
 .shortageEmpty h3 {

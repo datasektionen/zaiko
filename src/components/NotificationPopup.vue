@@ -65,7 +65,7 @@ const iconType = computed<number>(() => {
 
 <style scoped>
 .notiMain {
-  background-color: #FAFAFA;
+  background-color: var(--zaiko-bg-2);
   display: flex;
   flex-direction: row;
   gap: 1rem;
@@ -92,18 +92,19 @@ svg {
   margin-top: 0.5rem;
   color: rgba(0, 0, 0, 0.33);
   text-overflow: ellipsis;
+  color: var(--zaiko-text);
 }
 
 .green {
-  color: #2EB563;
+  color: var(--zaiko-main-color);
 }
 
 .yellow {
-  color: #b6b42e;
+  color: var(--zaiko-warning-color);
 }
 
 .red {
-  color: #B62E3D;
+  color: var(--zaiko-bad-color);
 }
 
 @media (max-width: 768px) {

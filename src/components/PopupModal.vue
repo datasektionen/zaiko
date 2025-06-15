@@ -1,16 +1,18 @@
 <template>
   <div v-if="modal">
     <Teleport to="#popup">
-      <div class="modal" @click.stop="">
-        <div class="modalHeader">
-          <TitleMedium :title="title">
-            <PencilSquareIcon />
-          </TitleMedium>
-          <button @click="emit('exit')">
-            <XMarkIcon />
-          </button>
+      <div class="modalBackground" @click="emit('exit')">
+        <div class="modal" @click.stop="">
+          <div class="modalHeader">
+            <TitleBig :title="title">
+              <PencilSquareIcon />
+            </TitleBig>
+            <button @click="emit('exit')">
+              <XMarkIcon />
+            </button>
+          </div>
+          <slot />
         </div>
-        <slot />
       </div>
     </Teleport>
   </div>
@@ -18,7 +20,7 @@
 
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
-import TitleMedium from '@/components/TitleMedium.vue';
+import TitleBig from '@/components/TitleBig.vue';
 import { PencilSquareIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 
@@ -31,17 +33,25 @@ const emit = defineEmits(["exit"]);
 </script>
 
 <style scoped>
-.modal {
+.modalBackground {
   position: fixed;
-  top: 10rem;
-  right: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.modal {
   width: 550px;
   z-index: 3;
-  background-color: #FAFAFA;
-  border-top-left-radius: 12px;
-  border-bottom-left-radius: 12px;
-  padding: 15px 3rem;
-  min-height: 70vh;
+  background-color: var(--zaiko-bg-2);
+  border-radius: 12px;
+  padding: 1rem 3rem;
   min-width: 500px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
 }
@@ -64,6 +74,7 @@ button {
 .modalHeader button svg {
   width: 26px;
   height: 26px;
+  color: var(--zaiko-text);
 }
 
 @media (max-width: 768px) {
@@ -73,6 +84,7 @@ button {
     min-width: unset;
     top: 5rem;
   }
+
   .modalHeader {
     gap: 1rem;
   }

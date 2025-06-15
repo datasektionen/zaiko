@@ -33,7 +33,6 @@ await statsStore.fetchStats();
   display: flex;
   flex-direction: column;
   gap: 20px;
-  margin: 1rem;
 }
 
 .boxDiv {

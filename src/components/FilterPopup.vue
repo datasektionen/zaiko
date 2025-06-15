@@ -62,9 +62,9 @@ button {
   margin: 0;
   border: none;
   cursor: pointer;
-  background-color: #80CBC3;
+  background-color: var(--zaiko-main-color);
   border-radius: 8px;
-  color: #FAFAFA;
+  color: var(--zaiko-bg-1);
   width: 32px;
   height: 32px;
 }
@@ -86,7 +86,7 @@ button {
   position: absolute;
   top: 3rem;
   right: 0;
-  background-color: #FAFAFA;
+  background-color: var(--zaiko-bg-2);
   width: 210px;
   height: 100px;
   z-index: 3;
@@ -102,20 +102,21 @@ button {
 .filterHeader svg {
   width: 21px;
   height: 21px;
-  color: #DADADA;
+  color: var(--zaiko-text);
 }
 
 .colSelect svg {
-  color: rgba(0, 0, 0, 0.33);
+  color: var(--zaiko-text);
 
 }
 
 .colSelect {
   display: flex;
   align-items: center;
-  background-color: #DADADA;
+  background-color: var(--zaiko-bg-1);
   padding: 0.4rem 0.5rem;
   border-radius: 6px;
+  color: var(--zaiko-text);
 }
 
 .colSelect select {
@@ -138,7 +139,7 @@ button {
 .filterContent svg {
   width: 24px;
   height: 24px;
-  color: rgba(0, 0, 0, 0.33);
+  color: var(--zaiko-text);
 }
 
 .filterContent input {
@@ -147,6 +148,7 @@ button {
   border-radius: 0;
   margin-left: 0.3rem;
   max-width: 100px;
+  color: var(--zaiko-text);
 }
 
 .filterContent button {
@@ -155,13 +157,13 @@ button {
 }
 
 .clearButton {
-  background-color: #F6CDD6;
+  background-color: var(--zaiko-bad-color);
   aspect-ratio: 1;
   padding: 0.1rem;
 }
 
 .clearButton svg {
-  color: #FAFAFA;
+  color: var(--zaiko-text);
   width: 24px;
   height: 24px;
 }

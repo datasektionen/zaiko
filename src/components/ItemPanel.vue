@@ -1,69 +1,23 @@
 <template>
   <div>
     <form v-on:submit.prevent="updateItem">
-      <div class="item">
-        <div class="itemHeader">
-          <ArchiveBoxIcon class="buttonIcon" />
-          <p>Produkt</p>
-        </div>
-        <input v-model="name" placeholder="Produkt" required minlength=1 :disabled="clubPerm != 'rw'">
-      </div>
-      <div class="item">
-        <div class="itemHeader">
-          <HomeIcon class="buttonIcon" />
-          <p>Plats</p>
-        </div>
-        <input v-model="location" placeholder="Plats" required minlength=1 :disabled="clubPerm != 'rw'">
+      <div class="groupHeader">
+        <InputText name="Produkt" :icon="ArchiveBoxIcon" v-model="name" :clubPerm="clubPerm" required />
+        <InputText name="Plats" :icon="HomeIcon" v-model="location" :clubPerm="clubPerm" />
       </div>
       <fieldset>
-        <div class="item">
-          <div class="itemHeader">
-            <Battery0Icon class="buttonIcon" />
-            <p>Min</p>
-          </div>
-          <input type="number" v-model="min" placeholder="Min" :disabled="clubPerm != 'rw'">
-        </div>
-        <div class="item">
-          <div class="itemHeader">
-            <Battery100Icon class="buttonIcon" />
-            <p>Max</p>
-          </div>
-          <input type="number" v-model="max" placeholder="Max" :disabled="clubPerm != 'rw'">
-        </div>
-        <div class="item">
-          <div class="itemHeader">
-            <Battery50Icon class="buttonIcon" />
-            <p>Nuvarande</p>
-          </div>
-          <input type="number" v-model="current" placeholder="Nuvarande" :disabled="clubPerm != 'rw'">
-        </div>
+        <InputNumber name="Min" :icon="Battery0Icon" v-model="min" :clubPerm="clubPerm" />
+        <InputNumber name="Max" :icon="Battery100Icon" v-model="max" :clubPerm="clubPerm" />
+        <InputNumber name="Nuvarande" :icon="Battery50Icon" v-model="current" :clubPerm="clubPerm" required />
       </fieldset>
-      <div class="item">
-        <div class="itemHeader">
-          <ShoppingCartIcon class="buttonIcon" />
-          <p>Leverantör</p>
-        </div>
-        <select class="input" v-model="supplier" placeholder="Leverantör" v-if="clubPerm == 'rw'">
-          <option selected disabled>Leverantör</option>
-          <option value="Ingen">Ingen</option>
-          <option v-for="supplier in supplierStore.suppliers" :key="supplier.id" :value="supplier.name"
-            :selected="item.supplier == supplier.name">{{ supplier.name }}</option>
-        </select>
-        <p v-else>{{supplier}}</p>
-      </div>
-      <div class="item">
-        <div class="itemHeader">
-          <LinkIcon class="buttonIcon" />
-          <p>Länk</p>
-        </div>
-        <input type="url" v-model="link" placeholder="Länk" :disabled="clubPerm != 'rw'">
-      </div>
+      <InputSelect name="Leverantör" :icon="ShoppingCartIcon" v-model="supplier" :clubPerm="clubPerm" :items="supplierStore.suppliers" />
+      <InputText name="Länk" :icon="LinkIcon" v-model="link" :clubPerm="clubPerm" />
       <div class="submitEdit" v-if="clubPerm == 'rw'">
-        <button type="submit">
+        <button type="submit" class="goodButton">
           <DocumentCheckIcon class="buttonIcon" />
           <p>Spara</p>
         </button>
-        <button class="delete" @click.prevent="Delete">
+        <button class="delete goodButton" @click.prevent="Delete">
           <BackspaceIcon class="buttonIcon" />
           <p>Radera</p>
         </button>
@@ -79,8 +33,9 @@ import { useSupplierStore } from '@/stores/suppliers';
 import { useItemStore } from '@/stores/items';
 import type { ItemUpdateRequest } from '@/types';
 import { useClubsStore } from '@/stores/clubs';
-
-
+import InputText from '@/components/InputText.vue';
+import InputNumber from '@/components/InputNumber.vue';
+import InputSelect from '@/components/InputSelect.vue';
 
 const { id } = defineProps<{
   id: number,
@@ -133,20 +88,16 @@ const Delete = async () => {
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 2rem;
   margin: 2rem auto;
-}
-
-p {
-  margin: 0;
 }
 
 form {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2rem;
+  gap: 1rem;
   width: 100%;
+  color: var(--zaiko-text);
 }
 
 fieldset {
@@ -157,8 +108,10 @@ fieldset {
   width: 100%;
 }
 
-fieldset .item input {
-  max-width: 100px;
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .submitEdit {
@@ -168,94 +121,23 @@ fieldset .item input {
   gap: 1rem;
 }
 
-select {
-  all: unset;
-  padding: 0.5rem;
-  appearance: auto;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-}
-
 .delete {
-  display: flex;
-  align-items: center;
-  flex-direction: row;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  padding: 0.6rem;
-  background-color: #B62E3D;
-  color: #FAFAFA;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button[type="submit"] {
-  display: flex;
-  align-items: center;
-  flex-direction: row;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  padding: 0.6rem;
-  background-color: #2EB563;
-  color: #FAFAFA;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-input[type="number"] {
-  -moz-appearance: textfield;
-  -webkit-appearance: textfield;
-  appearance: textfield;
-}
-
-input {
-  font-size: 0.9rem;
-}
-
-.buttonIcon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.itemHeader {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.itemHeader svg {
-  color: rgba(0, 0, 0, 0.33);
-}
-
-.item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.33);
-  padding: 8px 0;
-  margin-bottom: 8px;
-  max-width: 100%;
-}
-
-.item input {
-  border: none;
-  background-color: inherit;
-  text-align: right;
-  width: 100%;
+  background-color: var(--zaiko-bad-color);
 }
 
 @media (max-width: 700px) {
   .main-content {
     margin: 0;
-    gap: 0.5rem;
+    gap: 0.25rem;
+  }
+
+  form {
+    gap: 0.25rem;
   }
 
   fieldset {
     grid-template-columns: 1fr;
-    gap: 0.7rem;
+    gap: 0.25rem;
   }
 
   h1 {

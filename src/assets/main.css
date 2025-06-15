@@ -1,15 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
 
+@media (prefers-color-scheme: dark) {
+    :root {
+        --zaiko-bg-0: #0A0B10;
+        --zaiko-bg-1: #13171F;
+        --zaiko-bg-2: #1C212C;
+        --zaiko-text: #B3B9C5;
+        --zaiko-text-hc: #FFFFFF;
+        --zaiko-main-color: #01AD99;
+        --zaiko-bad-color: #DB065E;
+        --zaiko-warning-color: #FFB300;
+        --zaiko-link-color: #01AAFF;
+        --zaiko-table-divider: #B4C2E0;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --zaiko-bg-0: #FFFFFF;
+        --zaiko-bg-1: #F5F6FA;
+        --zaiko-bg-2: #E8EAF1;
+        --zaiko-text: #333333;
+        --zaiko-text-hc: #000000;
+        --zaiko-main-color: #01AD99;
+        --zaiko-bad-color: #DB065E;
+        --zaiko-warning-color: #FFB300;
+        --zaiko-link-color: #01AAFF;
+        --zaiko-table-divider: #B4C2E0;
+    }
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Lato", sans-serif;
+    font-family: "Lato", arial, sans-serif;
     transition: all 0.18s ease-in;
 }
 
 body {
-    background-color: #DADADA;
     min-height: 100vh;
 }
 
@@ -25,4 +54,104 @@ input[type="number"] {
     -moz-appearance: textfield;
     -webkit-appearance: textfield;
     appearance: textfield;
+}
+
+.table {
+    width: 100%;
+    max-width: 100vw;
+    border-collapse: collapse;
+    margin: 0 auto;
+    background-color: var(--zaiko-bg-0);
+    padding: 2rem;
+    border-radius: 8px;
+    color: var(--zaiko-text);
+}
+
+.table span {
+    display: flex;
+    align-items: center;
+    justify-content: start;
+}
+
+.table a {
+    color: var(--zaiko-link-color);
+    text-decoration: none;
+}
+
+.table th[scope="col"] {
+    padding: 0.5rem;
+    color: var(--zaiko-bg-2);
+    border-bottom: 2px solid var(--zaiko-bg-1);
+}
+
+.table td {
+    padding: 0.5rem;
+    text-overflow: ellipsis;
+    border-top: 1px solid var(--zaiko-border-color);
+}
+
+.table tr {
+    border-bottom: 1px solid var(--zaiko-bg-2);
+}
+
+.table tr:nth-child(even) {
+    background-color: var(--zaiko-bg-1);
+}
+
+.tableIcon {
+    margin-right: 0.5rem;
+    width: 20px;
+    height: 20px;
+}
+
+@media (max-width: 1200px) {
+    .table {
+        width: 100%;
+        margin: 2rem 0;
+        overflow-x: scroll;
+    }
+
+    .table td {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 100px;
+    }
+
+}
+
+@media (max-width: 768px) {
+    .tableIcon {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 400px) {
+    .table td {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 80px;
+    }
+}
+
+.goodButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: var(--zaiko-main-color);
+  color: var(--zaiko-text-hc);
+  cursor: pointer;
+}
+
+.goodButton p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.goodButton svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }

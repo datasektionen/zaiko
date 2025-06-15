@@ -36,9 +36,9 @@ const clubName = (name: string) => {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background-color: #FAFAFA;
+  background-color: var(--zaiko-bg-0);
   padding: 0.6rem 0.8rem;
-
+  color: var(--zaiko-text);
 }
 
 .dropdown {

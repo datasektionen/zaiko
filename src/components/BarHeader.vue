@@ -2,12 +2,46 @@
   <div :class="Main">
     <div :class="barSidePanel">
       <RouterLink to="/" class="titleDiv" @click="isMobileClose()">
-        <svg id="superdelta_img" width="26px" height="37px" viewBox="0 0 26 37" version="1.1"
-          xmlns="http://www.w3.org/2000/svg">
-          <g id="delta_logo" stroke-width="0.75" transform="translate(-19.000000, -14.000000)">
+        <svg width="42" height="42" viewBox="0 0 132.29167 132.29167" version="1.1" id="svg1" xml:space="preserve"
+          xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+          <defs id="defs1" />
+          <g id="layer1">
             <path
-              d="M43.7787458,33.592285 C42.6511301,25.8619776 36.4053307,24.9682463 34.9922796,24.5299077 C32.3456685,23.7086951 27.8894062,23.9803328 27.4482787,20.1247049 C26.86666,15.0454778 30.7276382,17.5429168 33.2996277,17.7418823 C35.8708494,17.9408478 36.0983993,15 36.0983993,15 C36.0983993,15 35.4851508,16.5550034 30.2855895,15.2896138 C25.0858747,14.0243779 24.4670987,18.2920717 24.4242603,19.3975207 C24.3005051,22.5931057 26.3630408,24.1203001 26.5793821,24.9886806 C26.6736571,25.3657163 19.4190838,26.7772187 20.0373992,36.3168058 C20.6555611,45.8573148 26.5135123,49.7624152 31.054223,49.9901116 C35.5953943,50.2181153 45.6108143,46.5551535 43.7787458,33.592285 L43.7787458,33.592285 Z M40.3377062,39.8597738 C36.6622072,53.7530938 25.7316742,50.3181357 23.0692483,40.126495 C20.4789873,30.2109477 27.5310381,25.431782 27.5310381,25.431782 C27.5310381,25.431782 29.0851947,26.0448107 30.8936176,26.5548998 C31.9510644,26.8531175 43.4696649,28.0210985 40.3377062,39.8597738 L40.3377062,39.8597738 Z">
-            </path>
+              style="fill:#01AD99;fill-opacity:1;stroke:none;stroke-width:8.47663;stroke-linejoin:bevel;paint-order:stroke markers fill"
+              d="m 66.683955,16.5 -15.438401,8.913365 a 1.4433757,1.4433757 90.000001 0 0 -10e-7,2.5 l 15.438402,8.913366 a 5.196152,5.196152 180 0 0 5.196152,0 l 15.438402,-8.913366 a 1.4433757,1.4433757 89.999999 0 0 -1e-6,-2.5 L 71.880107,16.5 a 5.1961525,5.1961525 0 0 0 -5.196152,0 z"
+              id="path8" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
+            <path
+              style="fill:#01AD99;fill-opacity:1;stroke:none;stroke-width:8.47663;stroke-linejoin:bevel;paint-order:stroke markers fill"
+              d="m 70.585356,43.584156 v 15.569305 a 1.4433757,1.4433757 30.000001 0 0 2.165064,1.25 l 15.438401,-8.913364 a 5.1961522,5.1961522 120 0 0 2.598076,-4.5 l 0,-15.569305 a 1.4433757,1.4433757 30.000001 0 0 -2.165064,-1.25 l -15.438401,8.913364 a 5.1961522,5.1961522 120 0 0 -2.598076,4.5 z"
+              id="path10" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
+            <path
+              style="fill:#01AD99;fill-opacity:1;stroke:none;stroke-width:8.47663;stroke-linejoin:bevel;paint-order:stroke markers fill"
+              d="m 67.978707,43.584157 v 15.569305 a 1.4433759,1.4433759 150 0 1 -2.165064,1.25 L 50.375239,51.490098 a 5.1961518,5.1961518 59.999997 0 1 -2.598076,-4.5 V 31.420793 a 1.4433759,1.4433759 150 0 1 2.165064,-1.25 l 15.438404,8.913364 a 5.1961518,5.1961518 59.999997 0 1 2.598076,4.5 z"
+              id="path10-4" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
+            <path
+              style="fill:#01AD99;fill-opacity:1;stroke:none;stroke-width:8.47663;stroke-linejoin:bevel;paint-order:stroke markers fill"
+              d="M 43.875762,53.725041 28.43736,62.638406 a 1.4433756,1.4433756 90.000001 0 0 -1e-6,2.5 l 15.438403,8.913366 a 5.196152,5.196152 180 0 0 5.196152,0 l 15.438401,-8.913366 a 1.4433758,1.4433758 89.999999 0 0 0,-2.5 L 49.071914,53.725041 a 5.1961525,5.1961525 1.2281142e-6 0 0 -5.196152,0 z"
+              id="path8-9" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
+            <path
+              style="fill:#01AD99;fill-opacity:1;stroke:none;stroke-width:8.47663;stroke-linejoin:bevel;paint-order:stroke markers fill"
+              d="m 47.777163,80.809197 0,15.569305 a 1.4433757,1.4433757 30.000001 0 0 2.165064,1.25 l 15.4384,-8.913364 a 5.1961523,5.1961523 120 0 0 2.598076,-4.5 V 68.645833 a 1.4433757,1.4433757 30.000001 0 0 -2.165064,-1.25 l -15.4384,8.913364 a 5.1961523,5.1961523 120 0 0 -2.598076,4.5 z"
+              id="path10-3" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
+            <path
+              style="color:#000000;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:normal;font-family:sans-serif;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-variant-east-asian:normal;font-feature-settings:normal;font-variation-settings:normal;text-indent:0;text-align:start;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:normal;word-spacing:normal;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-margin:0;inline-size:0;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;isolation:auto;mix-blend-mode:normal;color-interpolation-filters:linearRGB;vector-effect:none;fill:#01AD99;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+              d="m 45.170514,80.809198 0,15.569305 a 1.4433759,1.4433759 150 0 1 -2.165064,1.25 L 27.567046,88.715139 a 5.1961518,5.1961518 59.999997 0 1 -2.598076,-4.5 V 68.645834 a 1.4433759,1.4433759 150 0 1 2.165064,-1.25 l 15.438404,8.913364 a 5.1961518,5.1961518 59.999997 0 1 2.598076,4.5 z"
+              id="path10-4-1" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
+            <path
+              style="fill:#01AD99;fill-opacity:1;stroke:none;stroke-width:8.47663;stroke-linejoin:bevel;paint-order:stroke markers fill"
+              d="m 89.492148,53.725041 -15.438402,8.913365 a 1.4433756,1.4433756 90.000001 0 0 -10e-7,2.5 l 15.438403,8.913366 a 5.1961515,5.1961515 180 0 0 5.196152,0 l 15.4384,-8.913366 a 1.4433761,1.4433761 89.999999 0 0 0,-2.5 L 94.6883,53.725041 a 5.196152,5.196152 3.6843433e-6 0 0 -5.196152,0 z"
+              id="path8-9-5" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
+            <path
+              style="fill:#01AD99;fill-opacity:1;stroke:none;stroke-width:8.47663;stroke-linejoin:bevel;paint-order:stroke markers fill"
+              d="m 93.393549,80.809197 0,15.569301 a 1.443376,1.443376 30.000005 0 0 2.165064,1.25 l 15.438397,-8.91336 a 5.1961513,5.1961513 120.00001 0 0 2.59808,-4.5 V 68.645833 a 1.4433757,1.4433757 30.000001 0 0 -2.16506,-1.25 l -15.438405,8.913364 a 5.1961522,5.1961522 120 0 0 -2.598076,4.5 z"
+              id="path10-3-0" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
+            <path
+              style="fill:#01AD99;fill-opacity:1;stroke:none;stroke-width:8.47663;stroke-linejoin:bevel;paint-order:stroke markers fill"
+              d="m 90.7869,80.809198 v 15.56931 a 1.4433755,1.4433755 150 0 1 -2.165063,1.25 L 73.183432,88.715139 a 5.1961529,5.1961529 60.000002 0 1 -2.598076,-4.5 V 68.645834 a 1.4433759,1.4433759 150 0 1 2.165064,-1.25 l 15.438404,8.913364 a 5.1961518,5.1961518 59.999997 0 1 2.598076,4.5 z"
+              id="path10-4-1-2" transform="matrix(1.4926938,0,0,1.6129583,-37.271028,-25.490947)" />
           </g>
         </svg>
         <h1 v-if="barOpen">Zaiko</h1>
@@ -93,7 +127,7 @@ const isMobileClose = () => {
 .Main {
   display: grid;
   grid-template-columns: 220px 1fr;
-  background-color: #DADADA;
+  background-color: var(--zaiko-bg-2);
   min-height: 100vh;
   max-height: 100vh;
   z-index: 2;
@@ -106,7 +140,7 @@ const isMobileClose = () => {
 .mainContent {
   overflow-x: hidden;
   overflow-y: scroll;
-  background-color: #FAFAFA;
+  background-color: var(--zaiko-bg-1);
   border-top-left-radius: 16px;
   min-height: 100%;
   max-height: 90vh;
@@ -131,7 +165,7 @@ a {
   font-size: 1.8rem;
   font-weight: bold;
   text-decoration: none;
-  color: black;
+  color: var(--zaiko-main-color);
 }
 
 .titleDiv {
@@ -167,6 +201,11 @@ a {
   gap: 16px;
 }
 
+.pageHeader h1 {
+  font-size: 1.8rem;
+  color: var(--zaiko-text);
+}
+
 .clubMenu {
   display: flex;
   align-items: center;
@@ -184,6 +223,7 @@ a {
 .icon {
   width: 34px;
   height: 34px;
+  color: var(--zaiko-text);
 }
 
 @media (max-width: 890px) {
@@ -203,8 +243,9 @@ a {
     padding-right: 1rem;
   }
 
-  .barHeader h1 {
+  .pageHeader h1 {
     font-size: 1.4rem;
+    color: var(--zaiko-text);
   }
 
   .barPanel {

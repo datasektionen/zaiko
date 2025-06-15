@@ -29,26 +29,28 @@ div {
   border-radius: 6px;
   aspect-ratio: 1;
   gap: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
 }
 
 h5 {
   font-size: 2.5rem;
   font-weight: semi-bold;
   margin: 0;
+  color: var(--zaiko-bg-1);
 }
 
 h6 {
   font-size: 0.7rem;
   margin: 0;
-  color: rgba(0, 0, 0, 0.66);
+  color: var(--zaiko-bg-1);
 }
 
 .good {
-  background-color: #B2DFDB;
+  background-color: var(--zaiko-main-color);
 }
 
 .bad {
-  background-color: #F6CDD6;
+  background-color: var(--zaiko-bad-color);
 }
 
 @media (max-width: 768px) {

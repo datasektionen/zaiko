@@ -1,29 +1,29 @@
 <template>
   <div>
-    <table v-if="supplierStore.suppliers.length > 0">
+    <table v-if="supplierStore.suppliers.length > 0" class="table">
       <thead>
         <tr>
           <th scope="col">
             <span>
-              <ShoppingCartIcon class="icon" />
+              <ShoppingCartIcon class="tableIcon" />
               <p v-if="!isMobile">Namn</p>
             </span>
           </th>
           <th scope="col">
             <span>
-              <UserCircleIcon class="icon" />
+              <UserCircleIcon class="tableIcon" />
               <p v-if="!isMobile">Användarnamn</p>
             </span>
           </th>
           <th scope="col">
             <span>
-              <LockClosedIcon class="icon" />
+              <LockClosedIcon class="tableIcon" />
               <p v-if="!isMobile">Lösenord</p>
             </span>
           </th>
           <th scope="col">
             <span>
-              <DocumentTextIcon class="icon" />
+              <DocumentTextIcon class="tableIcon" />
               <p v-if="!isMobile">Anteckningar</p>
             </span>
           </th>
@@ -66,75 +66,4 @@ if (supplierStore.suppliers.length == 0) {
 </script>
 
 <style scoped>
-table {
-  width: calc(100% - 2rem);
-  border-collapse: collapse;
-  margin: 3rem 1rem;
-}
-
-thead tr th:first-child,
-td:first-child {
-  border-left: none;
-}
-
-span {
-  display: flex;
-  align-items: center;
-  justify-content: start;
-}
-
-th[scope="col"] {
-  padding: 0.5rem;
-  border-left: 1px solid #DADADA;
-  color: #DADADA;
-}
-
-td {
-  padding: 0.5rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  max-width: 200px;
-  border-left: 1px solid #DADADA;
-  border-top: 1px solid #DADADA;
-}
-
-tr {
-  cursor: pointer;
-}
-
-.icon {
-  margin-right: 0.5rem;
-  width: 20px;
-  height: 20px;
-}
-
-a {
-  color: #2984BA;
-  text-decoration: none;
-}
-
-td p,
-a {
-  max-width: 92%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 768px) {
-  table {
-    width: 96%;
-    margin: 2rem 0;
-    overflow-x: scroll;
-  }
-  .icon {
-    margin: 0 auto;
-  }
-}
-
-@media (max-width: 400px) {
-  td {
-    max-width: 55px;
-  }
-}
 </style>

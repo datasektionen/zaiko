@@ -31,15 +31,33 @@ const emit = defineEmits(["button"])
 button {
   all: unset;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   padding: 0.4rem;
-  margin: 0;
   border: none;
   cursor: pointer;
-  background-color: #80CBC3;
+  background-color: var(--zaiko-main-color);
   border-radius: 8px;
-  color: #FAFAFA;
+  color: var(--zaiko-bg-1);
+  margin-left: 1rem;
+}
+
+.panelContainer {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  width: 100%;
+  background-color: var(--zaiko-bg-2);
+  border-radius: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  padding: 1rem;
+}
+
+.panelContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
 }
 
 svg {
