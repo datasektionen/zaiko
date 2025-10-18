@@ -32,63 +32,63 @@ impl ResponseError for Error {
 
 impl From<sqlx::types::uuid::Error> for Error {
     fn from(value: sqlx::types::uuid::Error) -> Self {
-        log::error!("{}", value);
+        log::error!("sqlx: {}", value);
         Error::BadRequest
     }
 }
 
 impl From<sqlx::Error> for Error {
     fn from(value: sqlx::Error) -> Self {
-        log::error!("{}", value);
+        log::error!("sqlx: {}", value);
         Error::InternalServerError(format!("sql: {}", value))
     }
 }
 
 impl From<serde_json::Error> for Error {
     fn from(value: serde_json::Error) -> Self {
-        log::error!("{}", value);
+        log::error!("serde: {}", value);
         Error::BadRequest
     }
 }
 
 impl From<ConfigurationError> for Error {
     fn from(value: ConfigurationError) -> Self {
-        log::error!("{}", value);
+        log::error!("oidc: {}", value);
         Error::InternalServerError(format!("token clinet request config error: {}", value))
     }
 }
 
 impl From<ClaimsVerificationError> for Error {
     fn from(value: ClaimsVerificationError) -> Self {
-        log::error!("{}", value);
+        log::error!("oidc: {}", value);
         Error::InternalServerError(format!("aquireing claims error: {}", value))
     }
 }
 
 impl From<SignatureVerificationError> for Error {
     fn from(value: SignatureVerificationError) -> Self {
-        log::error!("{}", value);
+        log::error!("oidc: {}", value);
         Error::InternalServerError(format!("aquireing signing algorithm: {}", value))
     }
 }
 
 impl From<SigningError> for Error {
     fn from(value: SigningError) -> Self {
-        log::error!("{}", value);
+        log::error!("oidc: {}", value);
         Error::InternalServerError(format!("checking hash error: {}", value))
     }
 }
 
 impl From<VarError> for Error {
     fn from(value: VarError) -> Self {
-        log::error!("{}", value);
+        log::error!("env: {}", value);
         Error::InternalServerError(format!("env var error: {}", value))
     }
 }
 
 impl From<reqwest::Error> for Error {
     fn from(value: reqwest::Error) -> Self {
-        log::error!("{}", value);
+        log::error!("reqwest: {}", value);
         Error::InternalServerError(format!("request error: {}", value))
     }
 }

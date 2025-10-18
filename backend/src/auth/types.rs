@@ -165,7 +165,7 @@ pub struct HiveGroup {
     group_name: String,
     group_id: String,
     group_domain: String,
-    tag_content: String,
+    tag_content: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema, sqlx::Type)]
