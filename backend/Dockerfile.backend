@@ -41,8 +41,6 @@ WORKDIR /build
 
 RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash postgresql nginx
 
-COPY --from=prerelease /usr/src/app/dist ../dist
-
 COPY backend/Cargo.lock backend/Cargo.toml .
 
 RUN mkdir src
@@ -60,6 +58,8 @@ COPY backend/migrations/ migrations
 COPY backend/src src
 
 RUN cargo build
+
+COPY --from=prerelease /usr/src/app/dist/ dist/
 
 EXPOSE 8000
 
