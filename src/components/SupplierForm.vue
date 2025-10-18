@@ -52,8 +52,8 @@ const name = ref(props.editSupplier?.name || "")
 const group = ref<string>(props.editSupplier?.group || "")
 const username = ref<string | undefined>(props.editSupplier?.username || undefined)
 const password = ref<string | undefined>(props.editSupplier?.password || undefined)
-const link = ref<string | undefined>(props.editSupplier?.link || "")
-const note = ref<string | undefined>(props.editSupplier?.notes || "")
+const link = ref<string | undefined>(props.editSupplier?.link || undefined)
+const note = ref<string | undefined>(props.editSupplier?.notes || undefined)
 
 const addSupplier = async () => {
   const supplier: SupplierAddRequest = {
