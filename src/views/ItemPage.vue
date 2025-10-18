@@ -14,12 +14,13 @@
         <DynamicTable :rows="item.storage!" :columns="storageColumns" settings>
           <template #row="input">
             <td class="p-2 border-b border-(--zaiko-bg-2)">
-              <RouterLink :to="'/storage/' + input.row.storage">
+              <RouterLink :to="'/storage/' + encodeURIComponent(input.row.storage)">
                 <p class="hover:underline">{{ input.row.storage }}</p>
               </RouterLink>
             </td>
             <td class="p-2 border-b border-(--zaiko-bg-2)">
-              <RouterLink :to="'/storage/' + input.row.storage + '?container=' + input.row.container">
+              <RouterLink
+                :to="'/storage/' + encodeURIComponent(input.row.storage) + (input.row.container !== '' ? ('?container=' + encodeURIComponent(input.row.container)) : '')">
                 <p class="hover:underline">{{ input.row.container || "Ingen" }}</p>
               </RouterLink>
             </td>
@@ -44,7 +45,7 @@
         <DynamicTable :rows="item.supplier!" :columns="supplierColumns" settings>
           <template #row="input">
             <td class="p-2 border-b border-(--zaiko-bg-2)">
-              <RouterLink :to="'/supplier/' + input.row.name" class="flex items-center gap-1">
+              <RouterLink :to="'/supplier/' + encodeURIComponent(input.row.name)" class="flex items-center gap-1">
                 <TrophyIcon class="w-5 h-5 text-(--zaiko-warning-color) inline-block mr-1" v-if="input.row.prfered" />
                 <p class="hover:underline">{{ input.row.name }}</p>
               </RouterLink>
@@ -89,7 +90,7 @@ const permsStore = usePermsStore();
 
 const route = useRoute();
 const item = ref<ItemGetResponse>({
-  name: route.params.name as string,
+  name: decodeURI(route.params.name as string),
   storage: [],
   supplier: [],
   avrage_consuption: 0,
@@ -132,7 +133,7 @@ const editName = () => {
       editFunc: changeItemName,
     },
     cb: (result: any) => {
-      router.push('/item/' + result.new_name).then(() => {
+      router.push('/item/' + encodeURIComponent(result.new_name)).then(() => {
         getItemByName(result.new_name).then((data) => {
           item.value = data;
         });

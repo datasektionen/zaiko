@@ -1,15 +1,15 @@
 <template>
   <div class="main">
-    <PanelTemplate :title="$route.params.name as string || 'Lager'" :icon="ClipboardDocumentListIcon"
+    <PanelTemplate :title="decodeURI($route.params.name as string || 'Lager')" :icon="ClipboardDocumentListIcon"
       :button-left-icon="FolderIcon"
-      :button-left-restricted="!permsStore.writeAccessToStorage($route.params.name as string)"
+      :button-left-restricted="!permsStore.writeAccessToStorage(decodeURI($route.params.name as string))"
       @button-left="addContainer()" :button-right-icon="PlusIcon"
-      :button-right-restricted="!permsStore.writeAccessToStorage($route.params.name as string)"
+      :button-right-restricted="!permsStore.writeAccessToStorage(decodeURI($route.params.name as string))"
       @button-right="addItem()">
       <DynamicTree :rows="containers" :columns="columns" checkbox>
         <template #row="input">
           <td class="p-2 border-b border-(--zaiko-bg-2)">
-            <RouterLink :to="'/item/' + input.row.name" class="hover:underline">
+            <RouterLink :to="'/item/' + encodeURIComponent(input.row.name)" class="hover:underline">
               {{ input.row.name }}
             </RouterLink>
           </td>
@@ -27,7 +27,7 @@
 import PanelTemplate from '@/components/PanelTemplate.vue'
 import { ClipboardDocumentListIcon, FolderIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import { ref } from 'vue'
-import type { StorageContainersTreeGetResponse, StorageTreeGetResponse, StorageTreeRequest } from '@/types'
+import type { StorageContainersTreeGetResponse, StorageTreeRequest } from '@/types'
 import { getStorageTree } from '@/stores/storageData'
 import DynamicTree from '@/components/DynamicTree.vue'
 import { useRoute } from 'vue-router'
@@ -50,7 +50,7 @@ function addContainer() {
     cb: containerGhost,
     props: {
       editContainer: {
-        storage: route.params.name as string,
+        storage: decodeURI(route.params.name as string),
       },
     },
   })
@@ -90,7 +90,7 @@ function containerGhost(result?: any) {
 
 const route = useRoute()
 const body: StorageTreeRequest = {
-  name: route.params.name as string
+  name: decodeURI(route.params.name as string)
 }
 getStorageTree(body).then((data) => {
   containers.value = data

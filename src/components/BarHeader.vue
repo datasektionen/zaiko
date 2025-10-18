@@ -61,7 +61,7 @@
           <button class="hamIcon" @click="barOpen = !barOpen">
             <Bars3Icon class="icon" />
           </button>
-          <h1>{{ $route.params.name || $route.name }}</h1>
+          <h1>{{ decodeURI($route.params.name as string || $route.name as string) }}</h1>
         </div>
       </div>
       <div class="mainContent">

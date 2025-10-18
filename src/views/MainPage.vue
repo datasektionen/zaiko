@@ -4,7 +4,7 @@
       <DynamicTable :rows="rows" :columns="columns">
         <template #row="input">
           <td class="p-2 border-b border-(--zaiko-bg-2)">
-            <RouterLink :to="'/item/' + input.row.name">
+            <RouterLink :to="'/item/' + encodeURIComponent(input.row.name)">
               <p class="hover:underline">{{ input.row.name }}</p>
             </RouterLink>
           </td>
@@ -42,7 +42,7 @@ import { getStats } from '@/stores/statsData';
 import { getShortage, unitText, containerText } from '@/stores/inventoryData'
 
 function storagePath(storage: string, container?: string) {
-  return '/storage/' + storage + (container ? '?container=' + container : '');
+  return '/storage/' + encodeURI(storage) + (container ? '?container=' + encodeURI(container) : '');
 }
 
 const columns = {
