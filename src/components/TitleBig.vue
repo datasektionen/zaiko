@@ -1,46 +1,19 @@
 <template>
-  <div class="titleDiv">
-    <div class="icon">
-      <slot />
-    </div>
-    <h2>{{ title }}</h2>
+  <div class="flex justify-center align-center gap-4 mr-2 pl-1 pb-1 border-b-2 border-(--zaiko-main-color) w-fit">
+    <component :is="icon" class="flex justify-center align-center max-w-8 max-h-8 w-8 h-8 text-(--zaiko-text)" />
+    <h2 class="m-0 mr-2 text-3xl font-semibold text-(--zaiko-text) font-left w-fit text-nowrap">{{ title }}</h2>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue'
+import { defineProps, type FunctionalComponent } from 'vue'
 
 defineProps<{
   title: string,
+  icon: FunctionalComponent,
 }>()
 
 </script>
 
 <style scoped>
-.titleDiv {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 0;
-  padding-right: 8px;
-  border-bottom: 2px solid var(--zaiko-main-color);
-  width: fit-content;
-}
-
-.icon {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 30px;
-  min-height: 30px;
-  color: var(--zaiko-text);
-}
-
-h2 {
-  margin: 0;
-  font-size: 1.8rem;
-  font-weight: semi-bold;
-  color: var(--zaiko-text);
-}
-
 </style>

@@ -1,95 +1,99 @@
 <template>
-  <div class="main">
-    <PanelTemplate title="Produkter" :button="permission" @button="SelectItem(-1)">
-      <template #icon>
-        <ArchiveBoxIcon />
-      </template>
-      <template #content>
-        <Suspense>
-          <ItemsTable @select="SelectItem" />
-          <template #fallback>
-            <SpinnerSimple color="var(--zaiko-text)" />
-          </template>
-        </Suspense>
-      </template>
-      <template #headerRight>
-        <FilterPopup :columns="columns" />
-      </template>
-    </PanelTemplate>
-    <PopupModal :modal="isModal" @exit="UnSelect()" :title="ModalTitle">
-      <Suspense>
-        <ItemPanel :id="selected" @submit="UnSelect()" @delete="UnSelect()" v-if="selected != -1" />
-        <ItemForm v-else @submit="UnSelect()" />
-        <template #fallback>
-          <SpinnerSimple color="var(--zaiko-text)" />
+  <div class="pt-2 md:pt-8 md:p-3">
+    <PanelTemplate title="Produkter" :icon="ArchiveBoxIcon" :buttonLeftIcon="PlusIcon"
+      :buttonLeftRestricted="!permsStore.hasWriteAccess()" @buttonLeft="addItem()">
+      <SearchBar @send="(f) => filter = f" :storages="storages" :suppliers="suppliers" />
+      <DynamicTable :rows="rows" :columns="columns">
+        <template #row="input">
+          <td class="p-2 border-b border-(--zaiko-bg-2)">
+            <RouterLink :to="'/item/' + (input.row['name'] as string)">
+              <p class="hover:underline">{{ input.row['name'] }}</p>
+            </RouterLink>
+          </td>
+          <td class="p-2 border-b border-(--zaiko-bg-2)">
+            <span v-for="storage in input.row.storage" :key="storage.toString()" class="mr-2 inline-block">
+              <RouterLink :to="storagePath(storage.storage, storage.container)">
+                <p class="hover:underline">{{ storage.storage }}{{ containerText(storage.container) }}</p>
+              </RouterLink>
+            </span>
+          </td>
+          <td class="p-2 border-b border-(--zaiko-bg-2)">
+            <p>{{ input.row['amount'] }}</p>
+          </td>
         </template>
-      </Suspense>
-    </PopupModal>
+      </DynamicTable>
+    </PanelTemplate>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import type { FilterColumn } from '@/types';
+import { ref, watch } from 'vue';
+import type { ItemListGetResponse, ItemListQueryParams, StorageContainersGetResponse, SupplierGetResponse} from '@/types';
 import PanelTemplate from '@/components/PanelTemplate.vue';
-import ItemsTable from '@/components/ItemsTable.vue';
-import PopupModal from '@/components/PopupModal.vue';
+import { ArchiveBoxIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { getItems } from '@/stores/itemData';
+import DynamicTable from '@/components/DynamicTable.vue';
+import { RouterLink } from 'vue-router';
+import SearchBar from '@/components/SearchBar.vue';
+import { getStorageContainers, getStorages } from '@/stores/storageData';
+import { usePopupStore } from '@/stores/popup';
 import ItemForm from '@/components/ItemForm.vue';
-import FilterPopup from '@/components/FilterPopup.vue';
-import { ArchiveBoxIcon } from '@heroicons/vue/24/outline';
-import ItemPanel from '@/components/ItemPanel.vue';
-import { HomeIcon, ShoppingCartIcon, WalletIcon, Battery0Icon, Battery100Icon, InformationCircleIcon } from '@heroicons/vue/16/solid';
-import SpinnerSimple from '@/components/SpinnerSimple.vue';
-import { useClubsStore } from '@/stores/clubs';
-const clubsStore = useClubsStore();
+import { containerText } from '@/stores/inventoryData';
+import { usePermsStore } from '@/stores/permissions';
+import { getSuppliers } from '@/stores/supplierData';
 
-const permission = computed(() => {
-  return clubsStore.clubs.active.permission == "rw"
-});
-const isModal = ref<boolean>(false);
-const selected = ref<number>(-1);
+const popupStore = usePopupStore();
+const permsStore = usePermsStore();
 
-const columns: Array<FilterColumn> = [
-  { name: 'product', label: 'Produkt', icon: ArchiveBoxIcon },
-  { name: 'location', label: 'Plats', icon: HomeIcon },
-  { name: 'supplier', label: 'Leverantör', icon: ShoppingCartIcon },
-  { name: 'amount', label: 'Mängd', icon: WalletIcon },
-  { name: 'min', label: 'Min', icon: Battery0Icon },
-  { name: 'max', label: 'Max', icon: Battery100Icon },
-  { name: 'status', label: 'Status', icon: InformationCircleIcon },
-];
+function storagePath(storage: string, container?: string) {
+  return '/storage/' + storage + (container ? '?container=' + container : '');
+}
 
-const ModalTitle = computed(() => {
-  if (selected.value == -1) {
-    return 'Lägg till';
-  };
-  if (!permission.value) {
-    return 'Produkt';
+function addItemGhost(result?: any) {
+  if (result) {
+    getItems(filter.value).then((data) => {
+      rows.value = data;
+    });
   }
-  return 'Redigera';
-})
-
-const UnSelect = () => {
-  selected.value = -1
-  isModal.value = false
 }
 
-const SelectItem = (id: number) => {
-  selected.value = id;
-  isModal.value = true
+const addItem = () => {
+  popupStore.push({
+    title: 'Lägg till produkt',
+    component: ItemForm,
+    icon: PlusIcon,
+    cb: addItemGhost,
+  })
 }
+
+const filter = ref<ItemListQueryParams>({});
+watch(filter, (newFilter) => {
+  getItems(newFilter).then((data) => {
+    rows.value = data;
+  });
+}, { deep: true });
+
+const columns = {
+  name: 'Namn',
+  storage: 'Lager',
+  amount: 'Mängd',
+};
+
+const storages = ref<StorageContainersGetResponse>([]);
+getStorageContainers().then((data) => {
+  storages.value = data;
+});
+
+const rows = ref<ItemListGetResponse>([]);
+getItems(filter.value).then((data) => {
+  rows.value = data;
+});
+
+const suppliers = ref<SupplierGetResponse>([]);
+getSuppliers().then((data) => {
+  suppliers.value = data;
+});
 
 </script>
 
-<style scoped>
-.main {
-  padding: 4rem;
-  padding-bottom: 0;
-}
-
-@media (max-width: 940px) {
-  .main {
-    padding: 2rem 0.5rem;
-  }
-}
-</style>
+<style scoped></style>

@@ -3,7 +3,7 @@
     <div :class="barSidePanel">
       <RouterLink to="/" class="titleDiv" @click="isMobileClose()">
         <svg width="42" height="42" viewBox="0 0 132.29167 132.29167" version="1.1" id="svg1" xml:space="preserve"
-          xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+          xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" class="hover:animate-spin">
           <defs id="defs1" />
           <g id="layer1">
             <path
@@ -47,20 +47,12 @@
         <h1 v-if="barOpen">Zaiko</h1>
       </RouterLink>
       <div class="navLinks" @click="isMobileClose()">
-        <NavLink to="/" title="Dashboard" :compact="!barOpen">
-          <CommandLineIcon />
-        </NavLink>
-        <NavLink to="/items" title="Produkter" :compact="!barOpen">
-          <ArchiveBoxIcon />
-        </NavLink>
-        <div v-if="clubStore.clubs" class="navLinks">
-          <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen" v-if="permission">
-            <ShoppingCartIcon />
-          </NavLink>
-          <NavLink to="/stock" title="Inventera" :compact="!barOpen" v-if="permission">
-            <ClipboardDocumentListIcon />
-          </NavLink>
-        </div>
+        <NavLink to="/" title="Dashboard" :compact="!barOpen" :icon="CommandLineIcon" />
+        <NavLink to="/items" title="Produkter" :compact="!barOpen" :icon="ArchiveBoxIcon" />
+        <NavLink to="/storages" title="Lager" :compact="!barOpen" :icon="InboxIcon" />
+        <NavLink to="/suppliers" title="Leverantörer" :compact="!barOpen" :icon="ShoppingCartIcon" v-if="permsStore.hasGroup()"/>
+        <NavLink to="/stock" title="Inventera" :compact="!barOpen" :icon="ClipboardDocumentListIcon" v-if="permsStore.hasWriteAccess()"/>
+        <NavLink to="/admin" title="Admin" :compact="!barOpen" :icon="WrenchIcon" v-if="permsStore.isAdmin()"/>
       </div>
     </div>
     <div class="barPanel">
@@ -69,43 +61,33 @@
           <button class="hamIcon" @click="barOpen = !barOpen">
             <Bars3Icon class="icon" />
           </button>
-          <h1>{{ $route.name }}</h1>
+          <h1>{{ $route.params.name || $route.name }}</h1>
         </div>
-        <Suspense>
-          <div class="clubMenu">
-            <ArrowsUpDownIcon class="icon" v-if="!isMobile" />
-            <ClubSelect />
-          </div>
-        </Suspense>
       </div>
       <div class="mainContent">
         <slot />
       </div>
       <NotificationList />
+      <PopupModal />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import NavLink from '@/components/NavLink.vue'
-import ClubSelect from '@/components/ClubSelect.vue'
-import { ArrowsUpDownIcon, CommandLineIcon, Bars3Icon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline'
+import { CommandLineIcon, Bars3Icon, ArchiveBoxIcon, ShoppingCartIcon, ClipboardDocumentListIcon, WrenchIcon, InboxIcon } from '@heroicons/vue/24/outline'
 import { computed, ref } from 'vue';
 import NotificationList from '@/components/NotificationList.vue';
-import { useMediaQuery } from '@vueuse/core/index.cjs';
-import { useClubsStore } from '@/stores/clubs';
-
-const clubStore = useClubsStore();
-clubStore.fetchClubs();
-
-const permission = computed(() => {
-  return clubStore.clubs.active.permission == "rw";
-});
+import { useMediaQuery } from '@vueuse/core';
+import PopupModal from './PopupModal.vue';
+import { usePermsStore } from '@/stores/permissions';
 
 const isMobile = useMediaQuery("(max-width: 768px)");
 const isSmallScreen = useMediaQuery("(max-width: 1250px)");
 
 const barOpen = ref<boolean>(isSmallScreen || isMobile.value ? true : false);
+
+const permsStore = usePermsStore();
 
 const barSidePanel = computed<string>(() => {
   return barOpen.value ? "barSidePanel" : "barSidePanel closed";
@@ -138,12 +120,13 @@ const isMobileClose = () => {
 }
 
 .mainContent {
-  overflow-x: hidden;
+  /* overflow-x: hidden; */
   overflow-y: scroll;
   background-color: var(--zaiko-bg-1);
   border-top-left-radius: 16px;
   min-height: 100%;
   max-height: 90vh;
+  width: 100%;
 }
 
 .closed {

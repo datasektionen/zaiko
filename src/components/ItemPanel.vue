@@ -29,33 +29,10 @@
 <script setup lang="ts">
 import { ref, defineProps } from 'vue'
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, BackspaceIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
-import { useSupplierStore } from '@/stores/suppliers';
-import { useItemStore } from '@/stores/items';
-import type { ItemUpdateRequest } from '@/types';
-import { useClubsStore } from '@/stores/clubs';
+// import type { ItemUpdateRequest } from '@/types';
 import InputText from '@/components/InputText.vue';
 import InputNumber from '@/components/InputNumber.vue';
 import InputSelect from '@/components/InputSelect.vue';
-
-const { id } = defineProps<{
-  id: number,
-}>()
-
-const clubStore = useClubsStore();
-const club = await clubStore.getClub();
-const clubPerm = club.active.permission;
-
-const supplierStore = useSupplierStore();
-const itemStore = useItemStore();
-const item = await itemStore.getItem(id);
-
-const name = ref<string>(item.name)
-const location = ref<string>(item.location)
-const min = ref<number | undefined>(item.min)
-const max = ref<number | undefined>(item.max)
-const current = ref<number>(item.current)
-const supplier = ref<string | undefined>(item.supplier == undefined ? "Ingen" : item.supplier)
-const link = ref<string | undefined>(item.link)
 
 const emit = defineEmits(["submit", "delete"]);
 

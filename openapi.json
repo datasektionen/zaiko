@@ -1,0 +1,2305 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "backend",
+    "description": "",
+    "license": {
+      "name": ""
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/container": {
+      "post": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "create_container",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContainerCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "destroy_container",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The containers name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "storage",
+            "in": "query",
+            "description": "The name of the storage the container is at",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "change_container",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContainerUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/inventory": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "operationId": "items_due",
+        "parameters": [
+          {
+            "name": "storage",
+            "in": "query",
+            "description": "The name of the storage to check",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items due to be inventoried",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DueItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "operationId": "take_stock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/item": {
+      "get": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "get_item",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The items name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item with detailed info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailedItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "change_stored_item",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoredUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "create_item",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemAddRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "delete_item",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The items name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "storage",
+            "in": "query",
+            "description": "The storage locations name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "container",
+            "in": "query",
+            "description": "The containers name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "change_item",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemChangeNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/item/move": {
+      "patch": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "move_item",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemMoveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/items": {
+      "get": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "get_items",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The items name",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "storage",
+            "in": "query",
+            "description": "The storages name",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "container",
+            "in": "query",
+            "description": "The containers name (requier storage to also be set)",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "supplier",
+            "in": "query",
+            "description": "The suppliers name",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "min",
+            "in": "query",
+            "description": "Atleast this many items should exist",
+            "required": false,
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "float"
+            }
+          },
+          {
+            "name": "max",
+            "in": "query",
+            "description": "Atmost this many items should exist",
+            "required": false,
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "float"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items with basic info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BasicItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/log": {
+      "get": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "get_log",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The name of the item",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of logs for an item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Log"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/shipment": {
+      "get": {
+        "tags": [
+          "shipment"
+        ],
+        "operationId": "get_shipment",
+        "responses": {
+          "200": {
+            "description": "List of orders with info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShipmentGetResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "shipment"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShipmentCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "shipment"
+        ],
+        "operationId": "destroy",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/shortage": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "operationId": "get_shortage",
+        "responses": {
+          "200": {
+            "description": "List of items with less than order floor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShortageItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "operationId": "get_stats",
+        "responses": {
+          "200": {
+            "description": "General info about the entire organisation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsGetResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/storage": {
+      "post": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "create_storage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "destroy_storage",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The storages name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "change_storage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/storages": {
+      "get": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "get_storages",
+        "responses": {
+          "200": {
+            "description": "List of storages with information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Storage"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/storages/containers": {
+      "get": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "get_storage_container_tree",
+        "responses": {
+          "200": {
+            "description": "List of storages with their containers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContainerStorage"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/storages/containers/items": {
+      "get": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "get_container_item_tree_for_storage",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The name of the requested storage",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of storages with their containers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContainerItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/supplier": {
+      "get": {
+        "tags": [
+          "supplier"
+        ],
+        "operationId": "get_suppliers",
+        "responses": {
+          "200": {
+            "description": "List of suppliers with info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Supplier"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "supplier"
+        ],
+        "operationId": "create_supplier",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "supplier"
+        ],
+        "operationId": "delete_supplier",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The suppliers name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "supplier"
+        ],
+        "operationId": "update_supplier",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/supply": {
+      "post": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "supply_item",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierAddRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "item"
+        ],
+        "operationId": "unsupply_item",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The items name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplier",
+            "in": "query",
+            "description": "The suppliers name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/userinfo": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "user_info",
+        "responses": {
+          "200": {
+            "description": "Info about the currently logged in user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/oidc/callback": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "callback",
+        "responses": {
+          "200": {
+            "description": "OIDC callback function"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BasicItem": {
+        "type": "object",
+        "description": "Basic item information",
+        "required": [
+          "name",
+          "unit"
+        ],
+        "properties": {
+          "amount": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The current total amount of the item accros all storages"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "storage": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BasicItemStorage"
+            },
+            "description": "List of storage locations containing the item with basic info"
+          },
+          "unit": {
+            "type": "string",
+            "description": "The unit the amount is counted in"
+          }
+        }
+      },
+      "BasicItemStorage": {
+        "type": "object",
+        "description": "Basic info about where an item is stored",
+        "required": [
+          "storage",
+          "container",
+          "state"
+        ],
+        "properties": {
+          "container": {
+            "type": "string",
+            "description": "The container where the item is stored"
+          },
+          "state": {
+            "$ref": "#/components/schemas/OrderState",
+            "description": "The state the item is in (if more is needed to ordered)"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The storage where the item is stored"
+          }
+        }
+      },
+      "ContainerCreateRequest": {
+        "type": "object",
+        "description": "Info used to create a container",
+        "required": [
+          "name",
+          "storage"
+        ],
+        "properties": {
+          "inventory_interval": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Interval",
+                "description": "The time between when the container should be inventoried"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The containers name"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The storage location the container is at"
+          }
+        }
+      },
+      "ContainerItem": {
+        "type": "object",
+        "description": "List of containers with items",
+        "required": [
+          "name",
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinimalItem"
+            },
+            "description": "List of items"
+          },
+          "name": {
+            "type": "string",
+            "description": "The containers name"
+          }
+        }
+      },
+      "ContainerStorage": {
+        "type": "object",
+        "description": "List of containers at a storage location",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "containers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "List of containers"
+          },
+          "name": {
+            "type": "string",
+            "description": "The storages name"
+          }
+        }
+      },
+      "ContainerUpdateRequest": {
+        "type": "object",
+        "description": "Info used to update a container",
+        "required": [
+          "name",
+          "storage"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The containers name"
+          },
+          "new_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The containers new name if it should be changed"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The storage location the container should be at"
+          }
+        }
+      },
+      "DetailedItem": {
+        "type": "object",
+        "description": "Detailed item infarmation",
+        "required": [
+          "name",
+          "unit"
+        ],
+        "properties": {
+          "avrage_consuption": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The avrage weekly consumption over the last mounth"
+          },
+          "inventory_interval": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Interval",
+                "description": "The maximum inventory interval of the item"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "storage": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/StorageListing"
+            },
+            "description": "The storages that this item type is stored in"
+          },
+          "supplier": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SupplierListing"
+            },
+            "description": "The suppliers that the item is bought from"
+          },
+          "unit": {
+            "type": "string",
+            "description": "The unit every amount is counted in"
+          }
+        }
+      },
+      "DueItem": {
+        "type": "object",
+        "description": "An item due to be inventoried",
+        "required": [
+          "name",
+          "storage",
+          "container",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The number of item currently in storage"
+          },
+          "container": {
+            "type": "string",
+            "description": "The name of the container where the item is stored"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The name of the storage where the item is located"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The unit that the amount is measured in"
+          }
+        }
+      },
+      "FilterColumn": {
+        "type": "string",
+        "enum": [
+          "item",
+          "storage",
+          "container",
+          "supplier",
+          "amount"
+        ]
+      },
+      "Group": {
+        "type": "string"
+      },
+      "HivePermission": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "scope": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Interval": {
+        "type": "string",
+        "format": "duration"
+      },
+      "ItemAddRequest": {
+        "type": "object",
+        "description": "Info to add an item to storage",
+        "required": [
+          "storage",
+          "container",
+          "name",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The number of items currently in storage"
+          },
+          "container": {
+            "type": "string",
+            "description": "The container the item is stored in, can be \"default\" (loose)"
+          },
+          "inventory_interval": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Interval",
+                "description": "The time between the item should be inventoried"
+              }
+            ]
+          },
+          "max": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The upper limit on the number of items (order ceiling)"
+          },
+          "min": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The lower limit on how many items should be in storage (order limit)"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The storage location the item is at"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The unit in which amount is counted (st, 6-pack, %, etc)"
+          }
+        }
+      },
+      "ItemChangeNameRequest": {
+        "type": "object",
+        "description": "Info to change the name of an item (accross all storages)",
+        "required": [
+          "name",
+          "unit"
+        ],
+        "properties": {
+          "inventory_interval": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Interval",
+                "description": "The interval between the item needs to be inventoried"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The name to change from"
+          },
+          "new_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name to change to"
+          },
+          "unit": {
+            "type": "string",
+            "description": "The unit amount is counted in"
+          }
+        }
+      },
+      "ItemMoveRequest": {
+        "type": "object",
+        "description": "Info used to move an item",
+        "required": [
+          "name",
+          "from_storage",
+          "from_container",
+          "to_storage",
+          "to_container"
+        ],
+        "properties": {
+          "from_container": {
+            "type": "string",
+            "description": "The name of the container the items is moved from"
+          },
+          "from_storage": {
+            "type": "string",
+            "description": "The name of the storage the items is moved from"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "to_container": {
+            "type": "string",
+            "description": "The name of the container the items is moved to"
+          },
+          "to_storage": {
+            "type": "string",
+            "description": "The name of the storage the items is moved to"
+          }
+        }
+      },
+      "Log": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StateLog"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "state"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MoveLog"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "move"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "MinimalItem": {
+        "type": "object",
+        "description": "An item ment to be viewed in the context of a tree representation of the db",
+        "required": [
+          "name",
+          "amount",
+          "unit"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The current amount"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "next_inventory": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The next date when the item needs to be inventoried"
+          },
+          "state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrderState",
+                "description": "The current state of the item (good/need to order/etc)"
+              }
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "description": "The unit current is counted in"
+          }
+        }
+      },
+      "MoveLog": {
+        "type": "object",
+        "required": [
+          "item",
+          "user",
+          "amount",
+          "time",
+          "from_storage",
+          "from_container",
+          "to_storage",
+          "to_container"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float"
+          },
+          "from_container": {
+            "type": "string"
+          },
+          "from_storage": {
+            "type": "string"
+          },
+          "item": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to_container": {
+            "type": "string"
+          },
+          "to_storage": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderState": {
+        "type": "string",
+        "enum": [
+          "None",
+          "Good",
+          "Warning",
+          "Critical",
+          "Incoming"
+        ]
+      },
+      "ShipmentCreateRequest": {
+        "type": "object",
+        "required": [
+          "arrival_time",
+          "items"
+        ],
+        "properties": {
+          "arrival_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShipmentItem"
+            }
+          }
+        }
+      },
+      "ShipmentGetResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "time_created",
+          "time_arive"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "items": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ShipmentItem"
+            }
+          },
+          "time_arive": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "time_created": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ShipmentItem": {
+        "type": "object",
+        "required": [
+          "item",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float"
+          },
+          "item": {
+            "type": "string"
+          }
+        }
+      },
+      "ShortageItem": {
+        "type": "object",
+        "description": "An item with an amount lower than its order floor",
+        "required": [
+          "name",
+          "storage",
+          "container",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The number of item currently in storage"
+          },
+          "amount_to_buy": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The number of items to buy to reach the order ceiling"
+          },
+          "container": {
+            "type": "string",
+            "description": "The name of the container where the item is stored"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The name of the storage where the item is located"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The unit that the amount is measured in"
+          }
+        }
+      },
+      "StateLog": {
+        "type": "object",
+        "required": [
+          "item",
+          "user",
+          "amount",
+          "time",
+          "storage",
+          "container"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float"
+          },
+          "container": {
+            "type": "string"
+          },
+          "item": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "type": "string"
+          }
+        }
+      },
+      "StatsGetResponse": {
+        "type": "object",
+        "description": "Genaral info about the state of all storages",
+        "required": [
+          "items",
+          "suppliers",
+          "shortages"
+        ],
+        "properties": {
+          "items": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The total number of items"
+          },
+          "shortages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The total number of shortages"
+          },
+          "suppliers": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The total number of suppliers"
+          }
+        }
+      },
+      "StockUpdate": {
+        "type": "object",
+        "required": [
+          "name",
+          "storage",
+          "container",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The number of items currently in storage"
+          },
+          "container": {
+            "type": "string",
+            "description": "The container where the item is stored"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The storage where the item is located"
+          }
+        }
+      },
+      "StockUpdateRequest": {
+        "type": "object",
+        "description": "Info used to take inventory",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockUpdate"
+            },
+            "description": "List of items on which to update the amount"
+          }
+        }
+      },
+      "Storage": {
+        "type": "object",
+        "description": "Info about a storage location",
+        "required": [
+          "name",
+          "protected"
+        ],
+        "properties": {
+          "inventory_interval": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Interval",
+                "description": "The time between the storage should be inventoried"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The suppliers name"
+          },
+          "protected": {
+            "type": "boolean",
+            "description": "If the storage require a read permission"
+          }
+        }
+      },
+      "StorageCreateRequest": {
+        "type": "object",
+        "description": "Info used to create a storage location",
+        "required": [
+          "name",
+          "protected"
+        ],
+        "properties": {
+          "inventory_interval": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Interval",
+                "description": "The time between the storage should be inventoried"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The suppliers name"
+          },
+          "protected": {
+            "type": "boolean",
+            "description": "If the storage should require a read permission"
+          }
+        }
+      },
+      "StorageListing": {
+        "type": "object",
+        "description": "Detailed information about where an item is stored",
+        "required": [
+          "storage",
+          "container",
+          "amount",
+          "state"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The number of items currently in storage"
+          },
+          "container": {
+            "type": "string",
+            "description": "The container in which the item is stored"
+          },
+          "max": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The order ceiling for this storage"
+          },
+          "min": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The order floor for this storage"
+          },
+          "next_inventory": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The next time the item is to be inventoried"
+          },
+          "state": {
+            "$ref": "#/components/schemas/OrderState",
+            "description": "The state of the item (if more should be ordered)"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The location where the item is stored"
+          }
+        }
+      },
+      "StorageUpdateRequest": {
+        "type": "object",
+        "description": "Info used to update a storage location",
+        "required": [
+          "name",
+          "protected"
+        ],
+        "properties": {
+          "inventory_interval": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Interval",
+                "description": "The time between when the storage should be inventoried"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The suppliers name"
+          },
+          "new_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The new name of the storage if it is changed"
+          },
+          "protected": {
+            "type": "boolean",
+            "description": "If the storage should require a read permission"
+          }
+        }
+      },
+      "StoredUpdateRequest": {
+        "type": "object",
+        "description": "Info used to update an item at a particular storage location",
+        "required": [
+          "storage",
+          "container",
+          "name",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The current amount in storage"
+          },
+          "container": {
+            "type": "string",
+            "description": "The container the item is located in"
+          },
+          "max": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The upper limit on the number of items (order ceiling)"
+          },
+          "min": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float",
+            "description": "The lower limit on how many items should be in storage (order limit)"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "new_container": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The container to move the item to"
+          },
+          "new_storage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The storage to move the item to"
+          },
+          "storage": {
+            "type": "string",
+            "description": "The storage the item is located in"
+          }
+        }
+      },
+      "Supplier": {
+        "type": "object",
+        "description": "General info about a supplier",
+        "required": [
+          "name",
+          "group"
+        ],
+        "properties": {
+          "group": {
+            "type": "string",
+            "description": "Hive group this supplier is assosiated with"
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Link to the suppliers website"
+          },
+          "name": {
+            "type": "string",
+            "description": "The suppliers name"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Notes ex. order info"
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Password used to login to the suppliers website"
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Username used to login to the suppliers website"
+          }
+        }
+      },
+      "SupplierAddRequest": {
+        "type": "object",
+        "description": "Info used to add a supplier to an item",
+        "required": [
+          "supplier",
+          "name",
+          "prefered"
+        ],
+        "properties": {
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Link to the item och the suppliers webshop"
+          },
+          "name": {
+            "type": "string",
+            "description": "The items name"
+          },
+          "prefered": {
+            "type": "boolean",
+            "description": "If it is prefered to buy from this supplier instead of the others"
+          },
+          "supplier": {
+            "type": "string",
+            "description": "The suppliers name"
+          }
+        }
+      },
+      "SupplierCreateRequest": {
+        "type": "object",
+        "description": "Info used to create a supplier",
+        "required": [
+          "name",
+          "group"
+        ],
+        "properties": {
+          "group": {
+            "type": "string",
+            "description": "Hive group this supplier is assosiated with"
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Link to the suppliers website"
+          },
+          "name": {
+            "type": "string",
+            "description": "The suppliers name"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Notes ex. order info"
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Password used to login to the suppliers website"
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Username used to login to the suppliers website"
+          }
+        }
+      },
+      "SupplierListing": {
+        "type": "object",
+        "description": "Information about the supplier of an item",
+        "required": [
+          "name",
+          "prfered"
+        ],
+        "properties": {
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A link to the item on the suppliers website"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the supplier"
+          },
+          "prfered": {
+            "type": "boolean",
+            "description": "If this is the prefered supplier of this item"
+          }
+        }
+      },
+      "SupplierUpdateRequest": {
+        "type": "object",
+        "description": "Info used to update a supplier",
+        "required": [
+          "name",
+          "group"
+        ],
+        "properties": {
+          "group": {
+            "type": "string",
+            "description": "Hive group this supplier should be assosiated with"
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Link to the suppliers website"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name the supplier is supposed to have"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Notes ex. order info"
+          },
+          "old_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name of the supplier before update (only if changeing)"
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Password used to login to the suppliers website"
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Username used to login to the suppliers website"
+          }
+        }
+      },
+      "UserInfo": {
+        "type": "object",
+        "required": [
+          "username",
+          "permissions",
+          "groups",
+          "image"
+        ],
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Group"
+            }
+          },
+          "image": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HivePermission"
+            }
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
