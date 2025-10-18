@@ -55,7 +55,7 @@ const linkItem = () => {
   }
   supplierLinkItem(payload).then(() => {
     const popupStore = usePopupStore();
-    popupStore.callCurrent();
+    popupStore.callCurrent(payload);
     popupStore.pop();
   }).catch((err) => {
     console.error("Error creating item:", err);

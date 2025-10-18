@@ -31,7 +31,8 @@ const props = defineProps<{
 }>()
 
 // HACK
-const interval = ref<Duration>(parseISODuration(('inventory_interval' in props.item) ? (props.item as any).inventory_interval : 'P0D'));
+console.log(props.item, 'inventory_interval' in props.item);
+const interval = ref<Duration>(parseISODuration(('inventory_interval' in props.item && props.item.inventory_interval != null) ? (props.item as any).inventory_interval : 'P0D'));
 
 const popupStore = usePopupStore();
 function Comfirm() {

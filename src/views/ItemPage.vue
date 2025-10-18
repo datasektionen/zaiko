@@ -33,6 +33,9 @@
             <td class="p-2 border-b border-(--zaiko-bg-2)">
               <p>{{ input.row.amount }}</p>
             </td>
+            <td class="p-2 border-b border-(--zaiko-bg-2)">
+              <p>{{ stateEmoji(input.row.state) }}</p>
+            </td>
           </template>
           <template #settings="input">
             <HamMenu :rows="settings.props.rows" v-if="permsStore.writeAccessToStorage(input.row.storage)"
@@ -85,6 +88,7 @@ import HamMenu from '@/components/HamMenu.vue';
 import NameForm from '@/components/NameForm.vue';
 import { containerText } from '@/stores/inventoryData';
 import { usePermsStore } from '@/stores/permissions';
+import { stateEmoji } from '@/common';
 
 const permsStore = usePermsStore();
 
@@ -114,6 +118,7 @@ const linkItem = () => {
       name: item.value.name,
     },
     icon: LinkIcon,
+    cb: addSupplierGhost,
   })
 }
 
@@ -267,6 +272,14 @@ function removeSupplierGhost(result?: any) {
   }
 }
 
+function addSupplierGhost(result?: any) {
+  if (result) {
+    getItemByName(item.value.name).then((data) => {
+      item.value = data;
+    });
+  }
+}
+
 function editItemGhost(result?: any) {
   if (result) {
     getItemByName(item.value.name).then((data) => {
@@ -292,6 +305,7 @@ const storageColumns = {
   min: 'Min',
   max: 'Max',
   amount: 'Mängd',
+  state: 'Status',
 };
 
 const supplierColumns = {
