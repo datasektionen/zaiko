@@ -1,42 +1,59 @@
-import type { FunctionalComponent } from 'vue';
+import type { operations, components } from './openapi';
+import type { Component, FunctionalComponent } from 'vue';
 
-export interface ItemGetResponse {
-  id: number,
-  name: string,
-  location: string,
-  min?: number,
-  max?: number,
-  current: number,
-  supplier?: string,
-  updated: number,
-  link?: string,
-}
+export type ItemGetResponse = operations['get_item']['responses']['200']['content']['application/json'];
+export type ItemAddRequest = components['schemas']['ItemAddRequest'];
+export type ItemDeleteRequest = operations['delete_item']['parameters']['query'];
+export type ItemListGetResponse = operations['get_items']['responses']['200']['content']['application/json'];
+export type ItemListQueryParams = operations['get_items']['parameters']['query'];
+export type ItemLinkSupplierRequest = operations['supply_item']['requestBody']['content']['application/json'];
+export type ItemUnlinkSupplierRequest = operations['unsupply_item']['parameters']['query'];
+export type ItemEditRequest = operations['change_item']['requestBody']['content']['application/json'];
+export type ItemStorageEditRequest = operations['change_stored_item']['requestBody']['content']['application/json'];
 
-export interface ItemAddRequest {
-  name: string,
-  location: string,
-  min?: number,
-  max?: number,
-  current: number,
-  supplier?: number,
-  link?: string,
-}
+export type FilterColumn = components['schemas']['FilterColumn'];
 
-export interface ItemUpdateRequest {
-  id: number,
-  name: string,
-  location: string,
-  min?: number,
-  max?: number,
-  current: number,
-  supplier?: number,
-  link?: string,
-}
+export type StorageContainersGetResponse = operations['get_storage_container_tree']['responses']['200']['content']['application/json'];
+export type StorageTreeGetResponse = operations['get_storage_container_tree']['responses']['200']['content']['application/json'];
+export type StorageTreeRequest = operations['get_container_item_tree_for_storage']['parameters']['query'];
+export type StorageContainersTreeGetResponse = operations['get_container_item_tree_for_storage']['responses']['200']['content']['application/json'];
+export type StorageCreateRequest = components['schemas']['StorageCreateRequest'];
+export type StorageEditRequest = operations['change_storage']['requestBody']['content']['application/json'];
+export type StorageDeleteRequest = operations['destroy_storage']['parameters']['query'];
+export type StoragesGetResponse = operations['get_storages']['responses']['200']['content']['application/json'];
 
-export interface FilterColumn {
-  name: string,
-  label: string,
+export type ContainerCreateRequest = operations['create_container']['requestBody']['content']['application/json'];
+export type ContainerDeleteRequest = operations['destroy_container']['parameters']['query'];
+
+export type StatsGetResponse = operations['get_stats']['responses']['200']['content']['application/json'];
+
+export type LogGetResponse = operations['get_log']['responses']['200']['content']['application/json'];
+export type LogQueryParams = operations['get_log']['parameters']['query'];
+
+export type ShortageGetResponse = operations['get_shortage']['responses']['200']['content']['application/json'];
+
+export type SupplierGetResponse = operations['get_suppliers']['responses']['200']['content']['application/json'];
+export type SupplierAddRequest = operations['create_supplier']['requestBody']['content']['application/json'];
+export type SupplierDeleteRequest = operations['delete_supplier']['parameters']['query'];
+
+export type UserInfoGetResponse = operations['user_info']['responses']['200']['content']['application/json'];
+
+export type Duration = {
+  years?: number;
+  months?: number;
+  weeks?: number;
+  days?: number;
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
+};
+
+export interface PopupItem {
+  component: Component,
+  props?: Record<string, any>,
+  title: string,
   icon: FunctionalComponent,
+  cb?: (result: any) => any,
 }
 
 export interface FilterItemParams {
@@ -44,63 +61,6 @@ export interface FilterItemParams {
   search: string,
 }
 
-export interface SupplierGetResponse {
-  id: number,
-  name: string,
-  link?: string,
-  notes?: string,
-  username?: string,
-  password?: string,
-  updated: number
-}
-
-export interface SupplierAddRequest {
-  name: string,
-  link?: string,
-  notes?: string,
-  username?: string,
-  password?: string,
-}
-
-export interface SupplierUpdateRequest {
-  id: number,
-  name: string,
-  link?: string,
-  notes?: string,
-  username?: string,
-  password?: string,
-}
-
-export interface StockGetResponse {
-  id: number,
-  name: string,
-  location: string,
-  supplier?: string,
-  min: number,
-  current: number,
-  order: number,
-  link?: string,
-}
-
-export interface StockUpdateRequest {
-  items: Array<Array<number>>
-}
-
-export interface Log {
-  amount: number,
-  time: number,
-}
-
-export interface SupplierListGetResponse {
-    id: number,
-    name: string,
-}
-
-export interface TableColumn {
-  value: string,
-  label: string,
-  icon: FunctionalComponent,
-}
 
 export interface Notification {
   id: number,
@@ -109,18 +69,3 @@ export interface Notification {
   severity: "error" | "warning" | "info",
 }
 
-export interface ClubStorage {
-  active: ClubGetRequest,
-  clubs: Array<ClubGetRequest>,
-}
-
-export interface ClubGetRequest {
-  name: string,
-  permission: "r" | "rw",
-}
-
-export interface Stats {
-  items: number,
-  suppliers: number,
-  shortages: number,
-}

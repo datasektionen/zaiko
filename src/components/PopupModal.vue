@@ -1,17 +1,17 @@
 <template>
-  <div v-if="modal">
+  <div v-if="popupStore.current()">
     <Teleport to="#popup">
-      <div class="modalBackground" @click="emit('exit')">
+      <div class="modalBackground" @click="popupStore.pop()">
         <div class="modal" @click.stop="">
           <div class="modalHeader">
-            <TitleBig :title="title">
-              <PencilSquareIcon />
-            </TitleBig>
-            <button @click="emit('exit')">
-              <XMarkIcon />
+            <TitleBig :title="currentPopop.title" :icon="currentPopop.icon" />
+            <button @click="popupStore.pop()" class="text-(--zaiko-text) rounded-full">
+              <XMarkIcon/>
             </button>
           </div>
-          <slot />
+          <KeepAlive>
+            <component :is="currentPopop.component" v-bind="currentPopop.props"/>
+          </KeepAlive>
         </div>
       </div>
     </Teleport>
@@ -19,17 +19,17 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import TitleBig from '@/components/TitleBig.vue';
 import { PencilSquareIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { usePopupStore } from '@/stores/popup';
+import { ref, watch } from 'vue';
 
+const popupStore = usePopupStore();
 
-defineProps<{
-  modal: boolean
-  title: string
-}>()
-
-const emit = defineEmits(["exit"]);
+const currentPopop = ref(popupStore.current());
+watch(popupStore.popups, (val) => {
+  currentPopop.value = val[val.length - 1];
+})
 </script>
 
 <style scoped>
@@ -47,12 +47,12 @@ const emit = defineEmits(["exit"]);
 }
 
 .modal {
-  width: 550px;
   z-index: 3;
   background-color: var(--zaiko-bg-2);
   border-radius: 12px;
   padding: 1rem 3rem;
-  min-width: 500px;
+  min-width: 400px;
+  max-width: 600px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
 }
 

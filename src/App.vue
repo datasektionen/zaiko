@@ -17,8 +17,7 @@ import BarHeader from '@/components/BarHeader.vue';
 
 <style scoped>
 main {
-  max-width: 1728px;
-  margin: auto;
+  max-width: 100%;
   position: relative;
   z-index: 0;
 }

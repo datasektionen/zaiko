@@ -5,7 +5,7 @@
         <component :is="icon" class="buttonIcon" />
         <p>{{ name }}</p>
       </div>
-      <input type="number" v-model.number="model" :placeholder="name" :required :disabled="clubPerm != 'rw'">
+      <input type="number" v-model.number="model" :placeholder="placeholder || name" :required min="0" max="1000">
     </div>
   </div>
 </template>
@@ -16,8 +16,8 @@ import { defineProps, type FunctionalComponent } from 'vue'
 const props = defineProps<{
   name: string,
   icon: FunctionalComponent,
-  clubPerm: string,
   required?: boolean,
+  placeholder?: string,
 }>()
 
 const model = defineModel<number>();
@@ -39,6 +39,12 @@ input {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.itemHeader p {
+  margin: 0;
+  font-weight: 500;
+  color: var(--zaiko-text);
 }
 
 .itemHeader svg {

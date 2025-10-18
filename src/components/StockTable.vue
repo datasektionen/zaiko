@@ -68,7 +68,7 @@
 import { useItemStore } from '@/stores/items';
 import { useStockStore } from '@/stores/stock';
 import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, InboxArrowDownIcon, WalletIcon, ArrowsUpDownIcon } from '@heroicons/vue/16/solid'
-import { useMediaQuery } from '@vueuse/core/index.cjs'
+import { useMediaQuery } from '@vueuse/core'
 import EmptyTable from './EmptyTable.vue';
 import { ArchiveBoxXMarkIcon } from '@heroicons/vue/24/outline';
 

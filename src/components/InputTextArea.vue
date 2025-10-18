@@ -5,7 +5,7 @@
         <component :is="icon" class="buttonIcon" />
         <p>{{ name }}</p>
       </div>
-      <textarea v-model="model" :placeholder="name" :required minlength=1 :disabled="clubPerm != 'rw'"></textarea>
+      <textarea v-model="model" :placeholder="placeholder || name" :required minlength=1 :disabled="disabled"></textarea>
     </div>
   </div>
 </template>
@@ -16,8 +16,9 @@ import { defineProps, type FunctionalComponent } from 'vue'
 const props = defineProps<{
   name: string,
   icon: FunctionalComponent,
-  clubPerm: string,
   required?: boolean,
+  placeholder?: string,
+  disabled?: boolean,
 }>()
 
 const model = defineModel<string>()

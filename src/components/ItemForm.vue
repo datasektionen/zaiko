@@ -1,22 +1,39 @@
 <template>
   <div>
-    <form v-on:submit.prevent="addItem">
-      <div class="groupHeader">
-        <InputText name="Produkt" :icon="ArchiveBoxIcon" v-model="name" club-perm="rw" required />
-        <InputText name="Plats" :icon="HomeIcon" v-model="location" club-perm="rw" />
-      </div>
+    <form v-on:submit.prevent="edit ? EditItem() : addItem()">
       <fieldset>
-        <InputNumber name="Min" :icon="Battery0Icon" v-model="min" club-perm="rw" />
-        <InputNumber name="Max" :icon="Battery100Icon" v-model="max" club-perm="rw" />
-        <InputNumber name="Nuvarande" :icon="Battery50Icon" v-model="current" club-perm="rw" required />
+        <InputText name="Produkt*" :icon="ArchiveBoxIcon" v-model="name" required :disabled="edit" />
+        <InputText name="Enhet" :icon="LinkIcon" v-model="unit" placeholder="e.g; 3-pack, %, 2L" :disabled="edit" />
       </fieldset>
-      <InputSelect name="Leverantör" :icon="ShoppingCartIcon" v-model="supplier" club-perm="rw"
-        :items="supplierStore.suppliers" />
-      <InputText name="Länk" :icon="LinkIcon" v-model="link" club-perm="rw" />
-      <div class="submit">
-        <button type="submit" class="goodButton">
-          <DocumentCheckIcon class="buttonIcon" />
-          <p>Lägg till</p>
+      <InputDuration name="Intervall" :icon="CalendarDateRangeIcon" v-model="interval" :disabled="edit" />
+      <fieldset>
+        <InputNumber name="Min" :icon="Battery0Icon" v-model="min" />
+        <InputNumber name="Max" :icon="Battery100Icon" v-model="max" />
+        <InputNumber name="Nuvarande*" :icon="Battery50Icon" v-model="current" required />
+      </fieldset>
+      <fieldset>
+        <InputSelect name="Förråd*" :icon="HomeIcon" v-model="storage" :items="storages" required>
+          <template #row="item">
+            <option :key="item.row.name" :value="item.row.name">
+              {{ item.row.name }}
+            </option>
+          </template>
+        </InputSelect>
+        <InputSelect name="Låda*" :icon="ArchiveBoxIcon" v-model="container"
+          :items="storages.find((i) => i.name === storage)?.containers || []" :disabled="!storage">
+          <template #row="item">
+            <option :key="item.row" :value="item.row">
+              {{ item.row == "" ? "Ingen" : item.row }}
+            </option>
+          </template>
+        </InputSelect>
+      </fieldset>
+      <div class="submit justify-end">
+        <button type="submit"
+          class="flex items-center gap-2 p-2 bg-(--zaiko-main-color) text-(--zaiko-text-hc) rounded-md hover:cursor-pointer">
+          <DocumentCheckIcon class="w-8 aspect-square" />
+          <p v-if="edit">Ändra</p>
+          <p v-else>Lägg till</p>
         </button>
       </div>
     </form>
@@ -25,41 +42,88 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ItemAddRequest } from '@/types';
-import { ArchiveBoxIcon, ShoppingCartIcon, HomeIcon, LinkIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
-import { useSupplierStore } from '@/stores/suppliers';
-import { useItemStore } from '@/stores/items';
+import { ArchiveBoxIcon, HomeIcon, LinkIcon, DocumentCheckIcon, Battery0Icon, Battery100Icon, Battery50Icon } from '@heroicons/vue/16/solid';
 import InputText from '@/components/InputText.vue';
 import InputNumber from '@/components/InputNumber.vue';
 import InputSelect from '@/components/InputSelect.vue';
+import { getStorageContainers } from '@/stores/storageData';
+import type { Duration, ItemAddRequest, ItemStorageEditRequest, Notification, StorageContainersGetResponse} from '@/types';
+import { CalendarDateRangeIcon } from '@heroicons/vue/24/outline';
+import { createItem, editItemStorage } from '@/stores/itemData';
+import { usePopupStore } from '@/stores/popup';
+import { parseISODuration, toISODuration } from '@/common';
+import InputDuration from './InputDuration.vue';
+import { useNotificationsStore } from '@/stores/notifications';
 
-const supplierStore = useSupplierStore();
-const itemStore = useItemStore();
+const props = defineProps<{
+  edit?: boolean,
+  editItem?: ItemAddRequest,
+}>()
 
-const name = ref<string>("")
-const location = ref<string>("")
-const min = ref<number>()
-const max = ref<number>()
-const current = ref<number>(0)
-const supplier = ref<number>(-1)
-const link = ref<string>()
-
-const emit = defineEmits(["submit"]);
-
-const addItem = async () => {
-  const item: ItemAddRequest = {
-    name: name.value,
-    location: location.value,
-    min: min.value,
-    max: max.value,
-    current: current.value,
-    supplier: supplier.value == -1 ? undefined : supplier.value,
-    link: link.value
-  };
-  await itemStore.addItem(item);
-  emit('submit')
+const name = ref<string>(props.editItem?.name || "")
+const unit = ref<string | undefined>(props.editItem?.unit || undefined)
+const storage = ref<string>(props.editItem?.storage || "")
+const container = ref<string>(props.editItem?.container || "")
+const min = ref<number | undefined>(props.editItem?.min || undefined)
+const max = ref<number | undefined>(props.editItem?.max || undefined)
+const current = ref<number>(props.editItem?.amount || 0)
+const interval = ref<Duration>({ years: 0, months: 0, days: 0 })
+if (props.editItem?.inventory_interval) {
+  interval.value = parseISODuration(props.editItem.inventory_interval)
 }
 
+const Interval = (interval: Duration): string | undefined => {
+  if (interval.years === 0 && interval.months === 0 && interval.days === 0) {
+    return undefined
+  }
+  return toISODuration(interval)
+}
+
+const storages = ref<StorageContainersGetResponse>([])
+getStorageContainers().then((data) => {
+  storages.value = data
+})
+
+const addItem = () => {
+  const payload: ItemAddRequest = {
+    name: name.value,
+    unit: unit.value ? unit.value : undefined,
+    storage: storage.value,
+    container: container.value,
+    min: min.value,
+    max: max.value,
+    amount: current.value,
+    inventory_interval: Interval(interval.value),
+  }
+  console.log("Creating item with payload:", payload);
+  createItem(payload).then(() => {
+    const popupStore = usePopupStore();
+    popupStore.callCurrent(payload);
+    popupStore.pop();
+  }).catch((err) => {
+    console.error("Error creating item:", err);
+  })
+}
+
+const EditItem = () => {
+  const payload: ItemStorageEditRequest = {
+    name: props.editItem!.name,
+    storage: props.editItem!.storage,
+    container: props.editItem!.container,
+    min: min.value,
+    max: max.value,
+    amount: current.value,
+    new_container: container.value,
+    new_storage: storage.value,
+  }
+  editItemStorage(payload).then(() => {
+    const popupStore = usePopupStore();
+    popupStore.callCurrent(payload);
+    popupStore.pop();
+  }).catch((err) => {
+    console.error("Error editing item:", err);
+  })
+}
 </script>
 
 <style scoped>
@@ -83,7 +147,7 @@ form {
 fieldset {
   all: unset;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-auto-flow: column;
   gap: 1rem;
   width: 100%;
 }
