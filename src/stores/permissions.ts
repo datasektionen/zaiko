@@ -37,7 +37,7 @@ export const usePermsStore = defineStore('permissions', () => {
     if (isAdmin()) {
       return true;
     }
-    return perms.value?.permissions.find(sp => sp.id === 'write' && sp.scope === storageName) !== undefined;
+    return perms.value?.permissions.find(sp => sp.id === 'write' && sp.scope === storageName.toLowerCase()) !== undefined;
   }
 
   function hasGroup(): boolean {
