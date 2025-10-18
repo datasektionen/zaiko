@@ -1,6 +1,6 @@
 [package]
 name = "backend"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2021"
 
 [dependencies]
@@ -13,6 +13,12 @@ log = "0.4.22"
 openidconnect = "4.0.0"
 serde = { version = "1.0.213", features = ["derive"] }
 serde_json = "1.0.132"
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "postgres", "chrono"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "postgres", "chrono", "uuid"] }
 derive_more = { version = "2.0.1", features = ["display"] }
 jsonwebtoken = "9.3.1"
+utoipa = { version = "5.4.0", features = ["actix_extras", "chrono"] }
+utoipa-actix-web = "0.1.2"
+utoipa-redoc = { version = "6.0.0", features = ["actix-web"] }
+actix-web-httpauth = "0.8.2"
+chrono = { version = "0.4.42", features = ["serde"] }
+pg_interval = "0.4.2"
