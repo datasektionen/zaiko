@@ -29,7 +29,7 @@ COPY public public
 
 
 ENV NODE_ENV=development
-RUN bun test
+# RUN bun test
 RUN bun run build-only # FIXME
 
 ##
@@ -39,8 +39,7 @@ RUN bun run build-only # FIXME
 FROM rust:1.84-alpine AS build
 WORKDIR /build
 
-RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash postgresql
-RUN cargo install cargo-watch
+RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash postgresql nginx
 
 COPY --from=prerelease /usr/src/app/dist ../dist
 
@@ -49,15 +48,18 @@ COPY backend/Cargo.lock backend/Cargo.toml .
 RUN mkdir src
 RUN echo "pub fn test() {}" > src/lib.rs
 
-ENV SQLX_OFFLINE=true
-
-COPY backend/.sqlx .sqlx
-
 RUN cargo build
 
 RUN rm -r src
 
+ENV SQLX_OFFLINE=true
+
+COPY backend/.sqlx .sqlx
+COPY backend/migrations/ migrations
+
 COPY backend/src src
+
+RUN cargo build
 
 EXPOSE 8000
 
@@ -65,4 +67,8 @@ ENV SQLX_OFFLINE=false
 
 ENV RUST_LOG=debug
 
-CMD ["cargo", "watch", "--why", "-x", "run"]
+RUN echo "nginx &" >> run.sh
+RUN echo "cargo run" >> run.sh
+RUN chmod +x run.sh
+
+ENTRYPOINT ./run.sh

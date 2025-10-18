@@ -6,31 +6,147 @@ services:
     ports:
       - 8080:8080
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      VITE_HOST: http://localhost:8080
-      VITE_HOST_FRONTEND: http://localhost:8080
-      APP_SECRET: ${APP_SECRET}
-      OIDC_SECRET: ${OIDC_SECRET}
-      DATABASE_URL: postgresql://postgres:postgres@db/db
+      APP_SECRET: 1234567890abcdefabcdef
+      DATABASE_URL: postgresql://zaiko:zaiko@db/zaiko
       PORT: 8080
-      OIDC_PROVIDER: https://sso.datasektionen.se/op
-      OIDC_ID: zaiko
-      REDIRECT_URL: http://localhost:8080/api/oidc/callback
-      PLS_URL: https://pls.datasektionen.se/api
+      OIDC_PROVIDER: http://localhost:7003
+      OIDC_ID: client-id
+      OIDC_SECRET: client-secret
+      REDIRECT_URL: http://localhost:8080/auth/oidc/callback
+      HIVE_URL: http://nyckeln:7004/api/v1
+      HIVE_SECRET: 1234567890abcdefabcdef
       APP_URL: 0.0.0.0
       APP_ENV: development
       APP_AUTH: true
       RUST_LOG: debug
+    configs:
+      - source: nginx.conf
+        target: /etc/nginx/nginx.conf
     volumes:
       - type: bind
         source: ./src
         target: /build/src
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./src/
+          target: /build/src/
+        - action: rebuild 
+          path: ./migrations/
+        - action: rebuild
+          path: Cargo.toml
   db:
     image: 'postgres:latest'
     ports:
       - 5432:5432
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: db
+      POSTGRES_USER: zaiko
+      POSTGRES_PASSWORD: zaiko
+      POSTGRES_DB: zaiko
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "sh -c 'pg_isready -d zaiko -U zaiko'"
+      interval: 1s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  nyckeln:
+    image: ghcr.io/datasektionen/nyckeln-under-dorrmattan
+    configs:
+      - source: nyckeln.yaml
+        target: /config.yaml
+    ports:
+      - 7003:7003
+      - 7004:7004
+
+configs:
+  nginx.conf:
+    content: |
+      events {}
+
+      http {
+        server {
+          listen 7003;
+
+          location / {
+            proxy_pass http://nyckeln:7003;
+          }
+        }
+      }
+
+  nyckeln.yaml:
+    content: |
+      clients:
+        - id: client-id
+          secret: client-secret
+          redirect_uris:
+            [
+              "http://localhost:8080/auth/oidc/callback"
+            ]
+
+      users:
+        - ug_kth_id: some-id
+          kth_id: turetek
+          email: turetek@kth.se
+          first_name: Ture
+          family_name: Teknolog
+          year_tag: D-83
+        - ug_kth_id: some-other-id
+          kth_id: diadat
+          email: diadat@kth.se
+          first_name: Diana
+          family_name: Datalog
+          year_tag: D-83
+        - ug_kth_id: yet-anouther-id
+          kth_id: marmed
+          email: marmed@kth.se
+          first_name: Martin
+          family_name: Median
+          year_tag: M-00
+        - ug_kth_id: even-more
+          kth_id: karklu
+          email: karklu@kth.se
+          first_name: Karin
+          family_name: Klubbare
+          year_tag: D-85
+
+      hive:
+        tokens:
+          - secret: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+            permissions:
+            - id: admin
+        groups:
+          - name: Systemansvarig
+            id: d-sys
+            domain: example.com
+            members:
+              - turetek
+            permissions:
+              - id: admin
+                scope: null
+          - name: Metadorerna MISTER
+            id: mister
+            domain: example.com
+            members:
+              - diadat
+            permissions:
+            - id: write
+              scope: örådet
+            tags:
+              - id: supply-manager
+          - name: Klubbmästeriet
+            id: dkm
+            domain: example.com
+            members:
+              - karklu
+            permissions:
+              - id: read
+                scope: spritis
+              - id: write
+                scope: spritis
+            tags:
+              - id: supply-manager
