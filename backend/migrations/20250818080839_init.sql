@@ -156,7 +156,7 @@ BEGIN
     ELSIF amount < min THEN
         RETURN 'critical';
     ELSIF amount < min + warning_limit THEN
-        RETURN 'warnig';
+        RETURN 'warning';
     ELSE
         RETURN 'good';
     END IF;
