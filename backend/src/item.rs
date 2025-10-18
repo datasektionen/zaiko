@@ -1,260 +1,554 @@
-use actix_web::{delete, get, patch, post, web, HttpResponse};
+use actix_web::{
+    delete, get, patch, post, put,
+    web::{self},
+    HttpResponse,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
+use utoipa::{IntoParams, ToSchema};
+use utoipa_actix_web::service_config::ServiceConfig;
 
-use crate::error::Error;
+use crate::{
+    auth::{check_auth, types::HivePermission, CheckType},
+    db::{
+        self,
+        interval::Interval,
+        item::{BasicItem, DetailedItem},
+    },
+    error::Error,
+};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ItemGetResponse {
-    pub(crate) id: i32,
-    pub(crate) name: String,
-    pub(crate) location: String,
-    pub(crate) min: Option<f32>,
-    pub(crate) max: Option<f32>,
-    pub(crate) current: f32,
-    pub(crate) supplier: Option<String>,
-    pub(crate) updated: i32,
-    pub(crate) link: Option<String>,
+/// Info to add an item to storage
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+struct ItemAddRequest {
+    /// The storage location the item is at
+    storage: String,
+    /// The container the item is stored in, can be "default" (loose)
+    container: String,
+    /// The items name
+    name: String,
+    /// The lower limit on how many items should be in storage (order limit)
+    min: Option<f32>,
+    /// The upper limit on the number of items (order ceiling)
+    max: Option<f32>,
+    /// The number of items currently in storage
+    amount: f32,
+    /// The unit in which amount is counted (st, 6-pack, %, etc)
+    unit: Option<String>,
+    /// The time between the item should be inventoried
+    inventory_interval: Option<Interval>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ItemAddRequest {
-    pub(crate) name: String,
-    pub(crate) location: String,
-    pub(crate) min: Option<f32>,
-    pub(crate) max: Option<f32>,
-    pub(crate) current: f32,
-    pub(crate) supplier: Option<i32>,
-    pub(crate) link: Option<String>,
+/// Info used to add a supplier to an item
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+struct SupplierAddRequest {
+    /// The suppliers name
+    supplier: String,
+    /// The items name
+    name: String,
+    /// Link to the item och the suppliers webshop
+    link: Option<String>,
+    /// If it is prefered to buy from this supplier instead of the others
+    prefered: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ItemUpdateRequest {
-    pub(crate) id: i32,
-    pub(crate) name: String,
-    pub(crate) location: String,
-    pub(crate) min: Option<f32>,
-    pub(crate) max: Option<f32>,
-    pub(crate) current: f32,
-    pub(crate) supplier: Option<i32>,
-    pub(crate) link: Option<String>,
+/// Info to change the name of an item (accross all storages)
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+struct ItemChangeNameRequest {
+    /// The name to change from
+    name: String,
+    /// The name to change to
+    new_name: Option<String>,
+    /// The unit amount is counted in
+    unit: String,
+    /// The interval between the item needs to be inventoried
+    inventory_interval: Option<Interval>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+/// Info used to move an item
+#[derive(Debug, Deserialize, ToSchema)]
+struct ItemMoveRequest {
+    /// The items name
+    name: String,
+    /// The name of the storage the items is moved from
+    from_storage: String,
+    /// The name of the container the items is moved from
+    from_container: String,
+    /// The name of the storage the items is moved to
+    to_storage: String,
+    /// The name of the container the items is moved to
+    to_container: String,
+}
+
+/// Info used to update an item at a particular storage location
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+struct StoredUpdateRequest {
+    /// The storage the item is located in
+    storage: String,
+    /// The storage to move the item to
+    new_storage: Option<String>,
+    /// The container the item is located in
+    container: String,
+    /// The container to move the item to
+    new_container: Option<String>,
+    /// The items name
+    name: String,
+    /// The lower limit on how many items should be in storage (order limit)
+    min: Option<f32>,
+    /// The upper limit on the number of items (order ceiling)
+    max: Option<f32>,
+    /// The current amount in storage
+    amount: f32,
+}
+
+/// Info used when filtering the items list
+#[derive(Deserialize, Debug, IntoParams, ToSchema)]
+struct ItemsGetQuery {
+    /// The items name
+    name: Option<String>,
+    /// The storages name
+    storage: Option<String>,
+    /// The containers name (requier storage to also be set)
+    container: Option<String>,
+    /// The suppliers name
+    supplier: Option<String>,
+    /// Atleast this many items should exist
+    min: Option<f32>,
+    /// Atmost this many items should exist
+    max: Option<f32>,
+}
+
+/// Info used to get a specific item
+#[derive(Deserialize, Debug, IntoParams)]
 struct ItemGetQuery {
-    column: Option<String>,
-    search: Option<String>,
+    /// The items name
+    name: String,
 }
 
-#[derive(Debug, Deserialize)]
+/// Info used to delete an item from storage
+#[derive(Debug, Deserialize, IntoParams)]
 struct ItemDeleteQuery {
-    id: i32,
+    /// The items name
+    name: String,
+    /// The storage locations name
+    storage: String,
+    /// The containers name
+    container: String,
 }
 
-#[get("/item")]
-pub(crate) async fn get_item(
-    pool: web::Data<Pool<Postgres>>,
-    query: web::Query<ItemGetQuery>,
-    club: web::ReqData<String>,
-) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
+/// Info used to remove a supplier from an item
+#[derive(Debug, Deserialize, IntoParams)]
+struct SupplierRemoveQuery {
+    /// The items name
+    name: String,
+    /// The suppliers name
+    supplier: String,
+}
 
-    let items = if let ItemGetQuery {
-        column: Some(column),
-        search: Some(search),
-    } = query.0
-    {
-        if matches!(column.as_str(), "name" | "location" | "link") {
-            sqlx::query_as!(
-                ItemGetResponse,
-                r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
-                 FROM items
-                 LEFT JOIN suppliers ON items.supplier=suppliers.id
-                 WHERE items.club = $1"#,
-                club
-            )
-            .fetch_all(&mut *pool)
-            .await?
-        } else if matches!(
-            column.as_str(),
-            "min" | "max" | "current" | "supplier" | "updated"
-        ) {
-            sqlx::query_as!(
-                ItemGetResponse,
-                r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
-                 FROM items 
-                 LEFT JOIN suppliers ON items.supplier=suppliers.id
-                 WHERE items.club = $1 AND $2 = $3"#,
-                club,
-                column,
-                search
-            )
-            .fetch_all(&mut *pool)
-            .await?
-        } else {
-            return Err(Error::BadRequest);
-        }
-    } else {
-        sqlx::query_as!(
-            ItemGetResponse,
-            r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name AS "supplier?", items.updated 
-             FROM items 
-             LEFT JOIN suppliers ON items.supplier=suppliers.id
-             WHERE items.club = $1"#,
-            club
+pub fn config() -> impl FnOnce(&mut ServiceConfig) {
+    |cfg: &mut ServiceConfig| {
+        cfg.service(get_items)
+            .service(get_item)
+            .service(create_item)
+            .service(change_item)
+            .service(change_stored_item)
+            .service(move_item)
+            .service(supply_item)
+            .service(delete_item)
+            .service(unsupply_item);
+    }
+}
+
+#[utoipa::path(
+    tag = "item",
+    params(ItemsGetQuery),
+    responses(
+        (
+            status = StatusCode::OK,
+            body = Vec<BasicItem>,
+            description = "List of items with basic info"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
         )
-        .fetch_all(&mut *pool)
-        .await?
-    };
-
-    pool.commit().await?;
-
+    )
+)]
+#[get("/items")]
+async fn get_items(
+    db: web::Data<Pool<Postgres>>,
+    query: web::Query<ItemsGetQuery>,
+) -> Result<HttpResponse, Error> {
+    let items = db::item::get_all_filtered_basic(
+        &db,
+        query.name.as_deref(),
+        query.storage.as_deref(),
+        query.container.as_deref(),
+        query.supplier.as_deref(),
+        query.min,
+        query.max,
+    )
+    .await?;
     Ok(HttpResponse::Ok().json(items))
 }
 
-#[post("/item")]
-pub(crate) async fn add_item(
-    body: String,
-    pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>,
+#[utoipa::path(
+    tag = "item",
+    params(ItemGetQuery),
+    responses(
+        (
+            status = StatusCode::OK,
+            body = DetailedItem,
+            description = "Item with detailed info"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[get("/item")]
+async fn get_item(
+    db: web::Data<Pool<Postgres>>,
+    query: web::Query<ItemGetQuery>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
+    let item = db::item::get_item_by_name_detailed(&db, &query.name).await?;
+    Ok(HttpResponse::Ok().json(item))
+}
 
+#[utoipa::path(
+    tag = "item",
+    request_body = ItemAddRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[post("/item")]
+async fn create_item(
+    body: String,
+    db: web::Data<Pool<Postgres>>,
+    id: web::ReqData<String>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+) -> Result<HttpResponse, Error> {
     let item: ItemAddRequest = serde_json::from_str(&body)?;
 
-    if item.name.is_empty() || item.location.is_empty() {
-        return Err(Error::BadRequest);
-    }
+    check_auth(
+        CheckType::Storage {
+            storage: &item.storage,
+            container: Some(&item.container),
+        },
+        &db,
+        &permissions,
+    )
+    .await?;
 
-    sqlx::query!(
-        "INSERT INTO items (name, location, min, max, current, supplier, updated, link, club) 
-         VALUES ($1, $2, $3, $4, $5, $6, extract(epoch from now()), $7, $8)",
-        item.name,
-        item.location,
+    db::item::create(
+        &db,
+        &id,
+        &item.storage,
+        &item.container,
+        &item.name,
         item.min,
         item.max,
-        item.current,
-        item.supplier,
-        item.link,
-        club
+        item.amount,
+        item.unit.as_deref(),
+        item.inventory_interval,
     )
-    .execute(&mut *pool)
     .await?;
-
-    let id = sqlx::query!(
-        "SELECT id 
-         FROM items 
-         WHERE name = $1 AND club = $2",
-        item.name,
-        club
-    )
-    .fetch_one(&mut *pool)
-    .await?
-    .id;
-
-    sqlx::query!(
-        "INSERT INTO log (item_id, amount, time, club) 
-         VALUES ($1, $2, extract(epoch from now()), $3)",
-        id,
-        item.current,
-        club
-    )
-    .execute(&mut *pool)
-    .await?;
-
-    pool.commit().await?;
 
     Ok(HttpResponse::Ok().finish())
 }
 
-#[patch("/item")]
-pub(crate) async fn update_item(
-    body: String,
-    pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>,
-) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
-
-    let item: ItemUpdateRequest = serde_json::from_str(&body)?;
-
-    if item.name.is_empty() || item.location.is_empty() {
-        return Err(Error::BadRequest);
-    }
-
-    let current = sqlx::query!(
-        "SELECT current 
-         FROM items 
-         WHERE name = $1 AND club = $2",
-        item.name,
-        club
-    )
-    .fetch_one(&mut *pool)
-    .await?
-    .current;
-
-    if current != item.current {
-        sqlx::query!(
-            "INSERT INTO log (item_id, amount, time, club) 
-             VALUES ($1, $2, extract(epoch from now()), $3)",
-            item.id,
-            item.current,
-            club
+#[utoipa::path(
+    tag = "item",
+    request_body = SupplierAddRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
         )
-        .execute(&mut *pool)
-        .await?;
-    }
-
-    sqlx::query!(
-        "UPDATE items 
-         SET location = $1, min = $2, max = $3, current = $4, supplier = $5, updated = extract(epoch from now()), link = $6  WHERE name = $7 AND club = $8",
-        item.location,
-        item.min,
-        item.max,
-        item.current,
-        item.supplier,
-        item.link,
-        item.name,
-        club
     )
-    .execute(&mut *pool)
-    .await?;
+)]
+#[post("/supply")]
+async fn supply_item(
+    body: String,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+) -> Result<HttpResponse, Error> {
+    let supplier: SupplierAddRequest = serde_json::from_str(&body)?;
 
-    pool.commit().await?;
+    check_auth(CheckType::Item(&supplier.name), &db, &permissions).await?;
+
+    db::item::add_supplier(
+        &db,
+        &supplier.supplier,
+        &supplier.name,
+        supplier.link.as_deref(),
+        supplier.prefered,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().finish())
 }
 
-#[delete("/item")]
-pub(crate) async fn delete_item(
-    item_id: web::Query<ItemDeleteQuery>,
-    pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>,
+#[utoipa::path(
+    tag = "item",
+    request_body = ItemChangeNameRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[patch("/item")]
+async fn change_item(
+    body: String,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
+    let item: ItemChangeNameRequest = serde_json::from_str(&body)?;
+    check_auth(CheckType::Item(&item.name), &db, &permissions).await?;
 
-    sqlx::query!(
-        "DELETE FROM items 
-         WHERE id = $1 AND club = $2",
-        item_id.id,
-        club
+    db::item::change(
+        &db,
+        &item.name,
+        item.new_name.as_deref(),
+        &item.unit,
+        item.inventory_interval,
     )
-    .execute(&mut *pool)
     .await?;
 
-    sqlx::query!(
-        "DELETE FROM log 
-         WHERE item_id = $1 AND club = $2",
-        item_id.id,
-        club
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[utoipa::path(
+    tag = "item",
+    request_body = StoredUpdateRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
     )
-    .execute(&mut *pool)
+)]
+#[put("/item")]
+async fn change_stored_item(
+    body: String,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+    id: web::ReqData<String>,
+) -> Result<HttpResponse, Error> {
+    let stored_item: StoredUpdateRequest = serde_json::from_str(&body)?;
+    check_auth(CheckType::Item(&stored_item.name), &db, &permissions).await?;
+
+    db::item::change_stored_item(
+        &db,
+        &stored_item.name,
+        stored_item.amount,
+        stored_item.min,
+        stored_item.max,
+        &stored_item.storage,
+        stored_item.new_storage.as_deref(),
+        &stored_item.container,
+        stored_item.new_container.as_deref(),
+        &id,
+    )
     .await?;
 
-    pool.commit().await?;
+    Ok(HttpResponse::Ok().finish())
+}
 
+#[utoipa::path(
+    tag = "item",
+    request_body = ItemMoveRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[patch("/item/move")]
+async fn move_item(
+    body: String,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+    id: web::ReqData<String>,
+) -> Result<HttpResponse, Error> {
+    let item: ItemMoveRequest = serde_json::from_str(&body)?;
+
+    check_auth(
+        CheckType::MoveItem {
+            from_storage: &item.from_storage,
+            from_container: &item.from_container,
+            to_storage: &item.to_storage,
+            to_container: &item.to_container,
+        },
+        &db,
+        &permissions,
+    )
+    .await?;
+
+    let mut db = db.begin().await?;
+
+    db::item::move_item(
+        &mut db,
+        &item.name,
+        &item.from_storage,
+        &item.from_container,
+        &item.to_storage,
+        &item.to_container,
+        &id,
+    )
+    .await?;
+
+    db.commit().await?;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[utoipa::path(
+    tag = "item",
+    params(ItemDeleteQuery),
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[delete("/item")]
+async fn delete_item(
+    query: web::Query<ItemDeleteQuery>,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+) -> Result<HttpResponse, Error> {
+    check_auth(
+        CheckType::Storage {
+            storage: &query.storage,
+            container: Some(&query.container),
+        },
+        &db,
+        &permissions,
+    )
+    .await?;
+    db::item::delete(&db, &query.storage, &query.container, &query.name).await?;
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[utoipa::path(
+    tag = "item",
+    params(SupplierRemoveQuery),
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[delete("/supply")]
+async fn unsupply_item(
+    query: web::Query<SupplierRemoveQuery>,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+) -> Result<HttpResponse, Error> {
+    check_auth(CheckType::Item(&query.name), &db, &permissions).await?;
+    db::item::delete_supplier(&db, &query.name, &query.supplier).await?;
     Ok(HttpResponse::Ok().finish())
 }
