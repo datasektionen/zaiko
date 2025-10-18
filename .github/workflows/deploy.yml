@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ frontend-rework-2 ]
   workflow_dispatch:
 
 jobs:

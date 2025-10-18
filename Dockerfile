@@ -5,8 +5,8 @@
 FROM oven/bun:1 AS base
 WORKDIR /usr/src/app
 
-ENV VITE_HOST=https://zaiko.datasektionen.se
-ENV VITE_HOST_FRONTEND=https://zaiko.datasektionen.se
+ENV VITE_HOST=https://zaiko.betasektionen.se
+ENV VITE_HOST_FRONTEND=https://zaiko.betasektionen.se
 
 RUN apt update -y && apt upgrade -y && apt install -y unzip
 

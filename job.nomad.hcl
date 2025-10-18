@@ -1,23 +1,23 @@
-job "zaiko" {
+job "zaiko-dev" {
   type = "service"
 
-  group "zaiko" {
+  group "zaiko-dev" {
     network {
       port "http" { }
     }
 
     service {
-      name     = "zaiko"
+      name     = "zaiko-dev"
       port     = "http"
       provider = "nomad"
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.zaiko.rule=Host(`zaiko.datasektionen.se`)",
-        "traefik.http.routers.zaiko.tls.certresolver=default",
+        "traefik.http.routers.zaiko-dev.rule=Host(`zaiko.betasektionen.se`)",
+        "traefik.http.routers.zaiko-dev.tls.certresolver=default",
       ]
     }
 
-    task "zaiko" {
+    task "zaiko-dev" {
       driver = "docker"
 
       config {
@@ -27,16 +27,17 @@ job "zaiko" {
 
       template {
         data        = <<ENV
-{{ with nomadVar "nomad/jobs/zaiko" }}
+{{ with nomadVar "nomad/jobs/zaiko-dev" }}
 APP_SECRET={{ .app_secret }}
 OIDC_SECRET={{ .oidc_secret }}
-DATABASE_URL=postgresql://zaiko:{{ .database_password }}@postgres.dsekt.internal:5432/zaiko
+HIVE_API_KEY={{ .hive_api_key }}
+DATABASE_URL=postgresql://zaiko:{{ .database_password }}@postgres.dsekt.internal:5432/zaiko-dev
 {{ end }}
 PORT={{ env "NOMAD_PORT_http" }}
 OIDC_PROVIDER=https://sso.datasektionen.se/op
 OIDC_ID=zaiko
-REDIRECT_URL=https://zaiko.datasektionen.se/api/oidc/callback
-PLS_URL=https://pls.datasektionen.se/api
+REDIRECT_URL=https://zaiko.betasektionen.se/auth/oidc/callback
+HIVE_URL=https://hive.datasektionen.se/api/v1
 APP_URL=0.0.0.0
 APP_ENV=production
 APP_DEBUG=false
