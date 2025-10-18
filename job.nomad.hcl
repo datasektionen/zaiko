@@ -30,14 +30,14 @@ job "zaiko-dev" {
 {{ with nomadVar "nomad/jobs/zaiko-dev" }}
 APP_SECRET={{ .app_secret }}
 OIDC_SECRET={{ .oidc_secret }}
-HIVE_API_KEY={{ .hive_api_key }}
+HIVE_SECRET={{ .hive_api_key }}
 DATABASE_URL=postgresql://zaiko:{{ .database_password }}@postgres.dsekt.internal:5432/zaiko-dev
 {{ end }}
 PORT={{ env "NOMAD_PORT_http" }}
 OIDC_PROVIDER=https://sso.datasektionen.se/op
 OIDC_ID=zaiko
 REDIRECT_URL=https://zaiko.betasektionen.se/auth/oidc/callback
-HIVE_API_URL=https://hive.datasektionen.se/api/v1
+HIVE_URL=https://hive.datasektionen.se/api/v1
 APP_URL=0.0.0.0
 APP_ENV=production
 APP_DEBUG=false
