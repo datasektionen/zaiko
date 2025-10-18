@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="overflow-x-auto md:overflow-x-visible">
     <table
       class="w-full border-collapse table-auto m-4 bg-(--zaiko-bg-0) text-(--zaiko-text) rounded-lg shadow-md p-4">
       <thead>
@@ -28,7 +28,7 @@
             />
           </td>
           <slot :row="row" :columns="columns" name="row" />
-          <td v-if="settings" class="m-0 p-2 w-8 border-b border-(--zaiko-bg-2) relative overflow-visible">
+          <td v-if="settings" class="m-0 p-2 w-8 border-b border-(--zaiko-bg-2) relative">
             <slot :row="row" :columns="columns" name="settings" />
           </td>
         </tr>
