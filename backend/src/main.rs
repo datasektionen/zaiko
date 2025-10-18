@@ -87,11 +87,11 @@ async fn main() -> std::io::Result<()> {
                     .configure(shipment::config())
                     .service(auth::user_info),
             )
+            .openapi_service(|api| Redoc::with_url("/docs/api", api))
             .service(scope("").map(|app| {
                 app.service(serve_frontend)
                     .service(actix_files::Files::new("/", "dist/").index_file("index.html"))
             }))
-            .openapi_service(|api| Redoc::with_url("/docs/api", api))
             .into_app()
     })
     .bind((
