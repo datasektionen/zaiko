@@ -34,10 +34,10 @@ HIVE_SECRET={{ .hive_api_key }}
 DATABASE_URL=postgresql://zaiko:{{ .database_password }}@postgres.dsekt.internal:5432/zaiko-dev
 {{ end }}
 PORT={{ env "NOMAD_PORT_http" }}
-OIDC_PROVIDER=https://sso.datasektionen.se/op
+OIDC_PROVIDER=http://sso.nomad.dsekt.internal/op
 OIDC_ID=zaiko
 REDIRECT_URL=https://zaiko.betasektionen.se/auth/oidc/callback
-HIVE_URL=https://hive.datasektionen.se/api/v1
+HIVE_URL=http://hive.nomad.dsekt.internal/api/v1
 APP_URL=0.0.0.0
 APP_ENV=production
 APP_DEBUG=false
