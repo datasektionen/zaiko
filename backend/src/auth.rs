@@ -149,7 +149,7 @@ pub(crate) async fn check_auth(
                 })
         }
         CheckType::SupplierCreate { mandates, mandate } => {
-            !permissions.iter().any(|perm| perm.id == "write")
+            permissions.iter().any(|perm| perm.id == "write")
                 && mandates.iter().any(|man| man.0 == mandate)
         }
         CheckType::Supplier { mandates, name } => {
