@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT item, user_ as \"user\", amount, time, storage, container\n            FROM log\n            WHERE item = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "item",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "user",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "amount",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 3,
+        "name": "time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "storage",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "container",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a18581f2b26b06e5a852632cdaf69428dd9b00c89ceb7bbeab6a20217f5aa556"
+}

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT item.name as name, storage, container, amount, (max - amount) AS \"amount_to_buy\", unit\n            FROM stored_item\n            JOIN storage ON storage.name = stored_item.storage\n            JOIN item ON stored_item.item = item.name\n            WHERE (protected <> true OR storage.name IN (SELECT unnest($1::text[]))) AND amount <= min\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "storage",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "container",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "amount",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 4,
+        "name": "amount_to_buy",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 5,
+        "name": "unit",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      false
+    ]
+  },
+  "hash": "f372568fe824762f59d672960c9a66bbfc6a16139d34a67b23c5f6446167e10a"
+}

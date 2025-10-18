@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO container (name, storage, inventory_interval)\n            VALUES ($1, $2, $3)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Interval"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9a514239ff891cc1917ccf1a827108d5944417ebbcb6a8d38179ae4e130ba0a4"
+}

@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT item, user_ as \"user\", amount, time, from_storage, from_container, to_storage, to_container\n            FROM move_log\n            WHERE item = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "item",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "user",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "amount",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 3,
+        "name": "time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "from_storage",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "from_container",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "to_storage",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "to_container",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ee99e2f8311b09fde4d97d1cf95ed1a4552c0eec6b3e4ebb5a23f4e8be267442"
+}

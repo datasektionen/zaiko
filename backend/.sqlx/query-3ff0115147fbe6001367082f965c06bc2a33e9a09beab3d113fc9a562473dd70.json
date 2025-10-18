@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT item.name as name, storage, container, amount, unit\n            FROM stored_item\n            JOIN item ON stored_item.item = item.name\n            JOIN (\n                SELECT\n                    item.name,\n                    MAX(time) + \n                        MIN(\n                            (SELECT\n                                LEAST(\n                                    storage.inventory_interval,\n                                    item.inventory_interval\n                                ) AS inventory_interval\n                            FROM stored_item\n                            JOIN storage ON stored_item.storage = storage.name\n                            JOIN item ON stored_item.item = item.name)\n                        ) AS \"next_inventory\"\n                FROM item\n                LEFT JOIN log ON log.item = item.name\n                GROUP BY item.name\n            ) data ON stored_item.item = data.name\n            WHERE data.next_inventory < CURRENT_TIMESTAMP AND item.name IN (SELECT unnest($1::text[]))\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "storage",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "container",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "amount",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 4,
+        "name": "unit",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3ff0115147fbe6001367082f965c06bc2a33e9a09beab3d113fc9a562473dd70"
+}

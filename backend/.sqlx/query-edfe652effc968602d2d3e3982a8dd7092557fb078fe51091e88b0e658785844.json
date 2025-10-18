@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE supplier\n            SET\n                name = $2,\n                notes = $3,\n                username = $4,\n                password = $5,\n                link = $6,\n                mandate = $7\n            WHERE name = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "edfe652effc968602d2d3e3982a8dd7092557fb078fe51091e88b0e658785844"
+}

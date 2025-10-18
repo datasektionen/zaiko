@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT (1) as \"id\"\n            FROM stored_item\n            WHERE\n                item = $1 AND\n                storage = $2 AND\n                container = $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a5604c6c105bc00198fa94dbe6173342a800dcb621de1dd44ec4de23506c0cab"
+}

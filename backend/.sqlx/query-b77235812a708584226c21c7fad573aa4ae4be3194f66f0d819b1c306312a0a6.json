@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                item.name,\n                stored_item.amount,\n                item.unit,\n                STATE(\n                    stored_item.amount,\n                    stored_item.min,\n                    stored_item.max,\n                    EXISTS(\n                        SELECT 1\n                        FROM shipment_item\n                        WHERE shipment_item.item = item.name\n                    )\n                ) as \"state: OrderState\",\n                MAX(log.time) + \n                        LEAST(\n                            storage.inventory_interval,\n                            container.inventory_interval,\n                            item.inventory_interval\n                        ) as \"next_inventory\"\n            FROM stored_item\n            JOIN item ON item.name = stored_item.item\n            JOIN log ON log.item = stored_item.item\n            JOIN container ON container.name = stored_item.container\n            JOIN storage ON storage.name = stored_item.storage\n            LEFT JOIN shipment_item ON shipment_item.item = stored_item.item\n            WHERE stored_item.storage = $1 AND stored_item.container = $2\n            GROUP BY item.name, stored_item.amount, stored_item.min, stored_item.max, storage.inventory_interval, container.inventory_interval\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "amount",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 2,
+        "name": "unit",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "state: OrderState",
+        "type_info": {
+          "Custom": {
+            "name": "state",
+            "kind": {
+              "Enum": [
+                "none",
+                "good",
+                "warning",
+                "critical",
+                "incoming"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "next_inventory",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "b77235812a708584226c21c7fad573aa4ae4be3194f66f0d819b1c306312a0a6"
+}

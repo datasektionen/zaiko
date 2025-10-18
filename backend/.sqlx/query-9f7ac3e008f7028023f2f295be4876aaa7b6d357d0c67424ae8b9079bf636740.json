@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT storage, container\n            FROM stored_item\n            WHERE item = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "storage",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "container",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "9f7ac3e008f7028023f2f295be4876aaa7b6d357d0c67424ae8b9079bf636740"
+}

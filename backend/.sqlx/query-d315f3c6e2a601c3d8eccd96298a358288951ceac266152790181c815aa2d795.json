@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE storage\n            SET\n                name = $2,\n                protected = $3,\n                inventory_interval = $4\n            WHERE name = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Bool",
+        "Interval"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d315f3c6e2a601c3d8eccd96298a358288951ceac266152790181c815aa2d795"
+}

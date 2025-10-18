@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT name, protected, inventory_interval as \"inventory_interval: Interval\"\n            FROM storage\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "protected",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "inventory_interval: Interval",
+        "type_info": "Interval"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "5c7a19557f0ff9d4ba379da14e3939d8caae901dfbae23515f43b2afa1dea37e"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM supplier_item\n            WHERE item = $1 AND supplier = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b73bf130ca86c1ffc3474411c73fc9e4839c7201c8cfc3d09a05c31ee15caa1c"
+}

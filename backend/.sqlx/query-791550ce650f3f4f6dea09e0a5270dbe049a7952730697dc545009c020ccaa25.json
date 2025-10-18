@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE stored_item\n            SET amount = $1 \n            WHERE item = $2 AND storage = $3 AND container = $4\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Float4",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "791550ce650f3f4f6dea09e0a5270dbe049a7952730697dc545009c020ccaa25"
+}
