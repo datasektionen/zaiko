@@ -13,7 +13,7 @@
         <InputText v-model="username" name="Användarnamn" :icon="UserCircleIcon" />
         <InputText v-model="password" name="Lösenord" :icon="LockClosedIcon" type="password" />
       </fieldset>
-      <InputText v-model="link" name="Länk" :icon="LinkIcon" />
+      <InputText v-model="link" name="Länk" :icon="LinkIcon" :maxlength=10000 />
       <InputTextArea v-model="note" name="Anteckningar" :icon="DocumentTextIcon" />
       <div class="submit justify-end">
         <button type="submit"
