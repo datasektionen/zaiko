@@ -62,6 +62,7 @@ async fn main() -> std::io::Result<()> {
                     Method::DELETE,
                 ])
                 .allow_any_header()
+                .allowed_origin("https://sso.datasektionen.se")
         };
 
         App::new()
