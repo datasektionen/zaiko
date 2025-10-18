@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                DELETE FROM container\n                WHERE storage = $1 AND name = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "54ec831f915dbffefdf062ee2d02266a9083a9f48bb43a34c4db48b10a5044a3"
+}

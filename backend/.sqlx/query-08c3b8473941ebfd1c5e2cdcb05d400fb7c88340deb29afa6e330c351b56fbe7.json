@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO item (name, inventory_interval)\n            VALUES ($1, $2)\n            ON CONFLICT (name) DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Interval"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "08c3b8473941ebfd1c5e2cdcb05d400fb7c88340deb29afa6e330c351b56fbe7"
+}

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO log (\n                item,\n                storage,\n                container,\n                amount,\n                user_\n            )\n            VALUES ($1, $2, $3, $4, $5)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Float4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "53179e56c09fdac265087ccafced471558cef5058b6639791f09d6facdc8795c"
+}
