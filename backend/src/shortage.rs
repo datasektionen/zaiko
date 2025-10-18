@@ -1,113 +1,179 @@
 use actix_web::{get, post, web, HttpResponse};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::{Pool, Postgres};
+use utoipa::{IntoParams, ToSchema};
+use utoipa_actix_web::service_config::ServiceConfig;
 
-use crate::error::Error;
+use crate::{
+    auth::types::HivePermission,
+    db::{
+        self,
+        item::{DueItem, ShortageItem},
+    },
+    error::Error,
+};
 
-#[derive(Serialize)]
-struct ShortageGetResponse {
-    id: i32,
-    name: String,
-    location: String,
-    min: f32,
-    current: f32,
-    order: f32,
-    supplier: Option<String>,
-    link: Option<String>,
-}
-
-#[derive(Deserialize)]
-struct ShortageItem {
-    id: i32,
-    name: String,
-    location: String,
-    min: Option<f32>,
-    max: Option<f32>,
-    link: Option<String>,
-    current: f32,
-    supplier: Option<String>,
-}
-
-#[derive(Deserialize)]
+/// Info used to take inventory
+#[derive(Deserialize, ToSchema)]
 struct StockUpdateRequest {
-    items: Vec<(i32, f32)>,
+    /// List of items on which to update the amount
+    items: Vec<StockUpdate>,
 }
 
-#[get("/stock")]
-pub(crate) async fn get_shortage(
-    pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>,
-) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
+#[derive(Deserialize, ToSchema)]
+struct StockUpdate {
+    /// The items name
+    name: String,
+    /// The storage where the item is located
+    storage: String,
+    /// The container where the item is stored
+    container: String,
+    /// The number of items currently in storage
+    amount: f32,
+}
 
-    let items = sqlx::query_as!(
-        ShortageItem,
-        r#"SELECT items.id, items.name, location, min, max, current, items.link, suppliers.name as "supplier?"
-         FROM items 
-         LEFT JOIN suppliers ON items.supplier=suppliers.id
-         WHERE current <= min AND items.club = $1"#,
-        club
+/// Info used to filter items due to inventory
+#[derive(Debug, Deserialize, IntoParams)]
+struct DueQuery {
+    /// The name of the storage to check
+    storage: Option<String>,
+}
+
+pub fn config() -> impl FnOnce(&mut ServiceConfig) {
+    |cfg: &mut ServiceConfig| {
+        cfg.service(get_shortage)
+            .service(items_due)
+            .service(take_stock);
+    }
+}
+
+#[utoipa::path(
+    tag = "inventory",
+    responses(
+        (
+            status = StatusCode::OK,
+            body = Vec<ShortageItem>,
+            description = "List of items with less than order floor"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
     )
-    .fetch_all(&mut *pool)
-    .await?;
-
-    let items: Vec<ShortageGetResponse> = items
+)]
+#[get("/shortage")]
+async fn get_shortage(
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+) -> Result<HttpResponse, Error> {
+    let protected: Vec<String> = permissions
         .iter()
-        .filter_map(|item| {
-            Some(ShortageGetResponse {
-                id: item.id,
-                name: item.name.clone(),
-                location: item.location.clone(),
-                current: item.current,
-                order: item.max? - item.current,
-                min: item.min?,
-                supplier: item.supplier.clone(),
-                link: item.link.clone(),
-            })
+        .filter_map(|perm| {
+            if perm.id == "read" {
+                perm.scope.clone()
+            } else {
+                None
+            }
         })
         .collect();
 
-    pool.commit().await?;
+    let items = db::item::get_shortage(&db, &protected).await?;
 
     Ok(HttpResponse::Ok().json(items))
 }
 
-#[post("/stock")]
-pub(crate) async fn take_stock(
-    pool: web::Data<Pool<Postgres>>,
-    body: String,
-    club: web::ReqData<String>,
+#[utoipa::path(
+    tag = "inventory",
+    params(DueQuery),
+    responses(
+        (
+            status = StatusCode::OK,
+            body = Vec<DueItem>,
+            description = "List of items due to be inventoried"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[get("/inventory")]
+async fn items_due(
+    db: web::Data<Pool<Postgres>>,
+    query: web::Query<DueQuery>,
+    permissions: web::ReqData<Vec<HivePermission>>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
+    let storages: Vec<String> = if let DueQuery {
+        storage: Some(storage),
+    } = query.0
+    {
+        vec![storage]
+    } else {
+        permissions
+            .iter()
+            .filter_map(|perm| {
+                if perm.id == "write" {
+                    perm.scope.clone()
+                } else {
+                    None
+                }
+            })
+            .collect()
+    };
+
+    let items = db::item::items_due(&db, &storages).await?;
+
+    Ok(HttpResponse::Ok().json(items))
+}
+
+#[utoipa::path(
+    tag = "inventory",
+    request_body = StockUpdateRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[post("/inventory")]
+async fn take_stock(
+    db: web::Data<Pool<Postgres>>,
+    id: web::ReqData<String>,
+    body: String,
+) -> Result<HttpResponse, Error> {
+    let mut db = db.get_ref().begin().await?;
 
     let items: StockUpdateRequest = serde_json::from_str(&body)?;
 
-    for (id, amount) in items.items {
-        sqlx::query!(
-            "UPDATE items 
-             SET current = $1 
-             WHERE id = $2 AND club = $3",
-            amount,
-            id,
-            club
-        )
-        .execute(&mut *pool)
-        .await?;
-
-        sqlx::query!(
-            "INSERT INTO log (item_id, amount, time, club) 
-             VALUES ($1, $2, extract(epoch from now()), $3)",
-            id,
-            amount,
-            club
-        )
-        .execute(&mut *pool)
-        .await?;
+    for StockUpdate {
+        name,
+        storage,
+        container,
+        amount,
+    } in items.items
+    {
+        db::item::update_amount_in_transaction(&mut db, &id, &name, &storage, &container, amount)
+            .await?;
     }
 
-    pool.commit().await?;
+    db.commit().await?;
 
     Ok(HttpResponse::Ok().finish())
 }

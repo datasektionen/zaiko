@@ -1,244 +1,257 @@
 use actix_web::{delete, get, patch, post, web, HttpResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
+use utoipa::{IntoParams, ToSchema};
+use utoipa_actix_web::service_config::ServiceConfig;
 
-use crate::error::Error;
+use crate::{
+    auth::{
+        check_auth,
+        types::{Group, HivePermission},
+        CheckType,
+    },
+    db::{self, supplier::Supplier},
+    error::Error,
+};
 
-#[derive(Debug, Serialize, Deserialize)]
-struct SupplierGetResponse {
-    id: i32,
+/// Info used to create a supplier
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+struct SupplierCreateRequest {
+    /// The suppliers name
     name: String,
+    /// Link to the suppliers website
     link: Option<String>,
+    /// Notes ex. order info
     notes: Option<String>,
+    /// Username used to login to the suppliers website
     username: Option<String>,
+    /// Password used to login to the suppliers website
     password: Option<String>,
-    updated: i32,
+    /// Hive group this supplier is assosiated with
+    group: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct SupplierListGetResponse {
-    id: i32,
-    name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SupplierAddRequest {
-    name: String,
-    link: Option<String>,
-    notes: Option<String>,
-    username: Option<String>,
-    password: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+/// Info used to update a supplier
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 struct SupplierUpdateRequest {
-    id: i32,
+    /// The name the supplier is supposed to have
     name: String,
+    /// The name of the supplier before update (only if changeing)
+    old_name: Option<String>,
+    /// Link to the suppliers website
     link: Option<String>,
+    /// Notes ex. order info
     notes: Option<String>,
+    /// Username used to login to the suppliers website
     username: Option<String>,
+    /// Password used to login to the suppliers website
     password: Option<String>,
+    /// Hive group this supplier should be assosiated with
+    group: String,
 }
 
-#[derive(Deserialize)]
-struct SupplierGetQuery {
-    id: Option<i32>,
-    column: Option<String>,
-    search: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
+/// Info used to delete a supplier
+#[derive(Debug, Deserialize, IntoParams)]
 struct SupplierDeleteQuery {
-    id: i32,
+    /// The suppliers name
+    name: String,
 }
 
+pub(crate) fn config() -> impl FnOnce(&mut ServiceConfig) {
+    |cfg: &mut ServiceConfig| {
+        cfg.service(get_suppliers)
+            .service(create_supplier)
+            .service(update_supplier)
+            .service(delete_supplier);
+    }
+}
+
+#[utoipa::path(
+    tag = "supplier",
+    responses(
+        (
+            status = StatusCode::OK,
+            body = Vec<Supplier>,
+            description = "List of suppliers with info"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
 #[get("/supplier")]
-pub(crate) async fn get_supplier(
-    pool: web::Data<Pool<Postgres>>,
-    query: web::Query<SupplierGetQuery>,
-    club: web::ReqData<String>
-) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
-
-    if let Some(id) = query.id {
-        let name = sqlx::query!(
-            "SELECT name 
-             FROM suppliers 
-             WHERE club = $1 AND id = $2",
-            club,
-            id
-        )
-        .fetch_one(&mut *pool)
-        .await?
-        .name;
-
-        Ok(HttpResponse::Ok().json(name))
-    } else if let SupplierGetQuery {
-        column: Some(column),
-        search: Some(search),
-        id: _,
-    } = query.0
-    {
-        let suppliers = if matches!(
-            column.as_str(),
-            "name" | "username" | "password" | "link" | "notes"
-        ) {
-            sqlx::query_as!(
-                SupplierGetResponse,
-                "SELECT id, name, username, password, link, notes, updated 
-                 FROM suppliers 
-                 WHERE club = $1",
-                club
-            )
-            .fetch_all(&mut *pool)
-            .await?
-        } else if matches!(column.as_str(), "updated") {
-            sqlx::query_as!(
-                SupplierGetResponse,
-                "SELECT id, name, username, password, link, notes, updated 
-                 FROM suppliers 
-                 WHERE club = $1 AND $2 = $3",
-                club,
-                column,
-                search
-            )
-            .fetch_all(&mut *pool)
-            .await?
-        } else {
-            return Err(Error::BadRequest);
-        };
-
-        pool.commit().await?;
-
-        Ok(HttpResponse::Ok().json(suppliers))
-    } else {
-        let suppliers = sqlx::query_as!(
-            SupplierGetResponse,
-            "SELECT id, name, username, password, link, notes, updated 
-             FROM suppliers 
-             WHERE club = $1",
-            club
-        )
-        .fetch_all(&mut *pool)
-        .await?;
-
-        pool.commit().await?;
-
-        Ok(HttpResponse::Ok().json(suppliers))
-    }
-}
-
-#[get("/suppliers")]
 pub(crate) async fn get_suppliers(
-    pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>
+    db: web::Data<Pool<Postgres>>,
+    groups: web::ReqData<Vec<Group>>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
+    let groups: Vec<String> = groups.iter().map(|group| group.0.clone()).collect();
 
-    let supplier = sqlx::query_as!(
-        SupplierListGetResponse,
-        "SELECT id, name 
-         FROM suppliers 
-         WHERE club = $1",
-        club
-    )
-    .fetch_all(&mut *pool)
-    .await?;
+    log::debug!("groups: {groups:?}");
 
-    pool.commit().await?;
+    let suppliers = db::supplier::get_all_by_mandate(&db, &groups).await?;
 
-    Ok(HttpResponse::Ok().json(supplier))
+    Ok(HttpResponse::Ok().json(suppliers))
 }
 
-#[post("/supplier")]
-pub(crate) async fn add_supplier(
-    body: String,
-    pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>
-) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
-
-    let supplier: SupplierAddRequest = serde_json::from_str(&body)?;
-
-    if supplier.name.is_empty() {
-        return Err(Error::BadRequest);
-    }
-
-    sqlx::query!(
-        "INSERT INTO suppliers (name, link, notes, username, password, updated, club) 
-         VALUES ($1, $2, $3, $4, $5, extract(epoch from now()), $6)",
-        supplier.name,
-        supplier.link,
-        supplier.notes,
-        supplier.username,
-        supplier.password,
-        club
+#[utoipa::path(
+    tag = "supplier",
+    request_body = SupplierCreateRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
     )
-    .execute(&mut *pool)
+)]
+#[post("/supplier")]
+async fn create_supplier(
+    body: String,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+    groups: web::ReqData<Vec<Group>>,
+) -> Result<HttpResponse, Error> {
+    let supplier: SupplierCreateRequest = serde_json::from_str(&body)?;
+
+    check_auth(
+        CheckType::SupplierCreate {
+            mandates: &groups,
+            mandate: &supplier.group,
+        },
+        &db,
+        &permissions,
+    )
     .await?;
 
-    pool.commit().await?;
+    db::supplier::create(
+        &db,
+        &supplier.name,
+        supplier.notes.as_deref(),
+        supplier.username.as_deref(),
+        supplier.password.as_deref(),
+        supplier.link.as_deref(),
+        &supplier.group,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().finish())
 }
 
+#[utoipa::path(
+    tag = "supplier",
+    request_body = SupplierUpdateRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
 #[patch("/supplier")]
-pub(crate) async fn update_supplier(
+async fn update_supplier(
     body: String,
-    pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+    groups: web::ReqData<Vec<Group>>,
 ) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
-
     let supplier: SupplierUpdateRequest = serde_json::from_str(&body)?;
 
-    if supplier.name.is_empty() {
-        return Err(Error::BadRequest);
-    }
-
-    sqlx::query!(
-        "UPDATE suppliers 
-         SET name = $1, link = $2, notes = $3, username = $4, password = $5, updated = extract(epoch from now()) 
-         WHERE id = $6 AND club = $7",
-        supplier.name,
-        supplier.link,
-        supplier.notes,
-        supplier.username,
-        supplier.password,
-        supplier.id,
-        club
+    check_auth(
+        CheckType::Supplier {
+            mandates: &groups,
+            name: &supplier.name,
+        },
+        &db,
+        &permissions,
     )
-    .execute(&mut *pool)
     .await?;
 
-    pool.commit().await?;
+    db::supplier::change(
+        &db,
+        &supplier.name,
+        supplier.old_name.as_deref(),
+        supplier.notes.as_deref(),
+        supplier.username.as_deref(),
+        supplier.password.as_deref(),
+        supplier.link.as_deref(),
+        &supplier.group,
+    )
+    .await?;
 
     Ok(HttpResponse::Ok().finish())
 }
 
-#[delete("/supplier")]
-pub(crate) async fn delete_supplier(
-    item_id: web::Query<SupplierDeleteQuery>,
-    pool: web::Data<Pool<Postgres>>,
-    club: web::ReqData<String>
-) -> Result<HttpResponse, Error> {
-    let club = club.as_str();
-    let mut pool = pool.get_ref().begin().await?;
-
-    sqlx::query!(
-        "DELETE FROM suppliers 
-         WHERE id = $1 AND club = $2",
-        item_id.id,
-        club
+#[utoipa::path(
+    tag = "supplier",
+    params(SupplierDeleteQuery),
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
     )
-    .execute(&mut *pool)
+)]
+#[delete("/supplier")]
+async fn delete_supplier(
+    query: web::Query<SupplierDeleteQuery>,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+    groups: web::ReqData<Vec<Group>>,
+) -> Result<HttpResponse, Error> {
+    check_auth(
+        CheckType::Supplier {
+            mandates: &groups,
+            name: &query.name,
+        },
+        &db,
+        &permissions,
+    )
     .await?;
 
-    pool.commit().await?;
-
+    db::supplier::destroy(&db, &query.name).await?;
     Ok(HttpResponse::Ok().finish())
 }
