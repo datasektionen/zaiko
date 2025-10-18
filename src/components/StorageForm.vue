@@ -69,9 +69,10 @@ const addStorage = () => {
 
 const EditStorage = () => {
   const payload: StorageEditRequest = {
-    name: name.value,
+    name: props.editStorage!.name,
     inventory_interval: Interval(interval.value),
     protected: prot.value,
+    new_name: name.value,
   }
   editStorage(payload).then(() => {
     const popupStore = usePopupStore();
