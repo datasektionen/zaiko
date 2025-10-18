@@ -33,7 +33,6 @@
 
 <script setup lang="ts">
 import PanelTemplate from '@/components/PanelTemplate.vue'
-import SpinnerSimple from '@/components/SpinnerSimple.vue'
 import BoxData from '@/components/BoxData.vue'
 import DynamicTable from '@/components/DynamicTable.vue'
 import { BellAlertIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
