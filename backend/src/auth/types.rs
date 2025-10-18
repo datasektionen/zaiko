@@ -1,10 +1,9 @@
-use std::{collections::HashMap, env, future::Future, pin::Pin};
+use std::{env, future::Future, pin::Pin, rc::Rc};
 
 use actix_web::{
     cookie::{Cookie, SameSite},
     FromRequest, HttpRequest,
 };
-use derive_more::Display;
 use jsonwebtoken::{
     decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation,
 };
@@ -19,6 +18,7 @@ use openidconnect::{
     Nonce, RedirectUrl, RevocationErrorResponseType, StandardErrorResponse,
     StandardTokenIntrospectionResponse, StandardTokenResponse,
 };
+use utoipa::ToSchema;
 
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
@@ -116,94 +116,92 @@ impl OIDCData {
     }
 }
 
-#[derive(Debug, Display, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Permission {
-    #[serde(rename = "r")]
-    Read,
-    #[serde(rename = "rw")]
-    ReadWrite,
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct HivePermission {
+    pub id: String,
+    pub scope: Option<String>,
 }
 
-impl Permission {
-    pub async fn get_pls_permissions(
-        subject: String,
-    ) -> Result<HashMap<String, Permission>, Error> {
-        let pls_url = env::var("PLS_URL")?;
-
-        let res = reqwest::get(format!("{}/user/{}/zaiko", pls_url, subject.as_str()))
+impl HivePermission {
+    pub async fn get(subject: String) -> Result<Vec<HivePermission>, Error> {
+        log::debug!("getting hive permissions for {subject}");
+        let client = reqwest::Client::new();
+        let res = client
+            .get(format!(
+                "{}/user/{}/permissions",
+                env::var("HIVE_URL")?,
+                subject.as_str()
+            ))
+            .bearer_auth(env::var("HIVE_SECRET")?)
+            .send()
             .await?
             .text()
             .await?;
 
-        let mut privlages: HashMap<String, Permission> = Permission::default_privlages();
-
-        let pls_permissions = serde_json::from_str::<Vec<String>>(&res)?;
-
-        for privlage in pls_permissions {
-            let mut permission = privlage.split("-");
-            let name = permission
-                .next()
-                .ok_or(Error::InternalServerError(String::from(
-                    "Incorrect formating och pls permission",
-                )))?
-                .to_string();
-            let permission =
-                match permission
-                    .next()
-                    .ok_or(Error::InternalServerError(String::from(
-                        "Incorrect formatting of pls permission",
-                    )))? {
-                    "r" => Permission::Read,
-                    "rw" => Permission::ReadWrite,
-                    _ => {
-                        return Err(Error::InternalServerError(String::from(
-                            "pls permission contains incorrect access type",
-                        )))
-                    }
-                };
-            privlages.insert(name, permission);
-        }
-
-        Ok(privlages)
+        Ok(serde_json::from_str::<Vec<HivePermission>>(&res)?)
     }
 
-    pub fn default_privlages() -> HashMap<String, Permission> {
-        let mut privlages = HashMap::new();
+    pub async fn get_from_api_token(token: String) -> Result<Vec<HivePermission>, Error> {
+        log::debug!("getting hive permissions token {token}");
+        let client = reqwest::Client::new();
+        let res = client
+            .get(format!(
+                "{}/token/{}/permissions",
+                env::var("HIVE_URL")?,
+                token.as_str()
+            ))
+            .bearer_auth(env::var("HIVE_SECRET")?)
+            .send()
+            .await?
+            .text()
+            .await?;
 
-        privlages.insert(String::from("metadorerna"), Permission::Read);
-        privlages.insert(String::from("sjukvård"), Permission::Read);
-
-        privlages
+        Ok(serde_json::from_str::<Vec<HivePermission>>(&res)?)
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ClubGetResponse {
-    pub active: Club,
-    pub clubs: Vec<Club>
+#[derive(Clone, Serialize, Deserialize)]
+pub struct HiveGroup {
+    group_name: String,
+    group_id: String,
+    group_domain: String,
+    tag_content: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Club {
-    name: String,
-    permission: Permission,
-}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema, sqlx::Type)]
+#[sqlx(transparent)]
+pub struct Group(pub String);
 
-impl From<(String, Permission)> for Club {
-    fn from(value: (String, Permission)) -> Self {
-        Club {
-            name: value.0,
-            permission: value.1,
-        }
-    }
-}
+impl Group {
+    pub async fn get(subject: &str, admin: bool) -> Result<Vec<Group>, Error> {
+        log::debug!("getting groups for {subject}");
+        let client = reqwest::Client::new();
 
-impl From<(&String, &Permission)> for Club {
-    fn from(value: (&String, &Permission)) -> Self {
-        Club {
-            name: value.0.to_string(),
-            permission: value.1.clone(),
-        }
+        let url = if admin {
+            format!("{}/tagged/supply-manager/groups", env::var("HIVE_URL")?,)
+        } else {
+            format!(
+                "{}/tagged/supply-manager/memberships/{}",
+                env::var("HIVE_URL")?,
+                subject
+            )
+        };
+
+        log::debug!("group url: {url}");
+
+        let res = client
+            .get(url)
+            .bearer_auth(env::var("HIVE_SECRET")?)
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        let mandates = serde_json::from_str::<Vec<HiveGroup>>(&res)?;
+        Ok(mandates
+            .iter()
+            .map(|mandate| Group(format!("{}@{}", mandate.group_id, mandate.group_domain)))
+            .collect())
     }
 }
 
@@ -211,25 +209,21 @@ impl From<(&String, &Permission)> for Club {
 pub struct Token {
     pub sub: String,
     pub exp: u64,
-    pub permissions: HashMap<String, Permission>,
-    pub active_club: String,
-    pub active_permission: Permission,
+    pub permissions: Vec<HivePermission>,
+    pub groups: Vec<Group>,
 }
 
 impl Token {
-    pub fn new(sub: String, permissions: HashMap<String, Permission>) -> Option<Self> {
-        let active: Club = permissions.iter().next()?.into();
-
+    pub fn new(sub: String, permissions: Vec<HivePermission>, groups: Vec<Group>) -> Option<Self> {
         Some(Token {
             sub,
             exp: get_current_timestamp() + 7200,
             permissions,
-            active_club: active.name,
-            active_permission: active.permission,
+            groups,
         })
     }
 
-    pub fn cookie(&self) -> Result<Cookie, Error> {
+    pub fn cookie(&'_ self) -> Result<Cookie<'_>, Error> {
         let secret = EncodingKey::from_secret(env::var("APP_SECRET")?.as_bytes());
 
         let token = encode(&Header::default(), &self, &secret).unwrap();
@@ -240,13 +234,6 @@ impl Token {
             .http_only(true)
             .path("/")
             .finish())
-    }
-
-    pub fn set_active_club(&mut self, club: String) -> Result<(), Error> {
-        let permission = self.permissions.get(&club).ok_or(Error::Unauthorized)?;
-        self.active_club = club;
-        self.active_permission = permission.clone();
-        Ok(())
     }
 
     pub fn extract_token(cookie: Option<Cookie>) -> Option<Token> {
@@ -274,21 +261,24 @@ impl FromRequest for Token {
 }
 
 pub struct AuthMiddleware {
-    pub permission: Permission,
     pub auth_url: String,
 }
 
 impl AuthMiddleware {
-    pub fn new(auth_url: String, permission: Permission) -> Self {
-        AuthMiddleware {
-            auth_url,
-            permission,
-        }
+    pub fn new(auth_url: String) -> Self {
+        AuthMiddleware { auth_url }
     }
 }
 
 pub struct InnerAuthMiddleware<S> {
-    pub permission: Permission,
     pub auth_url: String,
-    pub service: S,
+    pub service: Rc<S>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct UserInfo {
+    pub username: String,
+    pub permissions: Vec<HivePermission>,
+    pub groups: Vec<Group>,
+    pub image: String,
 }
