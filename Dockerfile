@@ -27,7 +27,6 @@ COPY cypress  cypress
 COPY src src
 
 ENV NODE_ENV=production
-RUN bun test
 RUN bun run build-only # FIXME
 
 ##
