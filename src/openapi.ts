@@ -20,6 +20,22 @@ export interface paths {
         patch: operations["change_container"];
         trace?: never;
     };
+    "/api/container/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["move_container"];
+        trace?: never;
+    };
     "/api/inventory": {
         parameters: {
             query?: never;
@@ -318,6 +334,17 @@ export interface components {
             /** @description The containers name */
             name: string;
         };
+        /** @description Info used to move a container */
+        ContainerMoveRequest: {
+            /** @description The name of the storage the container is moved from */
+            from_storage: string;
+            /** @description Spcifies if containers with the same name should be merged */
+            merge: boolean;
+            /** @description The containers name */
+            name: string;
+            /** @description The name of the storage the container is moved to */
+            to_storage: string;
+        };
         /** @description List of containers at a storage location */
         ContainerStorage: {
             /** @description List of containers */
@@ -367,8 +394,6 @@ export interface components {
             /** @description The unit that the amount is measured in */
             unit?: string | null;
         };
-        /** @enum {string} */
-        FilterColumn: "item" | "storage" | "container" | "supplier" | "amount";
         Group: string;
         HivePermission: {
             id: string;
@@ -812,6 +837,49 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ContainerUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    move_container: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContainerMoveRequest"];
             };
         };
         responses: {

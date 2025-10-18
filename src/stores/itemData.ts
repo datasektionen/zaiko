@@ -152,10 +152,9 @@ export async function supplierLinkItem(link: ItemLinkSupplierRequest): Promise<v
 }
 
 export async function supplierUnlinkItem(link: ItemUnlinkSupplierRequest): Promise<void> {
-  const res = await fetch("/api/supply", {
+  const query = new URLSearchParams(link);
+  const res = await fetch("/api/supply?" + query.toString(), {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(link),
   });
   const notificationsStore = useNotificationsStore();
   if (!res.ok) {

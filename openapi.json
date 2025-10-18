@@ -6,7 +6,7 @@
     "license": {
       "name": ""
     },
-    "version": "0.1.0"
+    "version": "2.0.0"
   },
   "paths": {
     "/api/container": {
@@ -90,6 +90,38 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ContainerUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/container/move": {
+      "patch": {
+        "tags": [
+          "storage"
+        ],
+        "operationId": "move_container",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContainerMoveRequest"
               }
             }
           },
@@ -1206,6 +1238,34 @@
           }
         }
       },
+      "ContainerMoveRequest": {
+        "type": "object",
+        "description": "Info used to move a container",
+        "required": [
+          "name",
+          "from_storage",
+          "to_storage",
+          "merge"
+        ],
+        "properties": {
+          "from_storage": {
+            "type": "string",
+            "description": "The name of the storage the container is moved from"
+          },
+          "merge": {
+            "type": "boolean",
+            "description": "Spcifies if containers with the same name should be merged"
+          },
+          "name": {
+            "type": "string",
+            "description": "The containers name"
+          },
+          "to_storage": {
+            "type": "string",
+            "description": "The name of the storage the container is moved to"
+          }
+        }
+      },
       "ContainerStorage": {
         "type": "object",
         "description": "List of containers at a storage location",
@@ -1346,16 +1406,6 @@
             "description": "The unit that the amount is measured in"
           }
         }
-      },
-      "FilterColumn": {
-        "type": "string",
-        "enum": [
-          "item",
-          "storage",
-          "container",
-          "supplier",
-          "amount"
-        ]
       },
       "Group": {
         "type": "string"

@@ -1,4 +1,4 @@
-import type { Duration } from "./types";
+import type { Duration, StateEnum } from "./types";
 
 // A function to fetch a URL and handle redirects manually
 export async function fetchOrRedirect(url: string, info: RequestInit): Promise<Response> {
@@ -27,6 +27,36 @@ export async function fetchOrRedirect(url: string, info: RequestInit): Promise<R
   console.log("Fetch response status:", response.status);
   // Otherwise, normal success — return the data
   return response;
+}
+
+export function stateEmoji(state: StateEnum): string {
+  switch (state) {
+    case "Good":
+      return "✅";
+    case "Warning":
+      return "⚠️";
+    case "Critical":
+      return "❌";
+    case "Incoming":
+      return "📦";
+    default:
+      return "";
+  }
+}
+
+export function stateColor(state: StateEnum): string {
+  switch (state) {
+    case "Good":
+      return "text-(--zaiko-text)";
+    case "Warning":
+      return "text-(--zaiko-warning-color)";
+    case "Critical":
+      return "text-(--zaiko-bad-color)";
+    case "Incoming":
+      return "text-(--zaiko-link-color)";
+    default:
+      return "text-(--zaiko-text)";
+  }
 }
 
 export function parseISODuration(duration: string): Duration {
@@ -59,6 +89,7 @@ export function parseISODuration(duration: string): Duration {
     ...(seconds ? { seconds: parseFloat(seconds) } : {}),
   };
 }
+
 
 export function toISODuration(obj?: Duration): string | undefined {
   if (!obj) return undefined;

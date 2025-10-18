@@ -12,6 +12,7 @@ export type ItemEditRequest = operations['change_item']['requestBody']['content'
 export type ItemStorageEditRequest = operations['change_stored_item']['requestBody']['content']['application/json'];
 
 export type FilterColumn = components['schemas']['FilterColumn'];
+export type StateEnum = components['schemas']['OrderState'];
 
 export type StorageContainersGetResponse = operations['get_storage_container_tree']['responses']['200']['content']['application/json'];
 export type StorageTreeGetResponse = operations['get_storage_container_tree']['responses']['200']['content']['application/json'];

@@ -3,7 +3,7 @@
     <table
       class="w-full border-collapse table-auto m-4 bg-(--zaiko-bg-0) text-(--zaiko-text) rounded-lg shadow-md p-4">
       <thead>
-        <tr class="border-b-2 border-(--zaiko-border-color) text-(--zaiko-text-lc)">
+        <tr class="border-b-2 border-(--zaiko-bg-2) text-(--zaiko-text-lc)">
           <td v-if="checkbox" class="p-2 border-b border-(--zaiko-bg-2) w-8">
             <input
               type="checkbox"

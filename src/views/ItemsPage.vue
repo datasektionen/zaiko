@@ -13,7 +13,7 @@
           <td class="p-2 border-b border-(--zaiko-bg-2)">
             <span v-for="storage in input.row.storage" :key="storage.toString()" class="mr-2 inline-block">
               <RouterLink :to="storagePath(storage.storage, storage.container)">
-                <p class="hover:underline">{{ storage.storage }}{{ containerText(storage.container) }}</p>
+                <p :class="'hover:underline ' + stateColor(storage.state)">{{ storage.storage }}{{ containerText(storage.container) }}</p>
               </RouterLink>
             </span>
           </td>
@@ -41,6 +41,7 @@ import ItemForm from '@/components/ItemForm.vue';
 import { containerText } from '@/stores/inventoryData';
 import { usePermsStore } from '@/stores/permissions';
 import { getSuppliers } from '@/stores/supplierData';
+import { stateColor, stateEmoji } from '@/common';
 
 const popupStore = usePopupStore();
 const permsStore = usePermsStore();
