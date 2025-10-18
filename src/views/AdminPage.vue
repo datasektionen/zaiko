@@ -4,7 +4,7 @@
       <DynamicTable :rows="storages" :columns="columns" settings>
         <template #row="input">
           <td class="p-2 border-b border-(--zaiko-bg-2)">
-            <RouterLink :to="'/storage/' + input.row.name">
+            <RouterLink :to="'/storage/' + encodeURIComponent(input.row.name)">
               <p class="hover:underline">{{ input.row.name }}</p>
             </RouterLink>
           </td>
