@@ -22,6 +22,7 @@ RUN rm -r src
 EXPOSE 8080
 
 COPY backend/src src
+COPY backend/migrations/ migrations
 RUN cargo build
 
 FROM oven/bun:1 AS base
@@ -31,9 +32,7 @@ WORKDIR /usr/src/app
 ## ---------------build frontend-----------------------
 ##
 
-RUN apt update -y && apt upgrade -y && apt install -y unzip
-
-COPY --from=build /build/target/debug/backend backend
+RUN apt update -y && apt upgrade -y && apt install -y unzip nginx
 
 COPY package.json bun.lock .
 RUN bun install --frozen-lockfile
@@ -45,6 +44,10 @@ COPY src src
 
 ENV NODE_ENV=development
 
+COPY --from=build /build/target/debug/backend backend
+
+
+RUN echo "nginx &" >> ./run
 RUN echo "./backend &" >> ./run
 RUN echo "bun run dev --host 0.0.0.0" >> ./run
 

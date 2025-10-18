@@ -52,6 +52,7 @@ RUN cargo build --locked --release
 
 RUN rm -r src
 
+COPY backend/migrations migrations
 COPY backend/src src
 RUN cargo build --locked --release
 RUN cp ./target/release/backend /bin/server

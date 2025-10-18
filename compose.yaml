@@ -11,18 +11,22 @@ services:
     environment:
       VITE_HOST: http://localhost:8080
       VITE_HOST_FRONTEND: http://localhost:5173
-      APP_SECRET: ${APP_SECRET}
-      OIDC_SECRET: ${OIDC_SECRET}
+      APP_SECRET: 1234567890abcdefabcdef
+      OIDC_SECRET: client-secret
       DATABASE_URL: postgresql://postgres:postgres@db/db
       PORT: 8080
-      OIDC_PROVIDER: https://sso.datasektionen.se/op
-      OIDC_ID: zaiko
-      REDIRECT_URL: http://localhost:8080/api/oidc/callback
-      PLS_URL: https://pls.datasektionen.se/api
+      OIDC_PROVIDER: http://localhost:7003
+      OIDC_ID: client-id
+      REDIRECT_URL: http://localhost:8080/auth/oidc/callback
+      HIVE_URL: http://nyckeln:7004/api/v1
+      HIVE_SECRET: 1234567890abcdefabcdef
       APP_URL: 0.0.0.0
       APP_ENV: development
       APP_AUTH: false
       RUST_LOG: debug
+    configs:
+      - source: nginx.conf
+        target: /etc/nginx/nginx.conf
     volumes:
       - type: bind
         source: ./src
@@ -35,3 +39,96 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: db
+  nyckeln:
+    image: ghcr.io/datasektionen/nyckeln-under-dorrmattan
+    configs:
+      - source: nyckeln.yaml
+        target: /config.yaml
+    ports:
+      - 7003:7003
+      - 7004:7004
+
+configs:
+  nginx.conf:
+    content: |
+      events {}
+
+      http {
+        server {
+          listen 7003;
+
+          location / {
+            proxy_pass http://nyckeln:7003;
+          }
+        }
+      }
+
+  nyckeln.yaml:
+    content: |
+      clients:
+        - id: client-id
+          secret: client-secret
+          redirect_uris:
+            [
+              "http://localhost:8080/auth/oidc/callback"
+            ]
+
+      users:
+        - ug_kth_id: some-id
+          kth_id: turetek
+          email: turetek@kth.se
+          first_name: Ture
+          family_name: Teknolog
+          year_tag: D-83
+        - ug_kth_id: some-other-id
+          kth_id: diadat
+          email: diadat@kth.se
+          first_name: Diana
+          family_name: Datalog
+          year_tag: D-83
+        - ug_kth_id: yet-anouther-id
+          kth_id: marmed
+          email: marmed@kth.se
+          first_name: Martin
+          family_name: Median
+          year_tag: M-00
+        - ug_kth_id: even-more
+          kth_id: karklu
+          email: karklu@kth.se
+          first_name: Karin
+          family_name: Klubbare
+          year_tag: D-85
+
+      hive:
+        groups:
+          - name: Systemansvarig
+            id: d-sys
+            domain: example.com
+            members:
+              - turetek
+            permissions:
+              - id: admin
+                scope: null
+          - name: Metadorerna MISTER
+            id: mister
+            domain: example.com
+            members:
+              - diadat
+            permissions:
+            - id: write
+              scope: örådet
+            tags:
+              - id: supply-manager
+          - name: Klubbmästeriet
+            id: dkm
+            domain: example.com
+            members:
+              - karklu
+            permissions:
+              - id: read
+                scope: spritis
+              - id: write
+                scope: spritis
+            tags:
+              - id: supply-manager
+
