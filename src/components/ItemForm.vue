@@ -51,7 +51,7 @@ import type { Duration, ItemAddRequest, ItemStorageEditRequest, Notification, St
 import { CalendarDateRangeIcon } from '@heroicons/vue/24/outline';
 import { createItem, editItemStorage } from '@/stores/itemData';
 import { usePopupStore } from '@/stores/popup';
-import { parseISODuration, toISODuration } from '@/common';
+import { forceNumeric, parseISODuration, toISODuration } from '@/common';
 import InputDuration from './InputDuration.vue';
 import { useNotificationsStore } from '@/stores/notifications';
 
@@ -90,9 +90,9 @@ const addItem = () => {
     unit: unit.value ? unit.value : undefined,
     storage: storage.value,
     container: container.value,
-    min: min.value,
-    max: max.value,
-    amount: current.value,
+    min: forceNumeric(min.value),
+    max: forceNumeric(max.value),
+    amount: forceNumeric(current.value) as number,
     inventory_interval: Interval(interval.value),
   }
   console.log("Creating item with payload:", payload);
