@@ -3,25 +3,51 @@
     <div class="flex flex-col gap-4 justify-center">
       <PanelTemplate :title="item.name" :icon="ArchiveBoxIcon">
         <div class="flex flex-col md:flex-row gap-8 justify-center">
-          <LongButton title="Ändra" :icon="PencilSquareIcon" @click="editName()" v-if="permsStore.hasWriteAccess()" />
-          <LongButton title="Loggar" :icon="PencilSquareIcon" :link="'/logs/' + item.name" />
+          <LongButton
+            title="Ändra"
+            :icon="PencilSquareIcon"
+            @click="editName()"
+            v-if="permsStore.hasWriteAccess()"
+          />
+          <LongButton
+            title="Loggar"
+            :icon="PencilSquareIcon"
+            :link="'/logs/' + item.name"
+          />
         </div>
       </PanelTemplate>
-      <PanelTemplate title="Lager" :icon="InboxIcon" :button-left-icon="PlusIcon"
-        :buttonLeftRestricted="!permsStore.hasWriteAccess()" @buttonLeft="addItem()"
-        :button-right-icon="ArrowUpTrayIcon" :buttonRightRestricted="!permsStore.hasWriteAccess()"
-        @buttonRight="moveItem()">
+      <PanelTemplate
+        title="Lager"
+        :icon="InboxIcon"
+        :button-left-icon="PlusIcon"
+        :buttonLeftRestricted="!permsStore.hasWriteAccess()"
+        @buttonLeft="addItem()"
+        :button-right-icon="ArrowUpTrayIcon"
+        :buttonRightRestricted="!permsStore.hasWriteAccess()"
+        @buttonRight="moveItem()"
+      >
         <DynamicTable :rows="item.storage!" :columns="storageColumns" settings>
           <template #row="input">
             <td class="p-2 border-b border-(--zaiko-bg-2)">
-              <RouterLink :to="'/storage/' + encodeURIComponent(input.row.storage)">
+              <RouterLink
+                :to="'/storage/' + encodeURIComponent(input.row.storage)"
+              >
                 <p class="hover:underline">{{ input.row.storage }}</p>
               </RouterLink>
             </td>
             <td class="p-2 border-b border-(--zaiko-bg-2)">
               <RouterLink
-                :to="'/storage/' + encodeURIComponent(input.row.storage) + (input.row.container !== '' ? ('?container=' + encodeURIComponent(input.row.container)) : '')">
-                <p class="hover:underline">{{ input.row.container || "Ingen" }}</p>
+                :to="
+                  '/storage/' +
+                  encodeURIComponent(input.row.storage) +
+                  (input.row.container !== ''
+                    ? '?container=' + encodeURIComponent(input.row.container)
+                    : '')
+                "
+              >
+                <p class="hover:underline">
+                  {{ input.row.container || 'Ingen' }}
+                </p>
               </RouterLink>
             </td>
             <td class="p-2 border-b border-(--zaiko-bg-2)">
@@ -38,32 +64,59 @@
             </td>
           </template>
           <template #settings="input">
-            <HamMenu :rows="settings.props.rows" v-if="permsStore.writeAccessToStorage(input.row.storage)"
-              @select="(action) => Settings(action, input.row.storage, input.row.container)" />
+            <HamMenu
+              :rows="settings.props.rows"
+              v-if="permsStore.writeAccessToStorage(input.row.storage)"
+              @select="
+                action =>
+                  Settings(action, input.row.storage, input.row.container)
+              "
+            />
           </template>
         </DynamicTable>
       </PanelTemplate>
-      <PanelTemplate title="Leverantörer" :icon="ShoppingCartIcon" :button-left-icon="LinkIcon"
-        :buttonLeftRestricted="!permsStore.hasWriteAccess()" @buttonLeft="linkItem()">
-        <DynamicTable :rows="item.supplier!" :columns="supplierColumns" settings>
+      <PanelTemplate
+        title="Leverantörer"
+        :icon="ShoppingCartIcon"
+        :button-left-icon="LinkIcon"
+        :buttonLeftRestricted="!permsStore.hasWriteAccess()"
+        @buttonLeft="linkItem()"
+      >
+        <DynamicTable
+          :rows="item.supplier!"
+          :columns="supplierColumns"
+          settings
+        >
           <template #row="input">
             <td class="p-2 border-b border-(--zaiko-bg-2)">
               <span class="flex items-center gap-1">
-                <TrophyIcon class="w-5 h-5 text-(--zaiko-warning-color) inline-block mr-1" v-if="input.row.prfered" />
+                <TrophyIcon
+                  class="w-5 h-5 text-(--zaiko-warning-color) inline-block mr-1"
+                  v-if="input.row.prfered"
+                />
                 <p>{{ input.row.name }}</p>
               </span>
             </td>
             <td class="p-2 border-b border-(--zaiko-bg-2)">
-              <a v-if="input.row.link" :href="input.row.link" target="_blank" class="hover:underline">
-                <span class="w-5 aspect-square inline-block text-(--zaiko-link-color)">
+              <a
+                v-if="input.row.link"
+                :href="input.row.link"
+                target="_blank"
+                class="hover:underline"
+              >
+                <span
+                  class="w-5 aspect-square inline-block text-(--zaiko-link-color)"
+                >
                   <LinkIcon />
                 </span>
               </a>
             </td>
           </template>
           <template #settings="input">
-            <HamMenu :rows="settingsSupplier.props.rows"
-              @select="(action) => SettingsSupplier(action, input.row.name)" />
+            <HamMenu
+              :rows="settingsSupplier.props.rows"
+              @select="action => SettingsSupplier(action, input.row.name)"
+            />
           </template>
         </DynamicTable>
       </PanelTemplate>
@@ -72,27 +125,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, type FunctionalComponent } from 'vue';
-import type { ItemAddRequest, ItemDeleteRequest, ItemGetResponse, ItemEditRequest, ItemUnlinkSupplierRequest, ItemMoveRequest } from '@/types';
-import PanelTemplate from '@/components/PanelTemplate.vue';
-import { ArchiveBoxIcon, ArrowUpTrayIcon, BackspaceIcon, InboxIcon, LinkIcon, PencilSquareIcon, PlusIcon, ShoppingCartIcon, TrophyIcon } from '@heroicons/vue/24/outline';
-import DynamicTable from '@/components/DynamicTable.vue';
-import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { changeItemName, deleteItem, getItemByName, supplierUnlinkItem } from '@/stores/itemData';
-import { usePopupStore } from '@/stores/popup';
-import ItemForm from '@/components/ItemForm.vue';
-import LinkForm from '@/components/LinkForm.vue';
-import LongButton from '@/components/LongButton.vue';
-import DeleteForm from '@/components/DeleteForm.vue';
-import HamMenu from '@/components/HamMenu.vue';
-import NameForm from '@/components/NameForm.vue';
-import { containerText } from '@/stores/inventoryData';
-import { usePermsStore } from '@/stores/permissions';
-import { stateEmoji } from '@/common';
+import { ref, type FunctionalComponent } from 'vue'
+import type {
+  ItemAddRequest,
+  ItemDeleteRequest,
+  ItemGetResponse,
+  ItemEditRequest,
+  ItemUnlinkSupplierRequest,
+  ItemMoveRequest,
+} from '@/types'
+import PanelTemplate from '@/components/PanelTemplate.vue'
+import {
+  ArchiveBoxIcon,
+  ArrowUpTrayIcon,
+  BackspaceIcon,
+  InboxIcon,
+  LinkIcon,
+  PencilSquareIcon,
+  PlusIcon,
+  ShoppingCartIcon,
+  TrophyIcon,
+} from '@heroicons/vue/24/outline'
+import DynamicTable from '@/components/DynamicTable.vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import {
+  changeItemName,
+  deleteItem,
+  getItemByName,
+  supplierUnlinkItem,
+} from '@/stores/itemData'
+import { usePopupStore } from '@/stores/popup'
+import ItemForm from '@/components/ItemForm.vue'
+import LinkForm from '@/components/LinkForm.vue'
+import LongButton from '@/components/LongButton.vue'
+import DeleteForm from '@/components/DeleteForm.vue'
+import HamMenu from '@/components/HamMenu.vue'
+import NameForm from '@/components/NameForm.vue'
+import { containerText } from '@/stores/inventoryData'
+import { usePermsStore } from '@/stores/permissions'
+import { stateEmoji } from '@/common'
 
-const permsStore = usePermsStore();
+const permsStore = usePermsStore()
 
-const route = useRoute();
+const route = useRoute()
 const item = ref<ItemGetResponse>({
   name: decodeURI(route.params.name as string),
   storage: [],
@@ -100,9 +175,9 @@ const item = ref<ItemGetResponse>({
   avrage_consuption: 0,
   unit: 'st',
   inventory_interval: 'P0D',
-});
+})
 
-const popupStore = usePopupStore();
+const popupStore = usePopupStore()
 const moveItem = () => {
   popupStore.push({
     title: 'Flytta produkt',
@@ -122,7 +197,7 @@ const linkItem = () => {
   })
 }
 
-const router = useRouter();
+const router = useRouter()
 const editName = () => {
   popupStore.push({
     title: 'Ändra namn på ' + item.value.name,
@@ -139,10 +214,10 @@ const editName = () => {
     },
     cb: (result: any) => {
       router.push('/item/' + encodeURIComponent(result.new_name)).then(() => {
-        getItemByName(result.new_name).then((data) => {
-          item.value = data;
-        });
-      });
+        getItemByName(result.new_name).then(data => {
+          item.value = data
+        })
+      })
     },
   })
 }
@@ -157,7 +232,7 @@ const addItem = () => {
       editItem: {
         name: item.value.name,
         unit: item.value.unit || undefined,
-      }
+      },
     },
     cb: addItemGhost,
   })
@@ -165,22 +240,24 @@ const addItem = () => {
 
 function addItemGhost(result?: any) {
   if (result) {
-    getItemByName(item.value.name).then((data) => {
-      item.value = data;
-    });
+    getItemByName(item.value.name).then(data => {
+      item.value = data
+    })
   }
 }
 
 const Settings = (action: string, storage: string, container: string) => {
-  let title = "";
-  let comp = null;
-  let icon: FunctionalComponent = PlusIcon;
-  let props = {};
-  let cb = undefined;
+  let title = ''
+  let comp = null
+  let icon: FunctionalComponent = PlusIcon
+  let props = {}
+  let cb = undefined
   switch (action) {
     case 'edit':
-      comp = ItemForm;
-      const editItem = item.value.storage?.find((s) => s.storage === storage && s.container === container);
+      comp = ItemForm
+      const editItem = item.value.storage?.find(
+        s => s.storage === storage && s.container === container,
+      )
       props = {
         edit: true,
         editItem: {
@@ -191,39 +268,55 @@ const Settings = (action: string, storage: string, container: string) => {
           min: editItem?.min || undefined,
           max: editItem?.max || undefined,
           amount: editItem?.amount || 0,
-        } as ItemAddRequest
+        } as ItemAddRequest,
       }
       icon = PencilSquareIcon
-      title = "Redigera " + item.value.name + " i " + storage + containerText(container);
+      title =
+        'Redigera ' +
+        item.value.name +
+        ' i ' +
+        storage +
+        containerText(container)
       cb = editItemGhost
-      break;
+      break
     case 'move':
-      comp = ItemForm;
-      const moveItem = item.value.storage?.find((s) => s.storage === storage && s.container === container);
+      comp = ItemForm
+      const moveItem = item.value.storage?.find(
+        s => s.storage === storage && s.container === container,
+      )
       props = {
         item: {
           name: item.value.name,
           unit: item.value.unit || undefined,
           amount: moveItem?.amount || 0,
-        }
+        },
       }
       icon = ArrowUpTrayIcon
-      title = "Flytta " + item.value.name + " från " + storage + containerText(container);
+      title =
+        'Flytta ' +
+        item.value.name +
+        ' från ' +
+        storage +
+        containerText(container)
       cb = editItemGhost
-      break;
+      break
     case 'delete':
-      comp = DeleteForm;
-      title = "Är du säker?";
+      comp = DeleteForm
+      title = 'Är du säker?'
       props = {
-        item: { name: item.value.name, storage: storage, container: container } as ItemDeleteRequest,
-        deleteFunc: deleteItem
-      };
+        item: {
+          name: item.value.name,
+          storage: storage,
+          container: container,
+        } as ItemDeleteRequest,
+        deleteFunc: deleteItem,
+      }
       icon = BackspaceIcon
       cb = removeItemGhost
-      break;
+      break
     default:
-      console.error("Unknown action:", action, item);
-      break;
+      console.error('Unknown action:', action, item)
+      break
   }
   if (comp) {
     popupStore.push({
@@ -237,31 +330,34 @@ const Settings = (action: string, storage: string, container: string) => {
 }
 
 const SettingsSupplier = (action: string, name: string) => {
-  let title = "";
-  let comp = null;
-  let icon: FunctionalComponent = PlusIcon;
-  let props = {};
-  let cb = undefined;
+  let title = ''
+  let comp = null
+  let icon: FunctionalComponent = PlusIcon
+  let props = {}
+  let cb = undefined
   switch (action) {
     case 'edit':
       // comp = StorageForm;
-      props = {}; // add item
+      props = {} // add item
       icon = PencilSquareIcon
       cb = undefined
-      break;
+      break
     case 'unsupply':
-      comp = DeleteForm;
-      title = "Är du säker?";
+      comp = DeleteForm
+      title = 'Är du säker?'
       props = {
-        item: { name: item.value.name, supplier: name } as ItemUnlinkSupplierRequest,
-        deleteFunc: supplierUnlinkItem
-      };
+        item: {
+          name: item.value.name,
+          supplier: name,
+        } as ItemUnlinkSupplierRequest,
+        deleteFunc: supplierUnlinkItem,
+      }
       icon = BackspaceIcon
       cb = removeSupplierGhost
-      break;
+      break
     default:
-      console.error("Unknown action:", action, item);
-      break;
+      console.error('Unknown action:', action, item)
+      break
   }
   if (comp) {
     popupStore.push({
@@ -276,35 +372,39 @@ const SettingsSupplier = (action: string, name: string) => {
 
 function removeItemGhost(result?: any) {
   if (result) {
-    item.value.storage = item.value.storage?.filter(s => !(s.storage === result.storage && s.container === result.container));
+    item.value.storage = item.value.storage?.filter(
+      s => !(s.storage === result.storage && s.container === result.container),
+    )
   }
 }
 
 function removeSupplierGhost(result?: any) {
   if (result) {
-    item.value.supplier = item.value.supplier?.filter(s => s.name !== result.supplier);
+    item.value.supplier = item.value.supplier?.filter(
+      s => s.name !== result.supplier,
+    )
   }
 }
 
 function addSupplierGhost(result?: any) {
   if (result) {
-    getItemByName(item.value.name).then((data) => {
-      item.value = data;
-    });
+    getItemByName(item.value.name).then(data => {
+      item.value = data
+    })
   }
 }
 
 function editItemGhost(result?: any) {
   if (result) {
-    getItemByName(item.value.name).then((data) => {
-      item.value = data;
-    });
+    getItemByName(item.value.name).then(data => {
+      item.value = data
+    })
   }
 }
 
 const settings = {
   props: {
-    rows: { move: "Flytta", edit: 'Redigera', delete: 'Ta bort' },
+    rows: { move: 'Flytta', edit: 'Redigera', delete: 'Ta bort' },
   },
 }
 const settingsSupplier = {
@@ -320,20 +420,20 @@ const storageColumns = {
   max: 'Max',
   amount: 'Mängd',
   state: 'Status',
-};
+}
 
 const supplierColumns = {
   name: 'Namn',
   link: 'Länk',
-};
+}
 
-
-getItemByName(item.value.name).then((data) => {
-  console.log('item:', data);
-  item.value = data;
-  item.value.supplier = item.value.supplier?.sort((a, b) => a.prfered ? -1 : b.prfered ? 1 : 0 || a.name.localeCompare(b.name));
-});
-
+getItemByName(item.value.name).then(data => {
+  console.log('item:', data)
+  item.value = data
+  item.value.supplier = item.value.supplier?.sort((a, b) =>
+    a.prfered ? -1 : b.prfered ? 1 : 0 || a.name.localeCompare(b.name),
+  )
+})
 </script>
 
 <style scoped></style>

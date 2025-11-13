@@ -2,11 +2,17 @@
   <div>
     <form v-on:submit.prevent="edit ? EditStorage() : addStorage()">
       <InputText name="Namn*" :icon="InboxIcon" v-model="name" required />
-      <InputDuration name="Intervall" :icon="CalendarDateRangeIcon" v-model="interval" />
+      <InputDuration
+        name="Intervall"
+        :icon="CalendarDateRangeIcon"
+        v-model="interval"
+      />
       <InputCheckbox name="Skyddad" :icon="LockClosedIcon" v-model="prot" />
       <div class="submit justify-end">
-        <button type="submit"
-          class="flex items-center gap-2 p-2 bg-(--zaiko-main-color) text-(--zaiko-text-hc) rounded-md">
+        <button
+          type="submit"
+          class="flex items-center gap-2 p-2 bg-(--zaiko-main-color) text-(--zaiko-text-hc) rounded-md"
+        >
           <DocumentCheckIcon class="w-8 aspect-square" />
           <p v-if="edit">Ändra</p>
           <p v-else>Lägg till</p>
@@ -18,22 +24,31 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import InputText from '@/components/InputText.vue';
-import InputCheckbox from '@/components/InputCheckbox.vue';
-import { createStorage, editStorage, getStorages } from '@/stores/storageData';
-import { type Duration, type StorageCreateRequest, type StorageEditRequest, type StoragesGetResponse } from '@/types';
-import { CalendarDateRangeIcon, InboxIcon, LockClosedIcon } from '@heroicons/vue/24/outline';
-import { usePopupStore } from '@/stores/popup';
-import { parseISODuration, toISODuration } from '@/common';
-import InputDuration from '@/components/InputDuration.vue';
-import { DocumentCheckIcon } from '@heroicons/vue/16/solid';
+import InputText from '@/components/InputText.vue'
+import InputCheckbox from '@/components/InputCheckbox.vue'
+import { createStorage, editStorage, getStorages } from '@/stores/storageData'
+import {
+  type Duration,
+  type StorageCreateRequest,
+  type StorageEditRequest,
+  type StoragesGetResponse,
+} from '@/types'
+import {
+  CalendarDateRangeIcon,
+  InboxIcon,
+  LockClosedIcon,
+} from '@heroicons/vue/24/outline'
+import { usePopupStore } from '@/stores/popup'
+import { parseISODuration, toISODuration } from '@/common'
+import InputDuration from '@/components/InputDuration.vue'
+import { DocumentCheckIcon } from '@heroicons/vue/16/solid'
 
 const props = defineProps<{
-  edit?: boolean,
-  editStorage?: StorageCreateRequest,
+  edit?: boolean
+  editStorage?: StorageCreateRequest
 }>()
 
-const name = ref<string>(props.editStorage?.name || "")
+const name = ref<string>(props.editStorage?.name || '')
 const prot = ref<boolean>(props.editStorage?.protected || false)
 const interval = ref<Duration>({ years: 0, months: 0, days: 0 })
 if (props.editStorage?.inventory_interval) {
@@ -48,7 +63,7 @@ const Interval = (interval: Duration): string | undefined => {
 }
 
 const storages = ref<StoragesGetResponse>([])
-getStorages().then((data) => {
+getStorages().then(data => {
   storages.value = data
 })
 
@@ -58,13 +73,15 @@ const addStorage = () => {
     inventory_interval: Interval(interval.value),
     protected: prot.value,
   }
-  createStorage(payload).then(() => {
-    const popupStore = usePopupStore();
-    popupStore.callCurrent(payload);
-    popupStore.pop();
-  }).catch((err) => {
-    console.error("Error creating item:", err);
-  })
+  createStorage(payload)
+    .then(() => {
+      const popupStore = usePopupStore()
+      popupStore.callCurrent(payload)
+      popupStore.pop()
+    })
+    .catch(err => {
+      console.error('Error creating item:', err)
+    })
 }
 
 const EditStorage = () => {
@@ -74,13 +91,15 @@ const EditStorage = () => {
     protected: prot.value,
     new_name: name.value,
   }
-  editStorage(payload).then(() => {
-    const popupStore = usePopupStore();
-    popupStore.callCurrent(payload);
-    popupStore.pop();
-  }).catch((err) => {
-    console.error("Error editing storage:", err);
-  })
+  editStorage(payload)
+    .then(() => {
+      const popupStore = usePopupStore()
+      popupStore.callCurrent(payload)
+      popupStore.pop()
+    })
+    .catch(err => {
+      console.error('Error editing storage:', err)
+    })
 }
 </script>
 

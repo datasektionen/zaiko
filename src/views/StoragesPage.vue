@@ -9,8 +9,19 @@
             </RouterLink>
           </td>
           <td class="p-2 border-b border-(--zaiko-bg-2)">
-            <span v-for="container in input.row.containers" :key="container" class="mr-2 inline-block">
-              <RouterLink :to="'/storage/' + encodeURIComponent(input.row.name) + '?container=' + encodeURIComponent(container)">
+            <span
+              v-for="container in input.row.containers"
+              :key="container"
+              class="mr-2 inline-block"
+            >
+              <RouterLink
+                :to="
+                  '/storage/' +
+                  encodeURIComponent(input.row.name) +
+                  '?container=' +
+                  encodeURIComponent(container)
+                "
+              >
                 <p class="hover:underline">{{ container }}</p>
               </RouterLink>
             </span>
@@ -22,26 +33,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import PanelTemplate from '@/components/PanelTemplate.vue';
-import { InboxIcon, PlusIcon, ShoppingCartIcon } from '@heroicons/vue/24/outline';
-import type { StorageContainersGetResponse, SupplierGetResponse } from '@/types';
-import SupplierForm from '@/components/SupplierForm.vue';
-import { getSuppliers } from '@/stores/supplierData';
-import DynamicTable from '@/components/DynamicTable.vue';
-import { getStorageContainers } from '@/stores/storageData';
+import { ref } from 'vue'
+import PanelTemplate from '@/components/PanelTemplate.vue'
+import {
+  InboxIcon,
+  PlusIcon,
+  ShoppingCartIcon,
+} from '@heroicons/vue/24/outline'
+import type { StorageContainersGetResponse, SupplierGetResponse } from '@/types'
+import SupplierForm from '@/components/SupplierForm.vue'
+import { getSuppliers } from '@/stores/supplierData'
+import DynamicTable from '@/components/DynamicTable.vue'
+import { getStorageContainers } from '@/stores/storageData'
 
 const columns = {
   name: 'Namn',
   container: 'Lådor',
-};
+}
 
-const rows = ref<StorageContainersGetResponse>([]);
-getStorageContainers().then((data) => {
-  rows.value = data;
-});
-
-
+const rows = ref<StorageContainersGetResponse>([])
+getStorageContainers().then(data => {
+  rows.value = data
+})
 </script>
 
 <style scoped></style>

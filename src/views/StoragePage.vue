@@ -1,17 +1,34 @@
 <template>
   <div class="main">
-    <PanelTemplate :title="decodeURI(($route.params.name as string) || 'Lager')" :icon="ClipboardDocumentListIcon"
-      :button-left-icon="FolderIcon" :button-left-restricted="!permsStore.writeAccessToStorage(
-        decodeURI($route.params.name as string),
-      )
-        " @button-left="addContainer()" :button-right-icon="PlusIcon" :button-right-restricted="!permsStore.writeAccessToStorage(
-        decodeURI($route.params.name as string),
-      )
-        " @button-right="addItem()">
-    <DynamicTree :rows="sortedContainers" :columns="columns" :node="containers[0]?.items[0] || {}">
+    <PanelTemplate
+      :title="decodeURI(($route.params.name as string) || 'Lager')"
+      :icon="ClipboardDocumentListIcon"
+      :button-left-icon="FolderIcon"
+      :button-left-restricted="
+        !permsStore.writeAccessToStorage(
+          decodeURI($route.params.name as string),
+        )
+      "
+      @button-left="addContainer()"
+      :button-right-icon="PlusIcon"
+      :button-right-restricted="
+        !permsStore.writeAccessToStorage(
+          decodeURI($route.params.name as string),
+        )
+      "
+      @button-right="addItem()"
+    >
+      <DynamicTree
+        :rows="sortedContainers"
+        :columns="columns"
+        :node="containers[0]?.items[0] || {}"
+      >
         <template #row="{ row }">
           <td class="p-2 border-b border-(--zaiko-bg-2)">
-            <RouterLink :to="'/item/' + encodeURIComponent(row.name)" class="hover:underline">
+            <RouterLink
+              :to="'/item/' + encodeURIComponent(row.name)"
+              class="hover:underline"
+            >
               {{ row.name }}
             </RouterLink>
           </td>

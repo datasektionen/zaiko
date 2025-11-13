@@ -5,7 +5,13 @@
         <component :is="icon" class="buttonIcon" />
         <p>{{ name }}</p>
       </div>
-      <textarea v-model="model" :placeholder="placeholder || name" :required minlength=1 :disabled="disabled"></textarea>
+      <textarea
+        v-model="model"
+        :placeholder="placeholder || name"
+        :required
+        minlength="1"
+        :disabled="disabled"
+      ></textarea>
     </div>
   </div>
 </template>
@@ -14,15 +20,14 @@
 import { defineProps, type FunctionalComponent } from 'vue'
 
 const props = defineProps<{
-  name: string,
-  icon: FunctionalComponent,
-  required?: boolean,
-  placeholder?: string,
-  disabled?: boolean,
+  name: string
+  icon: FunctionalComponent
+  required?: boolean
+  placeholder?: string
+  disabled?: boolean
 }>()
 
 const model = defineModel<string>()
-
 </script>
 
 <style scoped>

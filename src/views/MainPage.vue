@@ -9,15 +9,19 @@
             </RouterLink>
           </td>
           <td class="p-2 border-b border-(--zaiko-bg-2)">
-            <RouterLink :to="storagePath(input.row.storage, input.row.container)">
-            <p class="hover:underline">{{ input.row.storage }}{{containerText(input.row.container)}}</p>
+            <RouterLink
+              :to="storagePath(input.row.storage, input.row.container)"
+            >
+              <p class="hover:underline">
+                {{ input.row.storage }}{{ containerText(input.row.container) }}
+              </p>
             </RouterLink>
           </td>
           <td class="p-2 border-b border-(--zaiko-bg-2)">
             <p>{{ input.row.amount + unitText(input.row.unit) }}</p>
           </td>
           <td class="p-2 border-b border-(--zaiko-bg-2)">
-            <p>{{ input.row.amount_to_buy + unitText(input.row.unit)  }}</p>
+            <p>{{ input.row.amount_to_buy + unitText(input.row.unit) }}</p>
           </td>
         </template>
       </DynamicTable>
@@ -36,13 +40,17 @@ import PanelTemplate from '@/components/PanelTemplate.vue'
 import BoxData from '@/components/BoxData.vue'
 import DynamicTable from '@/components/DynamicTable.vue'
 import { BellAlertIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
-import type { ShortageGetResponse, StatsGetResponse } from '@/types';
-import { ref } from 'vue';
-import { getStats } from '@/stores/statsData';
+import type { ShortageGetResponse, StatsGetResponse } from '@/types'
+import { ref } from 'vue'
+import { getStats } from '@/stores/statsData'
 import { getShortage, unitText, containerText } from '@/stores/inventoryData'
 
 function storagePath(storage: string, container?: string) {
-  return '/storage/' + encodeURI(storage) + (container ? '?container=' + encodeURI(container) : '');
+  return (
+    '/storage/' +
+    encodeURI(storage) +
+    (container ? '?container=' + encodeURI(container) : '')
+  )
 }
 
 const columns = {
@@ -50,18 +58,17 @@ const columns = {
   storage: 'Lager',
   amount: 'Mängd',
   amount_to_buy: 'Att köpa',
-};
+}
 
-const rows = ref<ShortageGetResponse>([]);
-getShortage().then((data) => {
-  rows.value = data;
-});
+const rows = ref<ShortageGetResponse>([])
+getShortage().then(data => {
+  rows.value = data
+})
 
-const stats = ref<StatsGetResponse>({ items: 0, shortages: 0, suppliers: 0 });
-getStats().then((data) => {
-  stats.value = data;
-});
-
+const stats = ref<StatsGetResponse>({ items: 0, shortages: 0, suppliers: 0 })
+getStats().then(data => {
+  stats.value = data
+})
 </script>
 
 <style scoped></style>

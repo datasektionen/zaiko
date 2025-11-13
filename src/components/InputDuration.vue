@@ -5,18 +5,52 @@
         <component :is="icon" class="buttonIcon" />
         <p>{{ name }}</p>
       </div>
-      <div :class="'grid grid-flow-col gap-2 items-center' + (disabled ? ' opacity-50' : '')">
-        <span class="flex items-center gap-1 border-1 border-(--zaiko-text) rounded-lg p-1">
+      <div
+        :class="
+          'grid grid-flow-col gap-2 items-center' +
+          (disabled ? ' opacity-50' : '')
+        "
+      >
+        <span
+          class="flex items-center gap-1 border-1 border-(--zaiko-text) rounded-lg p-1"
+        >
           <p class="text-(--zaiko-text) text-lg">År:</p>
-          <input type="number" v-model="model!.years" placeholder="år" :required min="0" :disabled="disabled">
+          <input
+            type="number"
+            v-model="model!.years"
+            placeholder="år"
+            :required
+            min="0"
+            :disabled="disabled"
+          />
         </span>
-        <span class="flex items-center gap-1 border-1 border-(--zaiko-text) rounded-lg p-1">
+        <span
+          class="flex items-center gap-1 border-1 border-(--zaiko-text) rounded-lg p-1"
+        >
           <p class="text-(--zaiko-text) text-lg">Månader:</p>
-          <input type="number" v-model="model!.months" placeholder="månader" :required min="0" max="11" :disabled="disabled">
+          <input
+            type="number"
+            v-model="model!.months"
+            placeholder="månader"
+            :required
+            min="0"
+            max="11"
+            :disabled="disabled"
+          />
         </span>
-        <span class="flex items-center gap-1 border-1 border-(--zaiko-text) rounded-lg p-1">
+        <span
+          class="flex items-center gap-1 border-1 border-(--zaiko-text) rounded-lg p-1"
+        >
           <p class="text-(--zaiko-text) text-lg">Dagar:</p>
-          <input type="number" v-model="model!.days" placeholder="dagar" :required min="0" max="30" :disabled="disabled">
+          <input
+            type="number"
+            v-model="model!.days"
+            placeholder="dagar"
+            :required
+            min="0"
+            max="30"
+            :disabled="disabled"
+          />
         </span>
       </div>
     </div>
@@ -24,18 +58,17 @@
 </template>
 
 <script setup lang="ts">
-import type { Duration } from '@/types';
+import type { Duration } from '@/types'
 import { defineProps, type FunctionalComponent } from 'vue'
 
 const props = defineProps<{
-  name: string,
-  icon: FunctionalComponent,
-  required?: boolean,
-  disabled?: boolean,
+  name: string
+  icon: FunctionalComponent
+  required?: boolean
+  disabled?: boolean
 }>()
 
 const model = defineModel<Duration>()
-
 </script>
 
 <style scoped>

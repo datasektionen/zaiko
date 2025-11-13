@@ -1,7 +1,8 @@
 <template>
   <div class="overflow-x-auto md:overflow-x-visible">
     <table
-      class="w-full border-collapse table-auto m-4 bg-(--zaiko-bg-0) text-(--zaiko-text) rounded-lg shadow-md p-4">
+      class="w-full border-collapse table-auto m-4 bg-(--zaiko-bg-0) text-(--zaiko-text) rounded-lg shadow-md p-4"
+    >
       <thead>
         <tr class="border-b-2 border-(--zaiko-bg-2) text-(--zaiko-text-lc)">
           <td v-if="checkbox" class="p-2 border-b border-(--zaiko-bg-2) w-8">
@@ -11,8 +12,11 @@
               @change="toggleSelectAll"
             />
           </td>
-          <td v-for="column in Object.entries(columns)" :key="column[0]"
-            class="p-2 text-left border-b border-(--zaiko-bg-2)">
+          <td
+            v-for="column in Object.entries(columns)"
+            :key="column[0]"
+            class="p-2 text-left border-b border-(--zaiko-bg-2)"
+          >
             <p>{{ column[1] }}</p>
           </td>
         </tr>
@@ -28,7 +32,10 @@
             />
           </td>
           <slot :row="row" :columns="columns" name="row" />
-          <td v-if="settings" class="m-0 p-2 w-8 border-b border-(--zaiko-bg-2) relative">
+          <td
+            v-if="settings"
+            class="m-0 p-2 w-8 border-b border-(--zaiko-bg-2) relative"
+          >
             <slot :row="row" :columns="columns" name="settings" />
           </td>
         </tr>
@@ -37,13 +44,17 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="T extends Record<string, unknown>, S extends Record<string, unknown>">
+<script
+  setup
+  lang="ts"
+  generic="T extends Record<string, unknown>, S extends Record<string, unknown>"
+>
 import { defineProps, defineEmits, ref, computed } from 'vue'
 const props = defineProps<{
-  rows: Array<T>,
-  columns: S,
-  checkbox?: boolean,
-  settings?: boolean,
+  rows: Array<T>
+  columns: S
+  checkbox?: boolean
+  settings?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -52,8 +63,8 @@ const emit = defineEmits<{
 
 const selectedRows = ref<Set<number>>(new Set())
 
-const allSelected = computed(() =>
-  props.rows.length > 0 && selectedRows.value.size === props.rows.length
+const allSelected = computed(
+  () => props.rows.length > 0 && selectedRows.value.size === props.rows.length,
 )
 
 function toggleRow(index: number) {
@@ -81,7 +92,7 @@ function emitSelected() {
 </script>
 
 <style scoped>
-input[type="checkbox"] {
+input[type='checkbox'] {
   accent-color: var(--zaiko-main-color);
   background-color: var(--zaiko-bg-2);
 }
