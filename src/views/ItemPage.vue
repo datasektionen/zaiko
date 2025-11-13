@@ -48,10 +48,10 @@
         <DynamicTable :rows="item.supplier!" :columns="supplierColumns" settings>
           <template #row="input">
             <td class="p-2 border-b border-(--zaiko-bg-2)">
-              <RouterLink :to="'/supplier/' + encodeURIComponent(input.row.name)" class="flex items-center gap-1">
+              <span class="flex items-center gap-1">
                 <TrophyIcon class="w-5 h-5 text-(--zaiko-warning-color) inline-block mr-1" v-if="input.row.prfered" />
-                <p class="hover:underline">{{ input.row.name }}</p>
-              </RouterLink>
+                <p>{{ input.row.name }}</p>
+              </span>
             </td>
             <td class="p-2 border-b border-(--zaiko-bg-2)">
               <a v-if="input.row.link" :href="input.row.link" target="_blank" class="hover:underline">
@@ -73,7 +73,7 @@
 
 <script setup lang="ts">
 import { ref, type FunctionalComponent } from 'vue';
-import type { ItemAddRequest, ItemDeleteRequest, ItemGetResponse, ItemEditRequest, ItemUnlinkSupplierRequest } from '@/types';
+import type { ItemAddRequest, ItemDeleteRequest, ItemGetResponse, ItemEditRequest, ItemUnlinkSupplierRequest, ItemMoveRequest } from '@/types';
 import PanelTemplate from '@/components/PanelTemplate.vue';
 import { ArchiveBoxIcon, ArrowUpTrayIcon, BackspaceIcon, InboxIcon, LinkIcon, PencilSquareIcon, PlusIcon, ShoppingCartIcon, TrophyIcon } from '@heroicons/vue/24/outline';
 import DynamicTable from '@/components/DynamicTable.vue';
@@ -197,6 +197,20 @@ const Settings = (action: string, storage: string, container: string) => {
       title = "Redigera " + item.value.name + " i " + storage + containerText(container);
       cb = editItemGhost
       break;
+    case 'move':
+      comp = ItemForm;
+      const moveItem = item.value.storage?.find((s) => s.storage === storage && s.container === container);
+      props = {
+        item: {
+          name: item.value.name,
+          unit: item.value.unit || undefined,
+          amount: moveItem?.amount || 0,
+        }
+      }
+      icon = ArrowUpTrayIcon
+      title = "Flytta " + item.value.name + " från " + storage + containerText(container);
+      cb = editItemGhost
+      break;
     case 'delete':
       comp = DeleteForm;
       title = "Är du säker?";
@@ -290,7 +304,7 @@ function editItemGhost(result?: any) {
 
 const settings = {
   props: {
-    rows: { edit: 'redigera', delete: 'ta bort' },
+    rows: { move: "Flytta", edit: 'Redigera', delete: 'Ta bort' },
   },
 }
 const settingsSupplier = {

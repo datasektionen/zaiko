@@ -1,5 +1,11 @@
 import type { Duration, StateEnum } from "./types";
 
+export function forceNumeric(value: string | number | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  return isNaN(num) ? undefined : num;
+}
+
 // A function to fetch a URL and handle redirects manually
 export async function fetchOrRedirect(url: string, info: RequestInit): Promise<Response> {
   info.redirect = "manual"; // Ensure manual redirect handling
@@ -178,5 +184,5 @@ export function durationToReadableString(duration: Duration): string {
 
 export function parseDate(dateStr: string): string {
   const date = new Date(dateStr);
-  return isNaN(date.getTime()) ? 'Aldrig' : date.toLocaleDateString('sv');
+  return (isNaN(date.getTime()) || date.getTime() === 0) ? 'Aldrig' : date.toLocaleDateString('sv');
 }
