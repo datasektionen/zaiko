@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import MainPage from '@/views/MainPage.vue';
-import SupplierPage from '@/views/SupplierPage.vue';
-import ItemsPage from '@/views/ItemsPage.vue';
-import ItemPage from '@/views/ItemPage.vue';
-import StockPage from '@/views/StockPage.vue';
-import AdminPage from '@/views/AdminPage.vue';
-import { usePermsStore } from '@/stores/permissions';
-import StoragesPage from '@/views/StoragesPage.vue';
-import StoragePage from '@/views/StoragePage.vue';
+import MainPage from '@/views/MainPage.vue'
+import SupplierPage from '@/views/SupplierPage.vue'
+import ItemsPage from '@/views/ItemsPage.vue'
+import ItemPage from '@/views/ItemPage.vue'
+import StockPage from '@/views/StockPage.vue'
+import AdminPage from '@/views/AdminPage.vue'
+import { usePermsStore } from '@/stores/permissions'
+import StoragesPage from '@/views/StoragesPage.vue'
+import StoragePage from '@/views/StoragePage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,43 +47,44 @@ const router = createRouter({
       name: 'Inventering',
       component: StockPage,
       beforeEnter: (to, from, next) => {
-
-        const permsStore = usePermsStore();
-        if(permsStore.hasWriteAccess() || permsStore.isAdmin()) {
-          next();
+        const permsStore = usePermsStore()
+        if (permsStore.hasWriteAccess() || permsStore.isAdmin()) {
+          next()
         } else {
-          next('/');
+          next('/')
         }
-      }
+      },
     },
     {
       path: '/admin',
       name: 'Admin',
       component: AdminPage,
       beforeEnter: (to, from, next) => {
-
-        const permsStore = usePermsStore();
-        if(permsStore.isAdmin()) {
-          next();
+        const permsStore = usePermsStore()
+        if (permsStore.isAdmin()) {
+          next()
         } else {
-          next('/');
+          next('/')
         }
-      }
+      },
     },
   ],
 })
 
 router.beforeEach((to, from, next) => {
-  const permsStore = usePermsStore();
+  const permsStore = usePermsStore()
   if (permsStore.perms === undefined) {
-    permsStore.fetchPermissions().then(() => {
-      next();
-    }).catch(() => {
-      next();
-    });
+    permsStore
+      .fetchPermissions()
+      .then(() => {
+        next()
+      })
+      .catch(() => {
+        next()
+      })
   } else {
-    next();
+    next()
   }
-});
+})
 
 export default router

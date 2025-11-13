@@ -5,12 +5,18 @@
         <div class="modal" @click.stop="">
           <div class="modalHeader">
             <TitleBig :title="currentPopop.title" :icon="currentPopop.icon" />
-            <button @click="popupStore.pop()" class="text-(--zaiko-text) rounded-full">
-              <XMarkIcon/>
+            <button
+              @click="popupStore.pop()"
+              class="text-(--zaiko-text) rounded-full"
+            >
+              <XMarkIcon />
             </button>
           </div>
           <KeepAlive>
-            <component :is="currentPopop.component" v-bind="currentPopop.props"/>
+            <component
+              :is="currentPopop.component"
+              v-bind="currentPopop.props"
+            />
           </KeepAlive>
         </div>
       </div>
@@ -19,16 +25,16 @@
 </template>
 
 <script setup lang="ts">
-import TitleBig from '@/components/TitleBig.vue';
-import { PencilSquareIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import { usePopupStore } from '@/stores/popup';
-import { ref, watch } from 'vue';
+import TitleBig from '@/components/TitleBig.vue'
+import { PencilSquareIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { usePopupStore } from '@/stores/popup'
+import { ref, watch } from 'vue'
 
-const popupStore = usePopupStore();
+const popupStore = usePopupStore()
 
-const currentPopop = ref(popupStore.current());
-watch(popupStore.popups, (val) => {
-  currentPopop.value = val[val.length - 1];
+const currentPopop = ref(popupStore.current())
+watch(popupStore.popups, val => {
+  currentPopop.value = val[val.length - 1]
 })
 </script>
 

@@ -1,18 +1,22 @@
 <template>
-    <Teleport to="#noti">
-        <div class="notiList">
-          <NotificationPopup v-for="noti in notificationsStore.notifications" :notification="noti" :key="noti.id" @close="notificationsStore.remove(noti.id)"/>
-        </div>
-    </Teleport>
+  <Teleport to="#noti">
+    <div class="notiList">
+      <NotificationPopup
+        v-for="noti in notificationsStore.notifications"
+        :notification="noti"
+        :key="noti.id"
+        @close="notificationsStore.remove(noti.id)"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { useNotificationsStore } from "@/stores/notifications";
-import NotificationPopup from "@/components/NotificationPopup.vue";
+import { useNotificationsStore } from '@/stores/notifications'
+import NotificationPopup from '@/components/NotificationPopup.vue'
 
-const notificationsStore = useNotificationsStore();
+const notificationsStore = useNotificationsStore()
 </script>
-
 
 <style scoped>
 .notiList {

@@ -1,18 +1,37 @@
 <template>
   <div>
     <form v-on:submit.prevent="addContainer()">
-        <InputText name="Namn*" :icon="ArchiveBoxIcon" v-model="name" required :disabled="edit"/>
-      <InputDuration name="Intervall" :icon="CalendarDateRangeIcon" v-model="interval" />
-        <InputSelect name="Förråd*" :icon="HomeIcon" v-model="storage" :items="storages" required :disabled="edit">
-          <template #row="item">
-            <option :key="item.row.name" :value="item.row.name">
-              {{ item.row.name }}
-            </option>
-          </template>
-        </InputSelect>
+      <InputText
+        name="Namn*"
+        :icon="ArchiveBoxIcon"
+        v-model="name"
+        required
+        :disabled="edit"
+      />
+      <InputDuration
+        name="Intervall"
+        :icon="CalendarDateRangeIcon"
+        v-model="interval"
+      />
+      <InputSelect
+        name="Förråd*"
+        :icon="HomeIcon"
+        v-model="storage"
+        :items="storages"
+        required
+        :disabled="edit"
+      >
+        <template #row="item">
+          <option :key="item.row.name" :value="item.row.name">
+            {{ item.row.name }}
+          </option>
+        </template>
+      </InputSelect>
       <div class="submit justify-end">
-        <button type="submit"
-          class="flex items-center gap-2 p-2 bg-(--zaiko-main-color) text-(--zaiko-text-hc) rounded-md">
+        <button
+          type="submit"
+          class="flex items-center gap-2 p-2 bg-(--zaiko-main-color) text-(--zaiko-text-hc) rounded-md"
+        >
           <DocumentCheckIcon class="w-8 aspect-square" />
           <p>Lägg till</p>
         </button>
@@ -23,24 +42,32 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ArchiveBoxIcon, HomeIcon, DocumentCheckIcon } from '@heroicons/vue/16/solid';
-import InputText from '@/components/InputText.vue';
-import InputSelect from '@/components/InputSelect.vue';
-import { getStorageContainers } from '@/stores/storageData';
-import { type ContainerCreateRequest, type Duration, type StorageContainersGetResponse } from '@/types';
-import { CalendarDateRangeIcon } from '@heroicons/vue/24/outline';
-import { usePopupStore } from '@/stores/popup';
-import { parseISODuration, toISODuration } from '@/common';
-import InputDuration from './InputDuration.vue';
-import { createContainer } from '@/stores/containerData';
+import {
+  ArchiveBoxIcon,
+  HomeIcon,
+  DocumentCheckIcon,
+} from '@heroicons/vue/16/solid'
+import InputText from '@/components/InputText.vue'
+import InputSelect from '@/components/InputSelect.vue'
+import { getStorageContainers } from '@/stores/storageData'
+import {
+  type ContainerCreateRequest,
+  type Duration,
+  type StorageContainersGetResponse,
+} from '@/types'
+import { CalendarDateRangeIcon } from '@heroicons/vue/24/outline'
+import { usePopupStore } from '@/stores/popup'
+import { parseISODuration, toISODuration } from '@/common'
+import InputDuration from './InputDuration.vue'
+import { createContainer } from '@/stores/containerData'
 
 const props = defineProps<{
-  edit?: boolean,
-  editContainer?: ContainerCreateRequest,
+  edit?: boolean
+  editContainer?: ContainerCreateRequest
 }>()
 
-const name = ref<string>(props.editContainer?.name || "")
-const storage = ref<string>(props.editContainer?.storage || "")
+const name = ref<string>(props.editContainer?.name || '')
+const storage = ref<string>(props.editContainer?.storage || '')
 const interval = ref<Duration>({ years: 0, months: 0, days: 0 })
 if (props.editContainer?.inventory_interval) {
   interval.value = parseISODuration(props.editContainer.inventory_interval)
@@ -54,7 +81,7 @@ const Interval = (interval: Duration): string | undefined => {
 }
 
 const storages = ref<StorageContainersGetResponse>([])
-getStorageContainers().then((data) => {
+getStorageContainers().then(data => {
   storages.value = data
 })
 
@@ -64,14 +91,16 @@ const addContainer = () => {
     storage: storage.value,
     inventory_interval: Interval(interval.value),
   }
-  console.log("Creating container with payload:", payload);
-  createContainer(payload).then(() => {
-    const popupStore = usePopupStore();
-    popupStore.callCurrent(payload);
-    popupStore.pop();
-  }).catch((err) => {
-    console.error("Error creating item:", err);
-  })
+  console.log('Creating container with payload:', payload)
+  createContainer(payload)
+    .then(() => {
+      const popupStore = usePopupStore()
+      popupStore.callCurrent(payload)
+      popupStore.pop()
+    })
+    .catch(err => {
+      console.error('Error creating item:', err)
+    })
 }
 </script>
 

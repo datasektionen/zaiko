@@ -5,7 +5,15 @@
         <component :is="icon" class="buttonIcon" />
         <p>{{ name }}</p>
       </div>
-      <input v-model="model" :placeholder="placeholder || name" :required minlength=1 :maxlength="maxlength || 100" :disabled="disabled" class="disabled:opacity-50"/>
+      <input
+        v-model="model"
+        :placeholder="placeholder || name"
+        :required
+        minlength="1"
+        :maxlength="maxlength || 100"
+        :disabled="disabled"
+        class="disabled:opacity-50"
+      />
     </div>
   </div>
 </template>
@@ -14,16 +22,15 @@
 import { defineProps, type FunctionalComponent } from 'vue'
 
 const props = defineProps<{
-  name: string,
-  icon: FunctionalComponent,
-  required?: boolean,
-  placeholder?: string,
-  disabled?: boolean,
-  maxlength?: number,
+  name: string
+  icon: FunctionalComponent
+  required?: boolean
+  placeholder?: string
+  disabled?: boolean
+  maxlength?: number
 }>()
 
 const model = defineModel<string>()
-
 </script>
 
 <style scoped>

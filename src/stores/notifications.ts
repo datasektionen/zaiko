@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { Notification } from "@/types";
+import type { Notification } from '@/types'
 
 export const useNotificationsStore = defineStore('notifications', () => {
   const notifications = ref<Array<Notification>>([])
@@ -14,7 +14,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   function remove(id: number) {
-    notifications.value = notifications.value.filter((notification) => notification.id !== id)
+    notifications.value = notifications.value.filter(
+      notification => notification.id !== id,
+    )
   }
 
   return { notifications, add, pop, remove }

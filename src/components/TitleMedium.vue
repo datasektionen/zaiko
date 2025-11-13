@@ -11,9 +11,8 @@
 import { defineProps } from 'vue'
 
 defineProps<{
-  title: string,
+  title: string
 }>()
-
 </script>
 
 <style scoped>
@@ -53,5 +52,4 @@ h2 {
     padding: 0;
   }
 }
-
 </style>

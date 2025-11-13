@@ -5,8 +5,14 @@
         <component :is="icon" class="buttonIcon" />
         <p>{{ name }}</p>
       </div>
-      <select class="disabled:opacity-35" v-model="model" :placeholder="name" :required="required" :disabled="disabled">
-        <slot :row="row" v-for="(row, idx) in items" :key="idx" name="row"/>
+      <select
+        class="disabled:opacity-35"
+        v-model="model"
+        :placeholder="name"
+        :required="required"
+        :disabled="disabled"
+      >
+        <slot :row="row" v-for="(row, idx) in items" :key="idx" name="row" />
       </select>
     </div>
   </div>
@@ -16,11 +22,11 @@
 import { defineProps, type FunctionalComponent } from 'vue'
 
 const props = defineProps<{
-  name: string,
-  icon: FunctionalComponent,
-  required?: boolean,
-  disabled?: boolean,
-  items: Array<T>,
+  name: string
+  icon: FunctionalComponent
+  required?: boolean
+  disabled?: boolean
+  items: Array<T>
 }>()
 
 const model = defineModel<string | number>()

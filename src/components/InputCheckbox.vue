@@ -6,7 +6,12 @@
         <p>{{ name }}</p>
       </div>
       <div class="flex items-center">
-        <input type="checkbox" v-model="model" :required class="w-8 h-8 bg-(--zaiko-bg-2) border-2 text-(--zaiko-main-color) " />
+        <input
+          type="checkbox"
+          v-model="model"
+          :required
+          class="w-8 h-8 bg-(--zaiko-bg-2) border-2 text-(--zaiko-main-color)"
+        />
       </div>
     </div>
   </div>
@@ -16,13 +21,12 @@
 import { defineProps, type FunctionalComponent } from 'vue'
 
 const props = defineProps<{
-  name: string,
-  icon: FunctionalComponent,
-  required?: boolean,
+  name: string
+  icon: FunctionalComponent
+  required?: boolean
 }>()
 
 const model = defineModel<boolean>()
-
 </script>
 
 <style scoped>
