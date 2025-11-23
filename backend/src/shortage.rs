@@ -8,7 +8,7 @@ use crate::{
     auth::types::HivePermission,
     db::{
         self,
-        item::{DueItem, ShortageItem},
+        item::{DueStorage, ShortageItem},
     },
     error::Error,
 };
@@ -92,7 +92,7 @@ async fn get_shortage(
     responses(
         (
             status = StatusCode::OK,
-            body = Vec<DueItem>,
+            body = Vec<DueStorage>,
             description = "List of items due to be inventoried"
         ),
         (

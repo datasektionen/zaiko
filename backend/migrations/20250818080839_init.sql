@@ -29,6 +29,17 @@ CREATE TYPE shipment_listing AS (
     amout REAL
 );
 
+CREATE TYPE shortage_item AS (
+    name TEXT,
+    unit TEXT,
+    amount REAL
+);
+
+CREATE TYPE shortage_listing AS (
+    name TEXT,
+    items shortage_item[]
+);
+
 CREATE TABLE "storage" (
     name TEXT,
     protected bool NOT NULL DEFAULT FALSE,
@@ -170,3 +181,18 @@ FROM log
 JOIN storage ON storage.name = log.storage
 WHERE time < CURRENT_TIMESTAMP - interval '1 month';
 
+CREATE VIEW next_inventory AS
+SELECT
+    stored_item.item,
+    MAX(log.time) + 
+            LEAST(
+                storage.inventory_interval,
+                container.inventory_interval,
+                item.inventory_interval
+            ) as "time"
+FROM stored_item
+JOIN item ON item.name = stored_item.item
+JOIN log ON log.item = stored_item.item
+JOIN container ON container.name = stored_item.container
+JOIN storage ON storage.name = stored_item.storage
+GROUP BY stored_item.item, storage.inventory_interval, container.inventory_interval, item.inventory_interval;
