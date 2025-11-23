@@ -56,19 +56,33 @@ pub struct ShortageItem {
     unit: Option<String>,
 }
 
-/// An item due to be inventoried
-#[derive(Debug, Serialize, ToSchema)]
-pub struct DueItem {
-    /// The items name
+#[derive(Debug, Serialize, sqlx::FromRow, ToSchema, PartialEq)]
+pub struct DueStorage {
     name: String,
-    /// The name of the storage where the item is located
-    storage: String,
-    /// The name of the container where the item is stored
-    container: String,
-    /// The number of item currently in storage
-    amount: f32,
+    containers: Option<Vec<DueContainer>>,
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow, sqlx::Type, ToSchema, PartialEq)]
+#[sqlx(type_name = "shortage_listing")]
+pub struct DueContainer {
+    name: String,
+    items: Vec<DueItem>,
+}
+
+/// An item due to be inventoried
+#[derive(Debug, Serialize, sqlx::FromRow, sqlx::Type, ToSchema, PartialEq)]
+#[sqlx(type_name = "shortage_item")]
+pub struct DueItem {
+    // The items name
+    name: String,
+    // // The name of the storage where the item is located
+    // storage: String,
+    // // The name of the container where the item is stored
+    // container: String,
     /// The unit that the amount is measured in
     unit: Option<String>,
+    // The number of item currently in storage
+    amount: f32,
 }
 
 /// An item ment to be viewed in the context of a tree representation of the db
@@ -383,32 +397,30 @@ pub async fn get_shortage_count(db: &Pool<Postgres>) -> Result<Option<i64>, sqlx
 pub async fn items_due(
     db: &Pool<Postgres>,
     storages: &[String],
-) -> Result<Vec<DueItem>, sqlx::Error> {
+) -> Result<Vec<DueStorage>, sqlx::Error> {
     Ok(sqlx::query_as!(
-        DueItem,
+        DueStorage,
         r#"
-            SELECT item.name as name, storage, container, amount, unit
-            FROM stored_item
-            JOIN item ON stored_item.item = item.name
-            JOIN (
-                SELECT
-                    item.name,
-                    MAX(time) + 
-                        MIN(
-                            (SELECT
-                                LEAST(
-                                    storage.inventory_interval,
-                                    item.inventory_interval
-                                ) AS inventory_interval
+            SELECT
+                name,
+                ARRAY(
+                    SELECT
+                        (name,
+                        ARRAY(
+                            SELECT (name, unit, amount)::shortage_item
                             FROM stored_item
-                            JOIN storage ON stored_item.storage = storage.name
-                            JOIN item ON stored_item.item = item.name)
-                        ) AS "next_inventory"
-                FROM item
-                LEFT JOIN log ON log.item = item.name
-                GROUP BY item.name
-            ) data ON stored_item.item = data.name
-            WHERE data.next_inventory < CURRENT_TIMESTAMP AND item.name IN (SELECT unnest($1::text[]))
+                            JOIN item ON item.name = stored_item.item
+                            JOIN next_inventory ON next_inventory.item = stored_item.item
+                                AND next_inventory.time < CURRENT_TIMESTAMP
+                            WHERE
+                                stored_item.container = container.name
+                                AND stored_item.storage = storage.name
+                        ))::shortage_listing
+                    FROM container
+                    WHERE container.storage = storage.name
+                ) AS "containers!: Vec<DueContainer>"
+            FROM storage
+            WHERE storage.name IN (SELECT unnest($1::text[]))
         "#,
         storages
     )
@@ -874,8 +886,8 @@ mod test {
         self,
         interval::Interval,
         item::{
-            get_all_filtered_basic, BasicItem, BasicItemStorage, DetailedItem, Item, MinimalItem,
-            StorageListing, StoredItem,
+            get_all_filtered_basic, BasicItem, BasicItemStorage, DetailedItem, DueContainer,
+            DueItem, DueStorage, Item, MinimalItem, StorageListing, StoredItem,
         },
         OrderState,
     };
@@ -1651,6 +1663,125 @@ mod test {
                 max: Some(10.0),
                 amount: 14.0
             }
+        )
+    }
+
+    #[sqlx::test]
+    async fn due_items(db: Pool<Postgres>) {
+        db::storage::create(&db, "meta", false, None).await.unwrap();
+        db::storage::create(&db, "örådet", false, None)
+            .await
+            .unwrap();
+
+        super::create(
+            &db,
+            "test",
+            "meta",
+            "",
+            "tejp",
+            Some(5.0),
+            Some(10.0),
+            7.0,
+            Some("st"),
+            Some(Interval {
+                months: 0,
+                days: 7,
+                microseconds: 0,
+            }),
+        )
+        .await
+        .unwrap();
+
+        sqlx::query!(
+            r#"
+                UPDATE log
+                    SET time = CURRENT_TIMESTAMP - INTERVAL '1 month'
+                WHERE item = 'tejp' AND storage = 'meta' AND container = ''
+            "#
+        )
+        .execute(&db)
+        .await
+        .unwrap();
+
+        super::create(
+            &db,
+            "test",
+            "meta",
+            "",
+            "eltejp",
+            Some(5.0),
+            Some(10.0),
+            7.0,
+            Some("st"),
+            Some(Interval {
+                months: 0,
+                days: 7,
+                microseconds: 0,
+            }),
+        )
+        .await
+        .unwrap();
+
+        super::create(
+            &db,
+            "test",
+            "örådet",
+            "",
+            "tändvätska",
+            Some(5.0),
+            Some(10.0),
+            7.0,
+            Some("st"),
+            Some(Interval {
+                months: 0,
+                days: 7,
+                microseconds: 0,
+            }),
+        )
+        .await
+        .unwrap();
+
+        sqlx::query!(
+            r#"
+                UPDATE log
+                    SET time = CURRENT_TIMESTAMP - INTERVAL '1 month'
+                WHERE item = 'tändvätska' AND storage = 'örådet' AND container = ''
+            "#
+        )
+        .execute(&db)
+        .await
+        .unwrap();
+
+        let shortage = super::items_due(&db, &vec![String::from("meta"), String::from("örådet")])
+            .await
+            .unwrap();
+
+        assert_eq!(
+            shortage,
+            vec![
+                DueStorage {
+                    name: String::from("meta"),
+                    containers: Some(vec![DueContainer {
+                        name: String::from(""),
+                        items: vec![DueItem {
+                            name: String::from("tejp"),
+                            unit: Some(String::from("st")),
+                            amount: 7.0
+                        },]
+                    }])
+                },
+                DueStorage {
+                    name: String::from("örådet"),
+                    containers: Some(vec![DueContainer {
+                        name: String::from(""),
+                        items: vec![DueItem {
+                            name: String::from("tändvätska"),
+                            unit: Some(String::from("st")),
+                            amount: 7.0
+                        }]
+                    }])
+                }
+            ]
         )
     }
 }

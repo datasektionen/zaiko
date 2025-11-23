@@ -10,7 +10,7 @@ use crate::{
         types::{Group, HivePermission},
         CheckType,
     },
-    db::{self, supplier::Supplier},
+    db::{self, item::BasicItem, supplier::Supplier},
     error::Error,
 };
 

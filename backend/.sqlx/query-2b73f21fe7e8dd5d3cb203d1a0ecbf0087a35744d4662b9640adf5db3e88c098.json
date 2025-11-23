@@ -1,0 +1,78 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                name,\n                ARRAY(\n                    SELECT\n                        (name,\n                        ARRAY(\n                            SELECT (name, unit, amount)::shortage_item\n                            FROM stored_item\n                            JOIN item ON item.name = stored_item.item\n                            JOIN next_inventory ON next_inventory.item = stored_item.item\n                                AND next_inventory.time < CURRENT_TIMESTAMP\n                            WHERE\n                                stored_item.container = container.name\n                                AND stored_item.storage = storage.name\n                        ))::shortage_listing\n                    FROM container\n                    WHERE container.storage = storage.name\n                ) AS \"containers!: Vec<DueContainer>\"\n            FROM storage\n            WHERE storage.name IN (SELECT unnest($1::text[]))\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "containers!: Vec<DueContainer>",
+        "type_info": {
+          "Custom": {
+            "name": "shortage_listing[]",
+            "kind": {
+              "Array": {
+                "Custom": {
+                  "name": "shortage_listing",
+                  "kind": {
+                    "Composite": [
+                      [
+                        "name",
+                        "Text"
+                      ],
+                      [
+                        "items",
+                        {
+                          "Custom": {
+                            "name": "shortage_item[]",
+                            "kind": {
+                              "Array": {
+                                "Custom": {
+                                  "name": "shortage_item",
+                                  "kind": {
+                                    "Composite": [
+                                      [
+                                        "name",
+                                        "Text"
+                                      ],
+                                      [
+                                        "unit",
+                                        "Text"
+                                      ],
+                                      [
+                                        "amount",
+                                        "Float4"
+                                      ]
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "2b73f21fe7e8dd5d3cb203d1a0ecbf0087a35744d4662b9640adf5db3e88c098"
+}
