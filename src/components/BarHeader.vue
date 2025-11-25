@@ -244,6 +244,9 @@
             }}
           </h1>
         </div>
+        <button @click="toggleTheme" class="ml-auto">
+          <component :is="themeIcon" class="icon w-4 h-4" />
+        </button>
       </div>
       <div class="mainContent">
         <slot />
@@ -270,6 +273,8 @@ import NotificationList from '@/components/NotificationList.vue'
 import { useMediaQuery } from '@vueuse/core'
 import PopupModal from './PopupModal.vue'
 import { usePermsStore } from '@/stores/permissions'
+import { useThemeStore } from '@/stores/theme'
+import { SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
 
 const isMobile = useMediaQuery('(max-width: 768px)')
 const isSmallScreen = useMediaQuery('(max-width: 1250px)')
@@ -284,6 +289,17 @@ const barSidePanel = computed<string>(() => {
 
 const Main = computed<string>(() => {
   return barOpen.value ? 'Main' : 'Main MainClosed'
+})
+
+const themeStore = useThemeStore()
+themeStore.loadTheme()
+
+const toggleTheme = () => {
+  themeStore.toggleTheme()
+}
+
+const themeIcon = computed(() => {
+  return themeStore.getTheme() === 'light' ? MoonIcon : SunIcon
 })
 
 const isMobileClose = () => {
