@@ -5,7 +5,6 @@ import type {
   StorageCreateRequest,
   StorageDeleteRequest,
   StorageEditRequest,
-  StorageTreeGetResponse,
   StorageTreeRequest,
   StorageContainersTreeGetResponse,
 } from '@/types'

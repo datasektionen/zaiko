@@ -378,21 +378,21 @@ export interface components {
             /** @description The unit every amount is counted in */
             unit: string;
         };
+        DueContainer: {
+            items: components["schemas"]["DueItem"][];
+            name: string;
+        };
         /** @description An item due to be inventoried */
         DueItem: {
-            /**
-             * Format: float
-             * @description The number of item currently in storage
-             */
+            /** Format: float */
             amount: number;
-            /** @description The name of the container where the item is stored */
-            container: string;
-            /** @description The items name */
             name: string;
-            /** @description The name of the storage where the item is located */
-            storage: string;
             /** @description The unit that the amount is measured in */
             unit?: string | null;
+        };
+        DueStorage: {
+            containers?: components["schemas"]["DueContainer"][] | null;
+            name: string;
         };
         Group: string;
         HivePermission: {
@@ -931,7 +931,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DueItem"][];
+                    "application/json": components["schemas"]["DueStorage"][];
                 };
             };
             /** @description Bad Request */
