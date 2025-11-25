@@ -21,7 +21,10 @@
           :key="rowIndex"
           v-if="rows && node"
         >
-          <tr class="p-2 border-b border-(--zaiko-bg-2)">
+          <tr
+            class="p-2 border-b border-(--zaiko-bg-2)"
+            v-if="(Object.values(row)[0] as string) !== ''"
+          >
             <td
               class="p-1 w-14 cursor-pointer flex items-center"
               @click="toggleOpen(rowIndex)"
@@ -34,11 +37,11 @@
           <tr
             v-for="(child, childIndex) in Object.values(row)[1]"
             :key="childIndex"
-            v-if="expanded.has(rowIndex)"
+            v-if="expanded.has(rowIndex) || Object.values(row)[0] === ''"
             class="p-2 border-b border-(--zaiko-bg-2)"
           >
             <td class="w-12"></td>
-            <slot :row="child as N" name="row" />
+            <slot :row="child as N" name="row" :container="row" />
           </tr>
         </template>
       </tbody>
@@ -56,7 +59,7 @@
   "
 >
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
-import { defineProps, defineEmits, ref, computed, watch } from 'vue'
+import { defineProps, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = defineProps<{
@@ -82,10 +85,6 @@ watch(
     })
   },
 )
-
-const emit = defineEmits<{
-  (e: 'select', selected: T): void
-}>()
 
 const expanded = ref<Set<number>>(new Set())
 

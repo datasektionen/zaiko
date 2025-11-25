@@ -54,6 +54,11 @@ export type LogQueryParams = operations['get_log']['parameters']['query']
 
 export type ShortageGetResponse =
   operations['get_shortage']['responses']['200']['content']['application/json']
+export type StockTreeGetResponse =
+  operations['items_due']['responses']['200']['content']['application/json']
+export type StockUpdateRequest =
+  operations['take_stock']['requestBody']['content']['application/json']
+export type StockUpdateItem = components['schemas']['StockUpdate']
 
 export type SupplierGetResponse =
   operations['get_suppliers']['responses']['200']['content']['application/json']

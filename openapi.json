@@ -171,7 +171,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/DueItem"
+                    "$ref": "#/components/schemas/DueStorage"
                   }
                 }
               }
@@ -1371,32 +1371,38 @@
           }
         }
       },
+      "DueContainer": {
+        "type": "object",
+        "required": [
+          "name",
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DueItem"
+            }
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "DueItem": {
         "type": "object",
         "description": "An item due to be inventoried",
         "required": [
           "name",
-          "storage",
-          "container",
           "amount"
         ],
         "properties": {
           "amount": {
             "type": "number",
-            "format": "float",
-            "description": "The number of item currently in storage"
-          },
-          "container": {
-            "type": "string",
-            "description": "The name of the container where the item is stored"
+            "format": "float"
           },
           "name": {
-            "type": "string",
-            "description": "The items name"
-          },
-          "storage": {
-            "type": "string",
-            "description": "The name of the storage where the item is located"
+            "type": "string"
           },
           "unit": {
             "type": [
@@ -1404,6 +1410,26 @@
               "null"
             ],
             "description": "The unit that the amount is measured in"
+          }
+        }
+      },
+      "DueStorage": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "containers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DueContainer"
+            }
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
