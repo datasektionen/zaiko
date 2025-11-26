@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                id,\n                time_created,\n                time_arive,\n                ARRAY(\n                    SELECT (\n                        shipment_item.item,\n                        shipment_item.amount\n                    )::shipment_listing\n                    FROM shipment_item\n                    WHERE shipment.id = shipment_item.shipment\n                ) as \"items: Vec<ShipmentItem>\"\n            FROM shipment\n        ",
+  "query": "\n            SELECT\n                id,\n                time_created,\n                time_arive,\n                ARRAY(\n                    SELECT (\n                        shipment_item.item,\n                        shipment_item.amount\n                    )::shipment_listing\n                    FROM shipment_item\n                    WHERE shipment.id = shipment_item.shipment\n                ) as \"items!: Vec<ShipmentItem>\"\n            FROM shipment\n            WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -20,7 +20,7 @@
       },
       {
         "ordinal": 3,
-        "name": "items: Vec<ShipmentItem>",
+        "name": "items!: Vec<ShipmentItem>",
         "type_info": {
           "Custom": {
             "name": "shipment_listing[]",
@@ -48,7 +48,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid"
+      ]
     },
     "nullable": [
       false,
@@ -57,5 +59,5 @@
       null
     ]
   },
-  "hash": "1c59cf86f04a4a615fc6bfd26bb3da83c86501af932380857980d8c27f756557"
+  "hash": "427c73e88cbfaa47c4d1827b492241f35d6328e4bd15901d1ef0ab39c56a7524"
 }

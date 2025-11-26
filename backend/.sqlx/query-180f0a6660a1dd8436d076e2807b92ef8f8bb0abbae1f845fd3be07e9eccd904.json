@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                item.name,\n                stored_item.amount,\n                item.unit,\n                current_state.state as \"state!: OrderState\",\n                next_inventory.time as \"next_inventory\"\n            FROM stored_item\n            JOIN item ON item.name = stored_item.item\n            JOIN next_inventory ON next_inventory.item = stored_item.item\n            JOIN current_state ON current_state.item = stored_item.item\n            WHERE stored_item.storage = $1 AND stored_item.container = $2\n            GROUP BY item.name, stored_item.amount, current_state.state, next_inventory.time\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "amount",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 2,
+        "name": "unit",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "state!: OrderState",
+        "type_info": {
+          "Custom": {
+            "name": "state",
+            "kind": {
+              "Enum": [
+                "none",
+                "good",
+                "warning",
+                "critical",
+                "incoming"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "next_inventory",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "180f0a6660a1dd8436d076e2807b92ef8f8bb0abbae1f845fd3be07e9eccd904"
+}

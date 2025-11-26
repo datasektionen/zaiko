@@ -26,7 +26,7 @@ pub struct Shipment {
     pub id: Uuid,
     pub time_created: DateTime<Utc>,
     pub time_arive: DateTime<Utc>,
-    pub items: Option<Vec<ShipmentItem>>,
+    pub items: Vec<ShipmentItem>,
 }
 
 #[derive(Debug, sqlx::Type, Serialize, Deserialize, ToSchema)]
@@ -51,7 +51,7 @@ pub async fn get_all_orders(db: &Pool<Postgres>) -> Result<Vec<Shipment>, sqlx::
                     )::shipment_listing
                     FROM shipment_item
                     WHERE shipment.id = shipment_item.shipment
-                ) as "items: Vec<ShipmentItem>"
+                ) as "items!: Vec<ShipmentItem>"
             FROM shipment
         "#
     )
@@ -74,7 +74,7 @@ pub async fn get_order_by_id(db: &Pool<Postgres>, id: Uuid) -> Result<Shipment, 
                     )::shipment_listing
                     FROM shipment_item
                     WHERE shipment.id = shipment_item.shipment
-                ) as "items: Vec<ShipmentItem>"
+                ) as "items!: Vec<ShipmentItem>"
             FROM shipment
             WHERE id = $1
         "#,

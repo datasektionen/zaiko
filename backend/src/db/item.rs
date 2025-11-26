@@ -51,15 +51,15 @@ pub struct ShortageItem {
     /// The number of item currently in storage
     amount: f32,
     /// The number of items to buy to reach the order ceiling
-    amount_to_buy: Option<f32>,
+    amount_to_buy: f32,
     /// The unit that the amount is measured in
-    unit: Option<String>,
+    unit: String,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow, ToSchema, PartialEq)]
 pub struct DueStorage {
     name: String,
-    containers: Option<Vec<DueContainer>>,
+    containers: Vec<DueContainer>,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow, sqlx::Type, ToSchema, PartialEq)]
@@ -75,12 +75,8 @@ pub struct DueContainer {
 pub struct DueItem {
     // The items name
     name: String,
-    // // The name of the storage where the item is located
-    // storage: String,
-    // // The name of the container where the item is stored
-    // container: String,
     /// The unit that the amount is measured in
-    unit: Option<String>,
+    unit: String,
     // The number of item currently in storage
     amount: f32,
 }
@@ -95,7 +91,7 @@ pub struct MinimalItem {
     /// The unit current is counted in
     pub unit: String,
     /// The current state of the item (good/need to order/etc)
-    pub state: Option<OrderState>,
+    pub state: OrderState,
     /// The next date when the item needs to be inventoried
     pub next_inventory: Option<DateTime<Utc>>,
 }
@@ -106,11 +102,11 @@ pub struct BasicItem {
     /// The items name
     pub name: String,
     /// The current total amount of the item accros all storages
-    pub amount: Option<f32>,
+    pub amount: f32,
     /// The unit the amount is counted in
     pub unit: String,
     /// List of storage locations containing the item with basic info
-    pub storage: Option<Vec<BasicItemStorage>>,
+    pub storage: Vec<BasicItemStorage>,
 }
 
 /// Basic info about where an item is stored
@@ -130,16 +126,14 @@ pub struct BasicItemStorage {
 pub struct DetailedItem {
     /// The items name
     pub name: String,
-    /// The avrage weekly consumption over the last mounth
-    pub avrage_consuption: Option<f32>,
     /// The maximum inventory interval of the item
     pub inventory_interval: Option<Interval>,
     /// The unit every amount is counted in
     pub unit: String,
     /// The storages that this item type is stored in
-    pub storage: Option<Vec<StorageListing>>,
+    pub storage: Vec<StorageListing>,
     /// The suppliers that the item is bought from
-    pub supplier: Option<Vec<SupplierListing>>,
+    pub supplier: Vec<SupplierListing>,
 }
 
 /// Detailed information about where an item is stored
@@ -190,7 +184,13 @@ pub async fn get_location(db: &Pool<Postgres>, item: &str) -> Result<Vec<Locatio
         r#"
             SELECT storage, container
             FROM stored_item
-            WHERE item = $1
+            JOIN storage ON stored_item.storage = storage.name
+            WHERE
+                item = $1 AND
+                (
+                    storage.protected <> true OR
+                    LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))
+                )
         "#,
         item
     )
@@ -210,34 +210,20 @@ pub async fn get_all_in_storage_grouped_by_container_minimal(
                 item.name,
                 stored_item.amount,
                 item.unit,
-                STATE(
-                    stored_item.amount,
-                    stored_item.min,
-                    stored_item.max,
-                    EXISTS(
-                        SELECT 1
-                        FROM shipment_item
-                        WHERE shipment_item.item = item.name
-                    )
-                ) as "state: OrderState",
-                MAX(log.time) + 
-                        LEAST(
-                            storage.inventory_interval,
-                            container.inventory_interval,
-                            item.inventory_interval
-                        ) as "next_inventory"
+                current_state.state as "state!: OrderState",
+                next_inventory.time as "next_inventory"
             FROM stored_item
             JOIN item ON item.name = stored_item.item
-            JOIN log ON log.item = stored_item.item
-            JOIN container ON container.name = stored_item.container
-            JOIN storage ON storage.name = stored_item.storage
-            LEFT JOIN shipment_item ON shipment_item.item = stored_item.item
+            JOIN next_inventory ON next_inventory.item = stored_item.item
+            JOIN current_state ON current_state.item = stored_item.item
             WHERE stored_item.storage = $1 AND stored_item.container = $2
-            GROUP BY item.name, stored_item.amount, stored_item.min, stored_item.max, storage.inventory_interval, container.inventory_interval
+            GROUP BY item.name, stored_item.amount, current_state.state, next_inventory.time
         "#,
         storage,
         container
-    ).fetch_all(db).await
+    )
+    .fetch_all(db)
+    .await
 }
 
 pub async fn get_all_filtered_basic(
@@ -248,32 +234,32 @@ pub async fn get_all_filtered_basic(
     supplier: Option<&str>,
     min: Option<f32>,
     max: Option<f32>,
+    permitted_storages: &[String],
 ) -> Result<Vec<BasicItem>, sqlx::Error> {
+    // DISTINCT feals like a shortcut but works
     sqlx::query_as!(
         BasicItem,
         r#"
             SELECT
                 item.name,
-                SUM(stored_item.amount) as "amount",
+                SUM(stored_item.amount) as "amount!",
                 item.unit,
                 ARRAY(
-                    SELECT (
+                    SELECT DISTINCT (
                         stored_item.storage,
                         stored_item.container,
-                        STATE(
-                            stored_item.amount,
-                            stored_item.min,
-                            stored_item.max,
-                            EXISTS(
-                                SELECT 1
-                                FROM shipment_item
-                                WHERE shipment_item.item = item.name
-                            )
-                        ))::storage_listing_basic
+                        current_state.state
+                    )::storage_listing_basic
                     FROM stored_item
+                    JOIN current_state ON current_state.item = stored_item.item
                     JOIN storage ON stored_item.storage = storage.name
-                    WHERE stored_item.item = item.name AND storage.protected <> true
-                ) AS "storage: Vec<BasicItemStorage>"
+                    WHERE
+                        stored_item.item = item.name AND
+                        (
+                            storage.protected <> true OR
+                            LOWER(stored_item.storage) IN (SELECT UNNEST($7::TEXT[]))
+                        )
+                ) AS "storage!: Vec<BasicItemStorage>"
             FROM item
             JOIN stored_item ON stored_item.item = item.name
             LEFT JOIN supplier_item ON supplier_item.item = item.name
@@ -291,7 +277,8 @@ pub async fn get_all_filtered_basic(
         container,
         supplier,
         min,
-        max
+        max,
+        permitted_storages
     )
     .fetch_all(db)
     .await
@@ -300,47 +287,41 @@ pub async fn get_all_filtered_basic(
 pub async fn get_item_by_name_detailed(
     db: &Pool<Postgres>,
     name: &str,
+    permitted_storages: &[String],
 ) -> Result<DetailedItem, sqlx::Error> {
+    // DISTINCT feals like a shortcut but works
     sqlx::query_as!(
         DetailedItem,
         r#"
             SELECT
                 item.name,
-                SUM(avrage_consuption.change) AS "avrage_consuption",
                 item.unit,
                 item.inventory_interval as "inventory_interval: Interval",
                 ARRAY(
-                    SELECT
-                        (
-                            stored_item.storage,
-                            stored_item.container,
-                            stored_item.amount,
-                            stored_item.min,
-                            stored_item.max,
-                            STATE(
-                                stored_item.amount,
-                                stored_item.min,
-                                stored_item.max,
-                                EXISTS(
-                                    SELECT 1
-                                    FROM shipment_item
-                                    WHERE shipment_item.item = stored_item.item
-                                )
-                            ),
-                            MAX(log.time) + 
-                                    LEAST(
-                                        storage.inventory_interval,
-                                        item.inventory_interval
-                                    )
-                        )::storage_listing
+                    SELECT DISTINCT (
+                        stored_item.storage,
+                        stored_item.container,
+                        stored_item.amount,
+                        stored_item.min,
+                        stored_item.max,
+                        current_state.state,
+                        next_inventory.time
+                    )::storage_listing
                     FROM stored_item
                     JOIN storage ON stored_item.storage = storage.name
-                    LEFT JOIN log ON stored_item.item = log.item
-                        AND stored_item.storage = log.storage
-                        AND stored_item.container = log.container
-                    WHERE stored_item.item = $1 AND storage.protected <> true
-                    GROUP BY stored_item.item, stored_item.storage, stored_item.container, storage.inventory_interval
-                ) AS "storage: Vec<StorageListing>",
+                    LEFT JOIN next_inventory ON 
+                        next_inventory.item = stored_item.item AND
+                        next_inventory.storage = stored_item.storage AND
+                        next_inventory.container = stored_item.container
+                    JOIN current_state ON current_state.item = stored_item.item
+                    WHERE
+                        stored_item.item = $1 AND
+                        (
+                            storage.protected <> true OR
+                            LOWER(storage.name) In (SELECT UNNEST($2::TEXT[]))
+                        )
+                    GROUP BY stored_item.item, stored_item.storage, stored_item.container, current_state.state, next_inventory.time
+                ) AS "storage!: Vec<StorageListing>",
                 ARRAY(
                     SELECT (
                         supplier,
@@ -349,14 +330,13 @@ pub async fn get_item_by_name_detailed(
                     )::supplier_listing
                     FROM supplier_item
                     WHERE item = $1
-                ) AS "supplier: Vec<SupplierListing>"
+                ) AS "supplier!: Vec<SupplierListing>"
             FROM item
-            LEFT JOIN log ON item.name = log.item
-            LEFT JOIN avrage_consuption ON avrage_consuption.item = item.name
             WHERE item.name = $1
             GROUP BY item.name
         "#,
         name,
+        permitted_storages
     )
     .fetch_one(db)
     .await
@@ -364,18 +344,29 @@ pub async fn get_item_by_name_detailed(
 
 pub async fn get_shortage(
     db: &Pool<Postgres>,
-    protected: &[String],
+    permitted_storages: &[String],
 ) -> Result<Vec<ShortageItem>, sqlx::Error> {
     sqlx::query_as!(
         ShortageItem,
         r#"
-            SELECT item.name as name, storage, container, amount, (max - amount) AS "amount_to_buy", unit
+            SELECT
+                item.name,
+                storage,
+                container,
+                amount,
+                (max - amount) AS "amount_to_buy!",
+                unit
             FROM stored_item
             JOIN storage ON storage.name = stored_item.storage
             JOIN item ON stored_item.item = item.name
-            WHERE (protected <> true OR storage.name IN (SELECT unnest($1::text[]))) AND amount <= min
+            WHERE
+                amount <= min AND
+                (
+                    protected <> true OR
+                    LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))
+                )
         "#,
-        protected
+        permitted_storages
     )
     .fetch_all(db)
     .await
@@ -405,22 +396,27 @@ pub async fn items_due(
                 name,
                 ARRAY(
                     SELECT
-                        (name,
-                        ARRAY(
-                            SELECT (name, unit, amount)::shortage_item
-                            FROM stored_item
-                            JOIN item ON item.name = stored_item.item
-                            JOIN next_inventory ON next_inventory.item = stored_item.item
-                                AND next_inventory.time < CURRENT_TIMESTAMP
-                            WHERE
-                                stored_item.container = container.name
-                                AND stored_item.storage = storage.name
-                        ))::shortage_listing
+                        (
+                            name,
+                            ARRAY(
+                                SELECT (name, unit, amount)::shortage_item
+                                FROM stored_item
+                                JOIN item ON item.name = stored_item.item
+                                JOIN next_inventory ON
+                                    next_inventory.item = stored_item.item AND
+                                    next_inventory.storage = stored_item.storage AND
+                                    next_inventory.container = stored_item.container AND
+                                    next_inventory.time < CURRENT_TIMESTAMP
+                                WHERE
+                                    stored_item.container = container.name
+                                    AND stored_item.storage = storage.name
+                            )
+                        )::shortage_listing
                     FROM container
                     WHERE container.storage = storage.name
                 ) AS "containers!: Vec<DueContainer>"
             FROM storage
-            WHERE storage.name IN (SELECT unnest($1::text[]))
+            WHERE LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))
         "#,
         storages
     )
@@ -522,9 +518,9 @@ pub async fn add_supplier(
 ) -> Result<PgQueryResult, sqlx::Error> {
     sqlx::query!(
         r#"
-                INSERT INTO supplier_item (supplier, item, link, prefered)
-                VALUES ($1, $2, $3, $4)
-            "#,
+            INSERT INTO supplier_item (supplier, item, link, prefered)
+            VALUES ($1, $2, $3, $4)
+        "#,
         supplier,
         item,
         link,
@@ -583,7 +579,10 @@ pub async fn change_stored_item(
         r#"
             SELECT amount
             FROM stored_item
-            WHERE item = $1 AND storage = $2 AND container = $3
+            WHERE
+                item = $1 AND
+                storage = $2 AND
+                container = $3
         "#,
         name,
         storage,
@@ -613,7 +612,10 @@ pub async fn change_stored_item(
                 amount = $3,
                 min = $4,
                 max = $5
-            WHERE item = $6 AND storage = $7 AND container = $8
+            WHERE
+                item = $6 AND
+                storage = $7 AND
+                container = $8
         "#,
         new_storage,
         new_container,
@@ -665,7 +667,10 @@ pub async fn move_item(
         r#"
             SELECT amount
             FROM stored_item
-            WHERE item = $1 AND storage = $2 AND container = $3
+            WHERE
+                item = $1 AND
+                storage = $2 AND
+                container = $3
         "#,
         item,
         from_storage,
@@ -698,7 +703,10 @@ pub async fn move_item(
                     amount + (
                         SELECT amount
                         FROM stored_item
-                        WHERE item = $1 AND storage = $2 AND container = $3
+                        WHERE
+                            item = $1 AND
+                            storage = $2 AND
+                            container = $3
                     )
                 WHERE
                     item = $1 AND
@@ -717,7 +725,10 @@ pub async fn move_item(
         sqlx::query!(
             r#"
                 DELETE FROM stored_item
-                WHERE item = $1 AND storage = $2 AND container = $3
+                WHERE
+                    item = $1 AND
+                    storage = $2 AND
+                    container = $3
             "#,
             item,
             from_storage,
@@ -729,7 +740,9 @@ pub async fn move_item(
         let result = sqlx::query!(
             r#"
                 UPDATE stored_item
-                SET storage = $1, container = $2
+                SET
+                    storage = $1, 
+                    container = $2
                 WHERE
                     item = $3 AND
                     storage = $4 AND
@@ -786,7 +799,10 @@ pub async fn update_amount_in_transaction(
         r#"
             UPDATE stored_item
             SET amount = $1 
-            WHERE item = $2 AND storage = $3 AND container = $4
+            WHERE
+                item = $2 AND
+                storage = $3 AND
+                container = $4
         "#,
         amount,
         item,
@@ -825,7 +841,9 @@ pub async fn delete_supplier(
     sqlx::query!(
         r#"
             DELETE FROM supplier_item
-            WHERE item = $1 AND supplier = $2
+            WHERE
+                item = $1 AND
+                supplier = $2
         "#,
         item,
         supplier
@@ -843,7 +861,10 @@ pub async fn delete(
     let result = sqlx::query!(
         r#"
             DELETE FROM stored_item
-            WHERE item = $1 AND storage = $2 AND container = $3
+            WHERE
+                item = $1 AND
+                storage = $2 AND
+                container = $3
         "#,
         item,
         storage,
@@ -921,7 +942,7 @@ mod test {
                 name: String::from("tejp"),
                 amount: 5.0,
                 unit: String::from("st"),
-                state: Some(OrderState::None),
+                state: OrderState::None,
                 next_inventory: None
             }]
         )
@@ -946,21 +967,30 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_all_filtered_basic(&db, None, None, None, None, None, None)
-            .await
-            .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("tejp"),
-                amount: Some(7.0),
+                amount: 7.0,
                 unit: String::from("st"),
-                storage: Some(vec![BasicItemStorage {
+                storage: vec![BasicItemStorage {
                     storage: String::from("meta"),
                     container: String::new(),
                     state: OrderState::Good
-                }])
+                }]
             }]
         )
     }
@@ -984,28 +1014,45 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_all_filtered_basic(&db, Some("tejp"), None, None, None, None, None)
-            .await
-            .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            Some("tejp"),
+            None,
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("tejp"),
-                amount: Some(7.0),
+                amount: 7.0,
                 unit: String::from("st"),
-                storage: Some(vec![BasicItemStorage {
+                storage: vec![BasicItemStorage {
                     storage: String::from("meta"),
                     container: String::from(""),
                     state: OrderState::Good,
-                }])
+                }]
             }]
         );
 
-        let item =
-            super::get_all_filtered_basic(&db, Some("hammare"), None, None, None, None, None)
-                .await
-                .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            Some("hammare"),
+            None,
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(item, vec![]);
     }
@@ -1029,27 +1076,45 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_all_filtered_basic(&db, None, Some("meta"), None, None, None, None)
-            .await
-            .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            None,
+            Some("meta"),
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("tejp"),
-                amount: Some(7.0),
+                amount: 7.0,
                 unit: String::from("st"),
-                storage: Some(vec![BasicItemStorage {
+                storage: vec![BasicItemStorage {
                     storage: String::from("meta"),
                     container: String::from(""),
                     state: OrderState::Good,
-                }])
+                }]
             }]
         );
 
-        let item = super::get_all_filtered_basic(&db, None, Some("örådet"), None, None, None, None)
-            .await
-            .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            None,
+            Some("örådet"),
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(item, vec![]);
     }
@@ -1073,28 +1138,45 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_all_filtered_basic(&db, None, None, Some(""), None, None, None)
-            .await
-            .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            None,
+            None,
+            Some(""),
+            None,
+            None,
+            None,
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("tejp"),
-                amount: Some(7.0),
+                amount: 7.0,
                 unit: String::from("st"),
-                storage: Some(vec![BasicItemStorage {
+                storage: vec![BasicItemStorage {
                     storage: String::from("meta"),
                     container: String::from(""),
                     state: OrderState::Good,
-                }])
+                }]
             }]
         );
 
-        let item =
-            super::get_all_filtered_basic(&db, None, None, Some("snickarlåda"), None, None, None)
-                .await
-                .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            None,
+            None,
+            Some("snickarlåda"),
+            None,
+            None,
+            None,
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(item, vec![]);
     }
@@ -1118,28 +1200,45 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_all_filtered_basic(&db, None, None, None, None, Some(6.0), Some(8.0))
-            .await
-            .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            None,
+            None,
+            None,
+            None,
+            Some(6.0),
+            Some(8.0),
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("tejp"),
-                amount: Some(7.0),
+                amount: 7.0,
                 unit: String::from("st"),
-                storage: Some(vec![BasicItemStorage {
+                storage: vec![BasicItemStorage {
                     storage: String::from("meta"),
                     container: String::from(""),
                     state: OrderState::Good,
-                }])
+                }]
             }]
         );
 
-        let item =
-            super::get_all_filtered_basic(&db, None, None, None, None, Some(8.0), Some(11.0))
-                .await
-                .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            None,
+            None,
+            None,
+            None,
+            Some(8.0),
+            Some(11.0),
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(item, vec![]);
     }
@@ -1181,17 +1280,26 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_all_filtered_basic(&db, None, None, None, None, None, None)
-            .await
-            .unwrap();
+        let item = super::get_all_filtered_basic(
+            &db,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta"), String::from("örådet")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("tejp"),
-                amount: Some(14.0),
+                amount: 14.0,
                 unit: String::from("st"),
-                storage: Some(vec![
+                storage: vec![
                     BasicItemStorage {
                         storage: String::from("meta"),
                         container: String::new(),
@@ -1202,7 +1310,7 @@ mod test {
                         container: String::new(),
                         state: OrderState::Good
                     }
-                ])
+                ]
             }]
         )
     }
@@ -1226,16 +1334,17 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_item_by_name_detailed(&db, "tejp").await.unwrap();
+        let item = super::get_item_by_name_detailed(&db, "tejp", &vec![String::from("meta")])
+            .await
+            .unwrap();
 
         assert_eq!(
             item,
             DetailedItem {
                 name: String::from("tejp"),
-                avrage_consuption: None,
                 unit: String::from("st"),
                 inventory_interval: None,
-                storage: Some(vec![StorageListing {
+                storage: vec![StorageListing {
                     storage: String::from("meta"),
                     container: String::from(""),
                     amount: 7.0,
@@ -1243,8 +1352,8 @@ mod test {
                     max: Some(10.0),
                     state: OrderState::Good,
                     next_inventory: None
-                }]),
-                supplier: Some(vec![])
+                }],
+                supplier: vec![]
             }
         )
     }
@@ -1286,16 +1395,21 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_item_by_name_detailed(&db, "tejp").await.unwrap();
+        let item = super::get_item_by_name_detailed(
+            &db,
+            "tejp",
+            &vec![String::from("meta"), String::from("örådet")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             DetailedItem {
                 name: String::from("tejp"),
-                avrage_consuption: None,
                 unit: String::from("st"),
                 inventory_interval: None,
-                storage: Some(vec![
+                storage: vec![
                     StorageListing {
                         storage: String::from("meta"),
                         container: String::from(""),
@@ -1314,8 +1428,8 @@ mod test {
                         state: OrderState::Good,
                         next_inventory: None,
                     }
-                ]),
-                supplier: Some(vec![])
+                ],
+                supplier: vec![]
             }
         )
     }
@@ -1406,21 +1520,30 @@ mod test {
             .await
             .unwrap();
 
-        let item = get_all_filtered_basic(&db, Some("silvertejp"), None, None, None, None, None)
-            .await
-            .unwrap();
+        let item = get_all_filtered_basic(
+            &db,
+            Some("silvertejp"),
+            None,
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("silvertejp"),
-                amount: Some(7.0),
+                amount: 7.0,
                 unit: String::from("rullar"),
-                storage: Some(vec![BasicItemStorage {
+                storage: vec![BasicItemStorage {
                     storage: String::from("meta"),
                     container: String::from(""),
                     state: OrderState::Good
-                }])
+                }]
             }]
         )
     }
@@ -1463,16 +1586,17 @@ mod test {
         .await
         .unwrap();
 
-        let item = super::get_item_by_name_detailed(&db, "tejp").await.unwrap();
+        let item = super::get_item_by_name_detailed(&db, "tejp", &vec![String::from("meta")])
+            .await
+            .unwrap();
 
         assert_eq!(
             item,
             DetailedItem {
                 name: String::from("tejp"),
-                avrage_consuption: None,
                 unit: String::from("st"),
                 inventory_interval: None,
-                storage: Some(vec![StorageListing {
+                storage: vec![StorageListing {
                     storage: String::from("meta"),
                     container: String::from("tejplåda"),
                     amount: 8.0,
@@ -1480,8 +1604,8 @@ mod test {
                     max: Some(11.0),
                     state: OrderState::Good,
                     next_inventory: None
-                }]),
-                supplier: Some(vec![])
+                }],
+                supplier: vec![]
             }
         )
     }
@@ -1761,25 +1885,25 @@ mod test {
             vec![
                 DueStorage {
                     name: String::from("meta"),
-                    containers: Some(vec![DueContainer {
+                    containers: vec![DueContainer {
                         name: String::from(""),
                         items: vec![DueItem {
                             name: String::from("tejp"),
-                            unit: Some(String::from("st")),
+                            unit: String::from("st"),
                             amount: 7.0
                         },]
-                    }])
+                    }]
                 },
                 DueStorage {
                     name: String::from("örådet"),
-                    containers: Some(vec![DueContainer {
+                    containers: vec![DueContainer {
                         name: String::from(""),
                         items: vec![DueItem {
                             name: String::from("tändvätska"),
-                            unit: Some(String::from("st")),
+                            unit: String::from("st"),
                             amount: 7.0
                         }]
-                    }])
+                    }]
                 }
             ]
         )

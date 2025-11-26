@@ -184,6 +184,8 @@ WHERE time < CURRENT_TIMESTAMP - interval '1 month';
 CREATE VIEW next_inventory AS
 SELECT
     stored_item.item,
+    stored_item.storage,
+    stored_item.container,
     MAX(log.time) + 
             LEAST(
                 storage.inventory_interval,
@@ -195,4 +197,25 @@ JOIN item ON item.name = stored_item.item
 JOIN log ON log.item = stored_item.item
 JOIN container ON container.name = stored_item.container
 JOIN storage ON storage.name = stored_item.storage
-GROUP BY stored_item.item, storage.inventory_interval, container.inventory_interval, item.inventory_interval;
+GROUP BY 
+    stored_item.item, 
+    stored_item.storage, 
+    stored_item.container, 
+    storage.inventory_interval, 
+    container.inventory_interval, 
+    item.inventory_interval;
+
+CREATE VIEW current_state AS
+SELECT
+    stored_item.item,
+    STATE(
+        stored_item.amount,
+        stored_item.min,
+        stored_item.max,
+        EXISTS(
+            SELECT 1
+            FROM shipment_item
+            WHERE shipment_item.item = stored_item.item
+        )
+    ) as "state"
+FROM stored_item;

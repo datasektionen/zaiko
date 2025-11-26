@@ -5,7 +5,7 @@ use utoipa::{IntoParams, ToSchema};
 use utoipa_actix_web::service_config::ServiceConfig;
 
 use crate::{
-    auth::types::HivePermission,
+    auth::{get_permitted_storages, types::HivePermission},
     db::{
         self,
         item::{DueStorage, ShortageItem},
@@ -30,13 +30,6 @@ struct StockUpdate {
     container: String,
     /// The number of items currently in storage
     amount: f32,
-}
-
-/// Info used to filter items due to inventory
-#[derive(Debug, Deserialize, IntoParams)]
-struct DueQuery {
-    /// The name of the storage to check
-    storage: Option<String>,
 }
 
 pub fn config() -> impl FnOnce(&mut ServiceConfig) {
@@ -88,7 +81,6 @@ async fn get_shortage(
 
 #[utoipa::path(
     tag = "inventory",
-    params(DueQuery),
     responses(
         (
             status = StatusCode::OK,
@@ -108,28 +100,11 @@ async fn get_shortage(
 #[get("/inventory")]
 async fn items_due(
     db: web::Data<Pool<Postgres>>,
-    query: web::Query<DueQuery>,
     permissions: web::ReqData<Vec<HivePermission>>,
 ) -> Result<HttpResponse, Error> {
-    let storages: Vec<String> = if let DueQuery {
-        storage: Some(storage),
-    } = query.0
-    {
-        vec![storage]
-    } else {
-        permissions
-            .iter()
-            .filter_map(|perm| {
-                if perm.id == "write" {
-                    perm.scope.clone()
-                } else {
-                    None
-                }
-            })
-            .collect()
-    };
+    let permitted_storages = get_permitted_storages(&db, &permissions).await?;
 
-    let items = db::item::items_due(&db, &storages).await?;
+    let items = db::item::items_due(&db, &permitted_storages).await?;
 
     Ok(HttpResponse::Ok().json(items))
 }

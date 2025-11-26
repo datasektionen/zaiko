@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT item.name as name, storage, container, amount, (max - amount) AS \"amount_to_buy\", unit\n            FROM stored_item\n            JOIN storage ON storage.name = stored_item.storage\n            JOIN item ON stored_item.item = item.name\n            WHERE (protected <> true OR storage.name IN (SELECT unnest($1::text[]))) AND amount <= min\n        ",
+  "query": "\n            SELECT\n                item.name,\n                storage,\n                container,\n                amount,\n                (max - amount) AS \"amount_to_buy!\",\n                unit\n            FROM stored_item\n            JOIN storage ON storage.name = stored_item.storage\n            JOIN item ON stored_item.item = item.name\n            WHERE\n                amount <= min AND\n                (\n                    protected <> true OR\n                    LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))\n                )\n        ",
   "describe": {
     "columns": [
       {
@@ -25,7 +25,7 @@
       },
       {
         "ordinal": 4,
-        "name": "amount_to_buy",
+        "name": "amount_to_buy!",
         "type_info": "Float4"
       },
       {
@@ -48,5 +48,5 @@
       false
     ]
   },
-  "hash": "f372568fe824762f59d672960c9a66bbfc6a16139d34a67b23c5f6446167e10a"
+  "hash": "b6687c6241f87e465810b9b9239a3c13f6ee19e45ceede269c932b4479f67a95"
 }

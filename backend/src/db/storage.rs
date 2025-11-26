@@ -36,7 +36,7 @@ pub async fn get_all(db: &Pool<Postgres>, access: &[String]) -> Result<Vec<Stora
         r#"
             SELECT name, protected, inventory_interval as "inventory_interval: Interval"
             FROM storage
-            WHERE protected <> true OR name IN (SELECT unnest($1::text[]))
+            WHERE protected <> true OR LOWER(name) IN (SELECT UNNEST($1::TEXT[]))
         "#,
         access
     )

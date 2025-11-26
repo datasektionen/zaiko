@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT storage.name, ARRAY_AGG(container.name) AS \"containers!\"\n            FROM storage\n            JOIN container ON storage.name = container.storage\n            WHERE protected <> true OR LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))\n            GROUP BY storage.name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "containers!",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "b306dfc76a86183ffdc5868952f9935726fac52d071b418244d14de4e7dffd7c"
+}

@@ -21,7 +21,7 @@ struct ShipmentGetResponse {
     id: String,
     time_created: DateTime<Utc>,
     time_arive: DateTime<Utc>,
-    items: Option<Vec<ShipmentItem>>,
+    items: Vec<ShipmentItem>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
