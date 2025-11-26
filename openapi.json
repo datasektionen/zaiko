@@ -149,20 +149,6 @@
           "inventory"
         ],
         "operationId": "items_due",
-        "parameters": [
-          {
-            "name": "storage",
-            "in": "query",
-            "description": "The name of the storage to check",
-            "required": false,
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "List of items due to be inventoried",
@@ -1134,14 +1120,13 @@
         "description": "Basic item information",
         "required": [
           "name",
-          "unit"
+          "amount",
+          "unit",
+          "storage"
         ],
         "properties": {
           "amount": {
-            "type": [
-              "number",
-              "null"
-            ],
+            "type": "number",
             "format": "float",
             "description": "The current total amount of the item accros all storages"
           },
@@ -1150,10 +1135,7 @@
             "description": "The items name"
           },
           "storage": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/BasicItemStorage"
             },
@@ -1270,14 +1252,12 @@
         "type": "object",
         "description": "List of containers at a storage location",
         "required": [
-          "name"
+          "name",
+          "containers"
         ],
         "properties": {
           "containers": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "type": "string"
             },
@@ -1319,17 +1299,11 @@
         "description": "Detailed item infarmation",
         "required": [
           "name",
-          "unit"
+          "unit",
+          "storage",
+          "supplier"
         ],
         "properties": {
-          "avrage_consuption": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "format": "float",
-            "description": "The avrage weekly consumption over the last mounth"
-          },
           "inventory_interval": {
             "oneOf": [
               {
@@ -1346,20 +1320,14 @@
             "description": "The items name"
           },
           "storage": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/StorageListing"
             },
             "description": "The storages that this item type is stored in"
           },
           "supplier": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/SupplierListing"
             },
@@ -1394,6 +1362,7 @@
         "description": "An item due to be inventoried",
         "required": [
           "name",
+          "unit",
           "amount"
         ],
         "properties": {
@@ -1405,10 +1374,7 @@
             "type": "string"
           },
           "unit": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "description": "The unit that the amount is measured in"
           }
         }
@@ -1416,14 +1382,12 @@
       "DueStorage": {
         "type": "object",
         "required": [
-          "name"
+          "name",
+          "containers"
         ],
         "properties": {
           "containers": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/DueContainer"
             }
@@ -1641,7 +1605,8 @@
         "required": [
           "name",
           "amount",
-          "unit"
+          "unit",
+          "state"
         ],
         "properties": {
           "amount": {
@@ -1662,15 +1627,8 @@
             "description": "The next date when the item needs to be inventoried"
           },
           "state": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/OrderState",
-                "description": "The current state of the item (good/need to order/etc)"
-              }
-            ]
+            "$ref": "#/components/schemas/OrderState",
+            "description": "The current state of the item (good/need to order/etc)"
           },
           "unit": {
             "type": "string",
@@ -1753,17 +1711,15 @@
         "required": [
           "id",
           "time_created",
-          "time_arive"
+          "time_arive",
+          "items"
         ],
         "properties": {
           "id": {
             "type": "string"
           },
           "items": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/ShipmentItem"
             }
@@ -1801,7 +1757,9 @@
           "name",
           "storage",
           "container",
-          "amount"
+          "amount",
+          "amount_to_buy",
+          "unit"
         ],
         "properties": {
           "amount": {
@@ -1810,10 +1768,7 @@
             "description": "The number of item currently in storage"
           },
           "amount_to_buy": {
-            "type": [
-              "number",
-              "null"
-            ],
+            "type": "number",
             "format": "float",
             "description": "The number of items to buy to reach the order ceiling"
           },
@@ -1830,10 +1785,7 @@
             "description": "The name of the storage where the item is located"
           },
           "unit": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "description": "The unit that the amount is measured in"
           }
         }

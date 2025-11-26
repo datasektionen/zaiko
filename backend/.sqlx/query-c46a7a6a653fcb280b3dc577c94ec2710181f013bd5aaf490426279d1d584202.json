@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT *\n            FROM supplier\n            WHERE mandate IN (SELECT unnest($1::text[]))\n        ",
+  "query": "\n            SELECT *\n            FROM supplier\n            WHERE mandate IN (SELECT UNNEST($1::TEXT[]))\n        ",
   "describe": {
     "columns": [
       {
@@ -48,5 +48,5 @@
       false
     ]
   },
-  "hash": "7a8cde14ce0e235f95a8257a23019e59790f1a529efaa0db8487d832a62acc11"
+  "hash": "c46a7a6a653fcb280b3dc577c94ec2710181f013bd5aaf490426279d1d584202"
 }

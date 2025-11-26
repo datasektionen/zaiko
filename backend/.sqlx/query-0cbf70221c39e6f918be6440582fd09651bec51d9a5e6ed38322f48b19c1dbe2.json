@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                item.name,\n                SUM(avrage_consuption.change) AS \"avrage_consuption\",\n                item.unit,\n                item.inventory_interval as \"inventory_interval: Interval\",\n                ARRAY(\n                    SELECT\n                        (\n                            stored_item.storage,\n                            stored_item.container,\n                            stored_item.amount,\n                            stored_item.min,\n                            stored_item.max,\n                            STATE(\n                                stored_item.amount,\n                                stored_item.min,\n                                stored_item.max,\n                                EXISTS(\n                                    SELECT 1\n                                    FROM shipment_item\n                                    WHERE shipment_item.item = stored_item.item\n                                )\n                            ),\n                            MAX(log.time) + \n                                    LEAST(\n                                        storage.inventory_interval,\n                                        item.inventory_interval\n                                    )\n                        )::storage_listing\n                    FROM stored_item\n                    JOIN storage ON stored_item.storage = storage.name\n                    LEFT JOIN log ON stored_item.item = log.item\n                        AND stored_item.storage = log.storage\n                        AND stored_item.container = log.container\n                    WHERE stored_item.item = $1 AND storage.protected <> true\n                    GROUP BY stored_item.item, stored_item.storage, stored_item.container, storage.inventory_interval\n                ) AS \"storage: Vec<StorageListing>\",\n                ARRAY(\n                    SELECT (\n                        supplier,\n                        link,\n                        prefered\n                    )::supplier_listing\n                    FROM supplier_item\n                    WHERE item = $1\n                ) AS \"supplier: Vec<SupplierListing>\"\n            FROM item\n            LEFT JOIN log ON item.name = log.item\n            LEFT JOIN avrage_consuption ON avrage_consuption.item = item.name\n            WHERE item.name = $1\n            GROUP BY item.name\n        ",
+  "query": "\n            SELECT\n                item.name,\n                item.unit,\n                item.inventory_interval as \"inventory_interval: Interval\",\n                ARRAY(\n                    SELECT DISTINCT (\n                        stored_item.storage,\n                        stored_item.container,\n                        stored_item.amount,\n                        stored_item.min,\n                        stored_item.max,\n                        current_state.state,\n                        next_inventory.time\n                    )::storage_listing\n                    FROM stored_item\n                    JOIN storage ON stored_item.storage = storage.name\n                    LEFT JOIN next_inventory ON \n                        next_inventory.item = stored_item.item AND\n                        next_inventory.storage = stored_item.storage AND\n                        next_inventory.container = stored_item.container\n                    JOIN current_state ON current_state.item = stored_item.item\n                    WHERE\n                        stored_item.item = $1 AND\n                        (\n                            storage.protected <> true OR\n                            LOWER(storage.name) In (SELECT UNNEST($2::TEXT[]))\n                        )\n                    GROUP BY stored_item.item, stored_item.storage, stored_item.container, current_state.state, next_inventory.time\n                ) AS \"storage!: Vec<StorageListing>\",\n                ARRAY(\n                    SELECT (\n                        supplier,\n                        link,\n                        prefered\n                    )::supplier_listing\n                    FROM supplier_item\n                    WHERE item = $1\n                ) AS \"supplier!: Vec<SupplierListing>\"\n            FROM item\n            WHERE item.name = $1\n            GROUP BY item.name\n        ",
   "describe": {
     "columns": [
       {
@@ -10,22 +10,17 @@
       },
       {
         "ordinal": 1,
-        "name": "avrage_consuption",
-        "type_info": "Float4"
-      },
-      {
-        "ordinal": 2,
         "name": "unit",
         "type_info": "Text"
       },
       {
-        "ordinal": 3,
+        "ordinal": 2,
         "name": "inventory_interval: Interval",
         "type_info": "Interval"
       },
       {
-        "ordinal": 4,
-        "name": "storage: Vec<StorageListing>",
+        "ordinal": 3,
+        "name": "storage!: Vec<StorageListing>",
         "type_info": {
           "Custom": {
             "name": "storage_listing[]",
@@ -85,8 +80,8 @@
         }
       },
       {
-        "ordinal": 5,
-        "name": "supplier: Vec<SupplierListing>",
+        "ordinal": 4,
+        "name": "supplier!: Vec<SupplierListing>",
         "type_info": {
           "Custom": {
             "name": "supplier_listing[]",
@@ -119,17 +114,17 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Text",
+        "TextArray"
       ]
     },
     "nullable": [
       false,
-      null,
       false,
       true,
       null,
       null
     ]
   },
-  "hash": "fade6d997b774a5a45b6cb580a39cfd47bb91b8fee3c6d31a386343b593d2ae1"
+  "hash": "0cbf70221c39e6f918be6440582fd09651bec51d9a5e6ed38322f48b19c1dbe2"
 }

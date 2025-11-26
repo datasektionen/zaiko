@@ -20,7 +20,7 @@ pub struct ContainerStorage {
     /// The storages name
     name: String,
     /// List of containers
-    containers: Option<Vec<String>>,
+    containers: Vec<String>,
 }
 
 /// List of containers with items
@@ -39,10 +39,10 @@ pub async fn get_all_containers_grouped_by_storage(
     sqlx::query_as!(
         ContainerStorage,
         r#"
-            SELECT storage.name, ARRAY_AGG(container.name) AS "containers"
+            SELECT storage.name, ARRAY_AGG(container.name) AS "containers!"
             FROM storage
             JOIN container ON storage.name = container.storage
-            WHERE protected <> true OR storage.name IN (SELECT unnest($1::text[]))
+            WHERE protected <> true OR LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))
             GROUP BY storage.name
         "#,
         protected
@@ -246,7 +246,7 @@ mod test {
             containers,
             vec![ContainerStorage {
                 name: String::from("meta"),
-                containers: Some(vec![String::new()])
+                containers: vec![String::new()]
             }]
         )
     }
@@ -267,7 +267,7 @@ mod test {
             containers,
             vec![ContainerStorage {
                 name: String::from("meta"),
-                containers: Some(vec![String::new(), String::from("Märkeslåda")])
+                containers: vec![String::new(), String::from("Märkeslåda")]
             }]
         )
     }
@@ -288,11 +288,11 @@ mod test {
             vec![
                 ContainerStorage {
                     name: String::from("ESCapen"),
-                    containers: Some(vec![String::new()])
+                    containers: vec![String::new()]
                 },
                 ContainerStorage {
                     name: String::from("meta"),
-                    containers: Some(vec![String::new()])
+                    containers: vec![String::new()]
                 },
             ]
         )
@@ -313,7 +313,7 @@ mod test {
             containers,
             vec![ContainerStorage {
                 name: String::from("meta"),
-                containers: Some(vec![String::new()])
+                containers: vec![String::new()]
             },]
         )
     }
@@ -335,11 +335,11 @@ mod test {
             vec![
                 ContainerStorage {
                     name: String::from("spritis"),
-                    containers: Some(vec![String::new()])
+                    containers: vec![String::new()]
                 },
                 ContainerStorage {
                     name: String::from("meta"),
-                    containers: Some(vec![String::new()])
+                    containers: vec![String::new()]
                 },
             ]
         )
@@ -424,14 +424,14 @@ mod test {
                             name: String::from("pantsäck"),
                             amount: 3.0,
                             unit: String::from("rullar"),
-                            state: Some(OrderState::None),
+                            state: OrderState::None,
                             next_inventory: None
                         },
                         MinimalItem {
                             name: String::from("ziptie"),
                             amount: 50.0,
                             unit: String::from("st"),
-                            state: Some(OrderState::None),
+                            state: OrderState::None,
                             next_inventory: None
                         }
                     ]
@@ -443,14 +443,14 @@ mod test {
                             name: String::from("eltejp"),
                             amount: 5.0,
                             unit: String::from("st"),
-                            state: Some(OrderState::None),
+                            state: OrderState::None,
                             next_inventory: None
                         },
                         MinimalItem {
                             name: String::from("silvertejp"),
                             amount: 5.0,
                             unit: String::from("st"),
-                            state: Some(OrderState::None),
+                            state: OrderState::None,
                             next_inventory: None
                         },
                     ]
@@ -557,21 +557,30 @@ mod test {
         assert_eq!(container.storage, "örådet");
         assert_eq!(container.inventory_interval, None);
 
-        let item = db::item::get_all_filtered_basic(&db, None, None, None, None, None, None)
-            .await
-            .unwrap();
+        let item = db::item::get_all_filtered_basic(
+            &db,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta"), String::from("örådet")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("tejp"),
-                amount: Some(5.0),
+                amount: 5.0,
                 unit: String::from("st"),
-                storage: Some(vec![BasicItemStorage {
+                storage: vec![BasicItemStorage {
                     storage: String::from("örådet"),
                     container: String::from("Märkeslåda"),
                     state: OrderState::None
-                }])
+                }]
             }]
         )
     }
@@ -662,21 +671,30 @@ mod test {
             .await
             .unwrap();
 
-        let item = db::item::get_all_filtered_basic(&db, None, None, None, None, None, None)
-            .await
-            .unwrap();
+        let item = db::item::get_all_filtered_basic(
+            &db,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            &vec![String::from("meta"), String::from("örådet")],
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             item,
             vec![BasicItem {
                 name: String::from("tejp"),
-                amount: Some(10.0),
+                amount: 10.0,
                 unit: String::from("st"),
-                storage: Some(vec![BasicItemStorage {
+                storage: vec![BasicItemStorage {
                     storage: String::from("örådet"),
                     container: String::from("Märkeslåda"),
                     state: OrderState::None
-                }])
+                }]
             }]
         )
     }

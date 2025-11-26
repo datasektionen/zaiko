@@ -302,11 +302,11 @@ export interface components {
              * Format: float
              * @description The current total amount of the item accros all storages
              */
-            amount?: number | null;
+            amount: number;
             /** @description The items name */
             name: string;
             /** @description List of storage locations containing the item with basic info */
-            storage?: components["schemas"]["BasicItemStorage"][] | null;
+            storage: components["schemas"]["BasicItemStorage"][];
             /** @description The unit the amount is counted in */
             unit: string;
         };
@@ -348,7 +348,7 @@ export interface components {
         /** @description List of containers at a storage location */
         ContainerStorage: {
             /** @description List of containers */
-            containers?: string[] | null;
+            containers: string[];
             /** @description The storages name */
             name: string;
         };
@@ -363,18 +363,13 @@ export interface components {
         };
         /** @description Detailed item infarmation */
         DetailedItem: {
-            /**
-             * Format: float
-             * @description The avrage weekly consumption over the last mounth
-             */
-            avrage_consuption?: number | null;
             inventory_interval?: null | components["schemas"]["Interval"];
             /** @description The items name */
             name: string;
             /** @description The storages that this item type is stored in */
-            storage?: components["schemas"]["StorageListing"][] | null;
+            storage: components["schemas"]["StorageListing"][];
             /** @description The suppliers that the item is bought from */
-            supplier?: components["schemas"]["SupplierListing"][] | null;
+            supplier: components["schemas"]["SupplierListing"][];
             /** @description The unit every amount is counted in */
             unit: string;
         };
@@ -388,10 +383,10 @@ export interface components {
             amount: number;
             name: string;
             /** @description The unit that the amount is measured in */
-            unit?: string | null;
+            unit: string;
         };
         DueStorage: {
-            containers?: components["schemas"]["DueContainer"][] | null;
+            containers: components["schemas"]["DueContainer"][];
             name: string;
         };
         Group: string;
@@ -472,7 +467,8 @@ export interface components {
              * @description The next date when the item needs to be inventoried
              */
             next_inventory?: string | null;
-            state?: null | components["schemas"]["OrderState"];
+            /** @description The current state of the item (good/need to order/etc) */
+            state: components["schemas"]["OrderState"];
             /** @description The unit current is counted in */
             unit: string;
         };
@@ -497,7 +493,7 @@ export interface components {
         };
         ShipmentGetResponse: {
             id: string;
-            items?: components["schemas"]["ShipmentItem"][] | null;
+            items: components["schemas"]["ShipmentItem"][];
             /** Format: date-time */
             time_arive: string;
             /** Format: date-time */
@@ -519,7 +515,7 @@ export interface components {
              * Format: float
              * @description The number of items to buy to reach the order ceiling
              */
-            amount_to_buy?: number | null;
+            amount_to_buy: number;
             /** @description The name of the container where the item is stored */
             container: string;
             /** @description The items name */
@@ -527,7 +523,7 @@ export interface components {
             /** @description The name of the storage where the item is located */
             storage: string;
             /** @description The unit that the amount is measured in */
-            unit?: string | null;
+            unit: string;
         };
         StateLog: {
             /** Format: float */
@@ -915,10 +911,7 @@ export interface operations {
     };
     items_due: {
         parameters: {
-            query?: {
-                /** @description The name of the storage to check */
-                storage?: string | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;

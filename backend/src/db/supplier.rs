@@ -41,7 +41,7 @@ pub async fn get_all_by_mandate(
         r#"
             SELECT *
             FROM supplier
-            WHERE mandate IN (SELECT unnest($1::text[]))
+            WHERE mandate IN (SELECT UNNEST($1::TEXT[]))
         "#,
         mandates
     )

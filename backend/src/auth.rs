@@ -164,6 +164,31 @@ pub(crate) async fn check_auth(
     }
 }
 
+pub async fn get_permitted_storages(
+    db: &Pool<Postgres>,
+    permissions: &[HivePermission],
+) -> Result<Vec<String>, Error> {
+    if check_auth(CheckType::Admin, db, permissions).await.is_ok() {
+        Ok(db::storage::get_all_unprotected(db).await.map(|storages| {
+            storages
+                .iter()
+                .map(|storage| storage.name.clone().to_lowercase())
+                .collect::<Vec<String>>()
+        })?)
+    } else {
+        Ok(permissions
+            .iter()
+            .filter_map(|perm| {
+                if perm.id == "read" {
+                    perm.scope.clone()
+                } else {
+                    None
+                }
+            })
+            .collect())
+    }
+}
+
 #[utoipa::path(
     tag = "auth",
     responses(

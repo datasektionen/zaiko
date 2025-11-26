@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                name,\n                ARRAY(\n                    SELECT\n                        (name,\n                        ARRAY(\n                            SELECT (name, unit, amount)::shortage_item\n                            FROM stored_item\n                            JOIN item ON item.name = stored_item.item\n                            JOIN next_inventory ON next_inventory.item = stored_item.item\n                                AND next_inventory.time < CURRENT_TIMESTAMP\n                            WHERE\n                                stored_item.container = container.name\n                                AND stored_item.storage = storage.name\n                        ))::shortage_listing\n                    FROM container\n                    WHERE container.storage = storage.name\n                ) AS \"containers!: Vec<DueContainer>\"\n            FROM storage\n            WHERE storage.name IN (SELECT unnest($1::text[]))\n        ",
+  "query": "\n            SELECT\n                name,\n                ARRAY(\n                    SELECT\n                        (\n                            name,\n                            ARRAY(\n                                SELECT (name, unit, amount)::shortage_item\n                                FROM stored_item\n                                JOIN item ON item.name = stored_item.item\n                                JOIN next_inventory ON\n                                    next_inventory.item = stored_item.item AND\n                                    next_inventory.storage = stored_item.storage AND\n                                    next_inventory.container = stored_item.container AND\n                                    next_inventory.time < CURRENT_TIMESTAMP\n                                WHERE\n                                    stored_item.container = container.name\n                                    AND stored_item.storage = storage.name\n                            )\n                        )::shortage_listing\n                    FROM container\n                    WHERE container.storage = storage.name\n                ) AS \"containers!: Vec<DueContainer>\"\n            FROM storage\n            WHERE LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))\n        ",
   "describe": {
     "columns": [
       {
@@ -74,5 +74,5 @@
       null
     ]
   },
-  "hash": "2b73f21fe7e8dd5d3cb203d1a0ecbf0087a35744d4662b9640adf5db3e88c098"
+  "hash": "dc3c84f84f4c7cd6418355a6095d0cc58361c0313eb761d7b4dc0cd032e6f1cf"
 }

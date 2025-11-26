@@ -9,7 +9,7 @@ use utoipa::{IntoParams, ToSchema};
 use utoipa_actix_web::service_config::ServiceConfig;
 
 use crate::{
-    auth::{check_auth, types::HivePermission, CheckType},
+    auth::{check_auth, get_permitted_storages, types::HivePermission, CheckType},
     db::{
         self,
         interval::Interval,
@@ -182,7 +182,10 @@ pub fn config() -> impl FnOnce(&mut ServiceConfig) {
 async fn get_items(
     db: web::Data<Pool<Postgres>>,
     query: web::Query<ItemsGetQuery>,
+    permissions: web::ReqData<Vec<HivePermission>>,
 ) -> Result<HttpResponse, Error> {
+    let permitted_storages = get_permitted_storages(&db, &permissions).await?;
+
     let items = db::item::get_all_filtered_basic(
         &db,
         query.name.as_deref(),
@@ -191,6 +194,7 @@ async fn get_items(
         query.supplier.as_deref(),
         query.min,
         query.max,
+        &permitted_storages,
     )
     .await?;
     Ok(HttpResponse::Ok().json(items))
@@ -219,8 +223,11 @@ async fn get_items(
 async fn get_item(
     db: web::Data<Pool<Postgres>>,
     query: web::Query<ItemGetQuery>,
+    permissions: web::ReqData<Vec<HivePermission>>,
 ) -> Result<HttpResponse, Error> {
-    let item = db::item::get_item_by_name_detailed(&db, &query.name).await?;
+    let permitted_storages = get_permitted_storages(&db, &permissions).await?;
+
+    let item = db::item::get_item_by_name_detailed(&db, &query.name, &permitted_storages).await?;
     Ok(HttpResponse::Ok().json(item))
 }
 
