@@ -179,7 +179,7 @@ pub async fn get_permitted_storages(
         Ok(permissions
             .iter()
             .filter_map(|perm| {
-                if perm.id == "read" {
+                if perm.id == "write" {
                     perm.scope.clone()
                 } else {
                     None
