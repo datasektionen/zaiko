@@ -421,7 +421,25 @@ pub async fn items_due(
         storages
     )
     .fetch_all(db)
-    .await?)
+    .await?
+    .into_iter()
+    .filter_map(|due_storages| {
+        let containers: Vec<DueContainer> = due_storages
+            .containers
+            .into_iter()
+            .filter(|due_container| !due_container.items.is_empty())
+            .collect();
+
+        if !containers.is_empty() {
+            Some(DueStorage {
+                name: due_storages.name,
+                containers,
+            })
+        } else {
+            None
+        }
+    })
+    .collect())
 }
 
 pub async fn create(
@@ -1793,6 +1811,7 @@ mod test {
     #[sqlx::test]
     async fn due_items(db: Pool<Postgres>) {
         db::storage::create(&db, "meta", false, None).await.unwrap();
+        db::storage::create(&db, "r1", false, None).await.unwrap();
         db::storage::create(&db, "örådet", false, None)
             .await
             .unwrap();
