@@ -13,6 +13,7 @@
           >
             <p>{{ column[1] }}</p>
           </td>
+          <td class="w-4"></td>
         </tr>
       </thead>
       <tbody>
@@ -33,6 +34,11 @@
               <ChevronRightIcon class="w-8 h-8" v-else />
             </td>
             <td>{{ row.name }}</td>
+            <td></td>
+            <td></td>
+            <td>
+              <slot :row="row" name="con" />
+            </td>
           </tr>
           <tr
             v-for="(child, childIndex) in Object.values(row)[1]"

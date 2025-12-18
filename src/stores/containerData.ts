@@ -1,12 +1,13 @@
 import type {
-  ContainerAddRequest,
+  ContainerCreateRequest,
   ContainerDeleteRequest,
+  ContainerMoveRequest,
   Notification,
 } from '@/types'
 import { useNotificationsStore } from './notifications'
 
 export async function createContainer(
-  container: ContainerAddRequest,
+  container: ContainerCreateRequest,
 ): Promise<void> {
   const res = await fetch('/api/container', {
     method: 'POST',
@@ -58,6 +59,37 @@ export async function deleteContainer(
     id: Date.now(),
     title: 'Låda borttagen',
     message: `Lådan "${container.name}" är borttagen.`,
+    severity: 'info',
+  }
+  notificationsStore.add(noti)
+  return Promise.resolve()
+}
+
+export async function moveContainer(
+  container: ContainerMoveRequest,
+): Promise<void> {
+  const res = await fetch('/api/container/move', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(container),
+  })
+  const notificationsStore = useNotificationsStore()
+  if (!res.ok) {
+    const noti: Notification = {
+      id: Date.now(),
+      title: res.statusText,
+      message: await res.text(),
+      severity: 'error',
+    }
+    notificationsStore.add(noti)
+    return Promise.reject(noti)
+  }
+  const noti: Notification = {
+    id: Date.now(),
+    title: 'Låda flyttad',
+    message: `Låda "${container.name}" är flyttad.`,
     severity: 'info',
   }
   notificationsStore.add(noti)

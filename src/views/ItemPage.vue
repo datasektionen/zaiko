@@ -22,9 +22,6 @@
         :button-left-icon="PlusIcon"
         :buttonLeftRestricted="!permsStore.hasWriteAccess()"
         @buttonLeft="addItem()"
-        :button-right-icon="ArrowUpTrayIcon"
-        :buttonRightRestricted="!permsStore.hasWriteAccess()"
-        @buttonRight="moveItem()"
       >
         <DynamicTable :rows="item.storage!" :columns="storageColumns" settings>
           <template #row="input">
@@ -132,7 +129,6 @@ import type {
   ItemGetResponse,
   ItemEditRequest,
   ItemUnlinkSupplierRequest,
-  ItemMoveRequest,
 } from '@/types'
 import PanelTemplate from '@/components/PanelTemplate.vue'
 import {
@@ -164,6 +160,7 @@ import NameForm from '@/components/NameForm.vue'
 import { containerText } from '@/stores/inventoryData'
 import { usePermsStore } from '@/stores/permissions'
 import { stateEmoji } from '@/common'
+import ItemMove from '@/components/ItemMove.vue'
 
 const permsStore = usePermsStore()
 
@@ -172,19 +169,11 @@ const item = ref<ItemGetResponse>({
   name: decodeURI(route.params.name as string),
   storage: [],
   supplier: [],
-  avrage_consuption: 0,
   unit: 'st',
   inventory_interval: 'P0D',
 })
 
 const popupStore = usePopupStore()
-const moveItem = () => {
-  popupStore.push({
-    title: 'Flytta produkt',
-    component: ItemForm,
-    icon: LinkIcon,
-  })
-}
 const linkItem = () => {
   popupStore.push({
     title: 'Koppla leverantör',
@@ -280,15 +269,15 @@ const Settings = (action: string, storage: string, container: string) => {
       cb = editItemGhost
       break
     case 'move':
-      comp = ItemForm
+      comp = ItemMove
       const moveItem = item.value.storage?.find(
         s => s.storage === storage && s.container === container,
       )
       props = {
         item: {
           name: item.value.name,
-          unit: item.value.unit || undefined,
-          amount: moveItem?.amount || 0,
+          storage: moveItem?.storage || storage,
+          container: moveItem?.container || container,
         },
       }
       icon = ArrowUpTrayIcon

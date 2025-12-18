@@ -94,7 +94,6 @@ import type {
   Duration,
   ItemAddRequest,
   ItemStorageEditRequest,
-  Notification,
   StorageContainersGetResponse,
 } from '@/types'
 import { CalendarDateRangeIcon } from '@heroicons/vue/24/outline'
@@ -102,7 +101,6 @@ import { createItem, editItemStorage } from '@/stores/itemData'
 import { usePopupStore } from '@/stores/popup'
 import { forceNumeric, parseISODuration, toISODuration } from '@/common'
 import InputDuration from './InputDuration.vue'
-import { useNotificationsStore } from '@/stores/notifications'
 
 const props = defineProps<{
   edit?: boolean

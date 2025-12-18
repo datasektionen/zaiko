@@ -44,6 +44,8 @@ export type ContainerCreateRequest =
   operations['create_container']['requestBody']['content']['application/json']
 export type ContainerDeleteRequest =
   operations['destroy_container']['parameters']['query']
+export type ContainerMoveRequest =
+  operations['move_container']['requestBody']['content']['application/json']
 
 export type StatsGetResponse =
   operations['get_stats']['responses']['200']['content']['application/json']
