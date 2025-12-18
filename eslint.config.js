@@ -17,18 +17,24 @@ export default [
 
   ...pluginVue.configs['flat/essential'],
   ...vueTsEslintConfig(),
-  
+
   {
     ...pluginVitest.configs.recommended,
     files: ['src/**/__tests__/*'],
   },
-  
+
   {
     ...pluginCypress.configs.recommended,
     files: [
       'cypress/e2e/**/*.{cy,spec}.{js,ts,jsx,tsx}',
-      'cypress/support/**/*.{js,ts,jsx,tsx}'
+      'cypress/support/**/*.{js,ts,jsx,tsx}',
     ],
+  },
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+    files: ['**/*.ts', '**/*.vue'],
   },
   skipFormatting,
 ]
