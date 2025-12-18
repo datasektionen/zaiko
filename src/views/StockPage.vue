@@ -33,7 +33,7 @@
                 <input
                   type="number"
                   class="text-(--zaiko-text) max-w-15"
-                  :placeholder="row.amount"
+                  :placeholder="row.amount.toString()"
                   v-model.number="
                     new_amounts[itemKey(storage.name, container.name, row.name)]
                   "

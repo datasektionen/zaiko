@@ -9,6 +9,7 @@ import type {
   ItemUnlinkSupplierRequest,
   Notification,
   ItemStorageEditRequest,
+  ItemMoveRequest,
 } from '@/types'
 import { useNotificationsStore } from './notifications'
 import { fetchOrRedirect } from '@/common'
@@ -110,6 +111,34 @@ export async function createItem(item: ItemAddRequest): Promise<void> {
   }
   notificationsStore.add(noti)
   console.log('Created item:', item)
+  return Promise.resolve()
+}
+
+export async function moveItem(item: ItemMoveRequest): Promise<void> {
+  const res = await fetch('/api/item/move', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item),
+  })
+  const notificationsStore = useNotificationsStore()
+  if (!res.ok) {
+    const noti: Notification = {
+      id: Date.now(),
+      title: res.statusText,
+      message: await res.text(),
+      severity: 'error',
+    }
+    notificationsStore.add(noti)
+    return Promise.reject(noti)
+  }
+  const noti: Notification = {
+    id: Date.now(),
+    title: 'Produkt flyttad',
+    message: `"${item.name}" har flyttats till "${item.to_container}" i "${item.to_storage}".`,
+    severity: 'info',
+  }
+  notificationsStore.add(noti)
+  console.log('Moved item:', item)
   return Promise.resolve()
 }
 

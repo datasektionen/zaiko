@@ -57,13 +57,13 @@ import { getItems } from '@/stores/itemData'
 import DynamicTable from '@/components/DynamicTable.vue'
 import { RouterLink } from 'vue-router'
 import SearchBar from '@/components/SearchBar.vue'
-import { getStorageContainers, getStorages } from '@/stores/storageData'
+import { getStorageContainers } from '@/stores/storageData'
 import { usePopupStore } from '@/stores/popup'
 import ItemForm from '@/components/ItemForm.vue'
 import { containerText } from '@/stores/inventoryData'
 import { usePermsStore } from '@/stores/permissions'
 import { getSuppliers } from '@/stores/supplierData'
-import { stateColor, stateEmoji } from '@/common'
+import { stateColor } from '@/common'
 
 const popupStore = usePopupStore()
 const permsStore = usePermsStore()

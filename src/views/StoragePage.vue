@@ -39,6 +39,24 @@
             {{ row.next_inventory ? parseDate(row.next_inventory) : '-' }}
           </td>
         </template>
+        <template #con="{ row }">
+          <HamMenu
+            :rows="settingsCol"
+            v-if="
+              permsStore.writeAccessToStorage(
+                decodeURI(route.params.name as string),
+              )
+            "
+            @select="
+              action =>
+                Settings(
+                  action,
+                  decodeURI(route.params.name as string),
+                  row.name,
+                )
+            "
+          />
+        </template>
       </DynamicTree>
     </PanelTemplate>
   </div>
@@ -46,12 +64,13 @@
 
 <script setup lang="ts">
 import PanelTemplate from '@/components/PanelTemplate.vue'
+import HamMenu from '@/components/HamMenu.vue'
 import {
   ClipboardDocumentListIcon,
   FolderIcon,
   PlusIcon,
 } from '@heroicons/vue/24/outline'
-import { ref, computed } from 'vue'
+import { ref, computed, type FunctionalComponent } from 'vue'
 import type {
   StorageContainersTreeGetResponse,
   StorageTreeRequest,
@@ -65,6 +84,8 @@ import { usePopupStore } from '@/stores/popup'
 import ContainerForm from '@/components/ContainerForm.vue'
 import ItemForm from '@/components/ItemForm.vue'
 import { usePermsStore } from '@/stores/permissions'
+import { ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
+import ContainerMove from '@/components/ContainerMove.vue'
 
 const permsStore = usePermsStore()
 const containers = ref<StorageContainersTreeGetResponse>([])
@@ -72,6 +93,50 @@ const containers = ref<StorageContainersTreeGetResponse>([])
 const sortedContainers = computed(() => {
   return containers.value.sort((a, b) => b.name.localeCompare(a.name))
 })
+
+const settingsCol = {
+  move: 'Flytta',
+  edit: 'Redigera',
+  delete: 'Ta bort',
+}
+const Settings = (action: string, storage: string, container: string) => {
+  let title = ''
+  let comp = null
+  let icon: FunctionalComponent = PlusIcon
+  let props = {}
+  let cb = undefined
+  switch (action) {
+    case 'edit':
+      break
+    case 'move':
+      comp = ContainerMove
+      props = {
+        container: {
+          name: container,
+          storage: storage,
+        },
+        moveFunc: () => {},
+      }
+      icon = ArrowUpTrayIcon
+      title = 'Flytta ' + container + ' från ' + storage
+      cb = containerGhostMove
+      break
+    case 'delete':
+      break
+    default:
+      console.error('Unknown action:', action, container)
+      break
+  }
+  if (comp) {
+    popupStore.push({
+      title: title,
+      component: comp,
+      props: props,
+      icon: icon,
+      cb: cb,
+    })
+  }
+}
 
 const popupStore = usePopupStore()
 function addContainer() {
@@ -116,6 +181,14 @@ function containerGhost(result?: any) {
     containers.value.push({
       name: result.name,
       items: [],
+    })
+  }
+}
+
+function containerGhostMove(result?: any) {
+  if (result) {
+    getStorageTree(body).then(data => {
+      containers.value = data
     })
   }
 }
