@@ -89,7 +89,9 @@ async fn main() -> std::io::Result<()> {
             )
             .openapi_service(|api| Redoc::with_url("/docs/api", api))
             .service(scope("").map(|app| {
-                app.service(serve_frontend)
+                app
+                    .service(actix_files::Files::new("/assets/", "dist/assets/").index_file("index.html"))
+                    .service(serve_frontend)
                     .service(actix_files::Files::new("/", "dist/").index_file("index.html"))
             }))
             .into_app()
