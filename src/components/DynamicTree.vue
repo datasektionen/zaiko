@@ -40,11 +40,12 @@
               <slot :row="row" name="con" />
             </td>
           </tr>
+          <tr v-else class="p-2 h-0 border-t-4 border-(--zaiko-bg-2)"></tr>
           <tr
             v-for="(child, childIndex) in Object.values(row)[1]"
             :key="childIndex"
             v-if="expanded.has(rowIndex) || Object.values(row)[0] === ''"
-            class="p-2 border-b border-(--zaiko-bg-2) last:border-t-4"
+            class="p-2 border-b border-(--zaiko-bg-2)"
           >
             <td class="w-12"></td>
             <slot :row="child as N" name="row" :container="row" />
