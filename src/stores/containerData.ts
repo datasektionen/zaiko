@@ -1,6 +1,7 @@
 import type {
   ContainerCreateRequest,
   ContainerDeleteRequest,
+  ContainerEditRequest,
   ContainerMoveRequest,
   Notification,
 } from '@/types'
@@ -59,6 +60,37 @@ export async function deleteContainer(
     id: Date.now(),
     title: 'Låda borttagen',
     message: `Lådan "${container.name}" är borttagen.`,
+    severity: 'info',
+  }
+  notificationsStore.add(noti)
+  return Promise.resolve()
+}
+
+export async function updateContainer(
+  container: ContainerEditRequest,
+): Promise<void> {
+  const res = await fetch('/api/container', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(container),
+  })
+  const notificationsStore = useNotificationsStore()
+  if (!res.ok) {
+    const noti: Notification = {
+      id: Date.now(),
+      title: res.statusText,
+      message: await res.text(),
+      severity: 'error',
+    }
+    notificationsStore.add(noti)
+    return Promise.reject(noti)
+  }
+  const noti: Notification = {
+    id: Date.now(),
+    title: 'Låda uppdaterad',
+    message: `Låda "${container.name}" är uppdaterad.`,
     severity: 'info',
   }
   notificationsStore.add(noti)

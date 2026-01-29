@@ -86,6 +86,9 @@ import ItemForm from '@/components/ItemForm.vue'
 import { usePermsStore } from '@/stores/permissions'
 import { ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
 import ContainerMove from '@/components/ContainerMove.vue'
+import DeleteForm from '@/components/DeleteForm.vue'
+import { deleteContainer } from '@/stores/containerData'
+import { BackspaceIcon } from '@heroicons/vue/24/solid'
 
 const permsStore = usePermsStore()
 const containers = ref<StorageContainersTreeGetResponse>([])
@@ -107,6 +110,17 @@ const Settings = (action: string, storage: string, container: string) => {
   let cb = undefined
   switch (action) {
     case 'edit':
+      comp = ContainerForm
+      props = {
+        editContainer: {
+          name: container,
+          storage: storage,
+        },
+        edit: true,
+      }
+      icon = FolderIcon
+      title = 'Redigera ' + container + ' i ' + storage
+      cb = containerGhostEdit
       break
     case 'move':
       comp = ContainerMove
@@ -122,6 +136,23 @@ const Settings = (action: string, storage: string, container: string) => {
       cb = containerGhostMove
       break
     case 'delete':
+      comp = DeleteForm
+      title = 'Ta bort ' + container + ' från ' + storage
+      props = {
+        item: {
+          name: container,
+          storage: storage,
+        },
+        deleteFunc: deleteContainer,
+      }
+      icon = BackspaceIcon
+      cb = async (result: any) => {
+        if (result) {
+          getStorageTree(body).then(data => {
+            containers.value = data
+          })
+        }
+      }
       break
     default:
       console.error('Unknown action:', action, container)
@@ -180,6 +211,15 @@ function containerGhost(result?: any) {
   if (result) {
     containers.value.push({
       name: result.name,
+      items: [],
+    })
+  }
+}
+
+function containerGhostEdit(result?: any) {
+  if (result) {
+    containers.value.push({
+      name: result.new_name,
       items: [],
     })
   }

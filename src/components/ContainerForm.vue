@@ -1,13 +1,7 @@
 <template>
   <div>
-    <form v-on:submit.prevent="addContainer()">
-      <InputText
-        name="Namn*"
-        :icon="ArchiveBoxIcon"
-        v-model="name"
-        required
-        :disabled="edit"
-      />
+    <form v-on:submit.prevent="edit ? EditContainer() : addContainer()">
+      <InputText name="Namn*" :icon="ArchiveBoxIcon" v-model="name" required />
       <InputDuration
         name="Intervall"
         :icon="CalendarDateRangeIcon"
@@ -52,6 +46,7 @@ import InputSelect from '@/components/InputSelect.vue'
 import { getStorageContainers } from '@/stores/storageData'
 import {
   type ContainerCreateRequest,
+  type ContainerEditRequest,
   type Duration,
   type StorageContainersGetResponse,
 } from '@/types'
@@ -59,7 +54,7 @@ import { CalendarDateRangeIcon } from '@heroicons/vue/24/outline'
 import { usePopupStore } from '@/stores/popup'
 import { parseISODuration, toISODuration } from '@/common'
 import InputDuration from './InputDuration.vue'
-import { createContainer } from '@/stores/containerData'
+import { createContainer, updateContainer } from '@/stores/containerData'
 
 const props = defineProps<{
   edit?: boolean
@@ -100,6 +95,24 @@ const addContainer = () => {
     })
     .catch(err => {
       console.error('Error creating item:', err)
+    })
+}
+
+const EditContainer = () => {
+  console.log('Editing container...')
+  const payload: ContainerEditRequest = {
+    name: props.editContainer!.name,
+    new_name: name.value,
+    storage: storage.value,
+  }
+  updateContainer(payload)
+    .then(() => {
+      const popupStore = usePopupStore()
+      popupStore.callCurrent(payload)
+      popupStore.pop()
+    })
+    .catch(err => {
+      console.error('Error editing container:', err)
     })
 }
 </script>

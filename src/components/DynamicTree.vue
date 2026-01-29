@@ -23,7 +23,7 @@
           v-if="rows && node"
         >
           <tr
-            class="p-2 border-b border-(--zaiko-bg-2)"
+            class="p-2 border-b border-(--zaiko-bg-2) not-first:border-t-4"
             v-if="(Object.values(row)[0] as string) !== ''"
           >
             <td
@@ -44,7 +44,7 @@
             v-for="(child, childIndex) in Object.values(row)[1]"
             :key="childIndex"
             v-if="expanded.has(rowIndex) || Object.values(row)[0] === ''"
-            class="p-2 border-b border-(--zaiko-bg-2)"
+            class="p-2 border-b border-(--zaiko-bg-2) last:border-t-4"
           >
             <td class="w-12"></td>
             <slot :row="child as N" name="row" :container="row" />
