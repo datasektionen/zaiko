@@ -91,6 +91,7 @@ async fn main() -> std::io::Result<()> {
             .service(scope("").map(|app| {
                 app
                     .service(actix_files::Files::new("/assets/", "dist/assets/").index_file("index.html"))
+                    .service(actix_files::Files::new("/static/", "dist/static/").index_file("index.html"))
                     .service(serve_frontend)
                     .service(actix_files::Files::new("/", "dist/").index_file("index.html"))
             }))
