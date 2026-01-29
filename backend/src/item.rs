@@ -70,6 +70,8 @@ struct ItemChangeNameRequest {
 struct ItemMoveRequest {
     /// The items name
     name: String,
+    /// The amount of items to move
+    amount: f32,
     /// The name of the storage the items is moved from
     from_storage: String,
     /// The name of the container the items is moved from
@@ -473,6 +475,7 @@ async fn move_item(
     db::item::move_item(
         &mut db,
         &item.name,
+        Some(item.amount),
         &item.from_storage,
         &item.from_container,
         &item.to_storage,
