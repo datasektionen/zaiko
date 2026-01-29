@@ -5,7 +5,7 @@ use sqlx::{
 };
 use utoipa::ToSchema;
 
-use crate::db::{self, item::MinimalItem};
+use crate::{db::{self, item::MinimalItem}, error::Error};
 
 #[cfg(test)]
 pub struct Container {
@@ -144,7 +144,7 @@ pub async fn move_container(
     to_storage: &str,
     id: &str,
     merge: bool,
-) -> Result<(), sqlx::Error> {
+) -> Result<(), Error> {
     let mut trans = db.begin().await?;
 
     let result = sqlx::query!(
@@ -177,7 +177,7 @@ pub async fn move_container(
         .await?;
 
         for Item { item } in items {
-            db::item::move_item(&mut trans, &item, from_storage, name, to_storage, name, id)
+            db::item::move_item(&mut trans, &item, None, from_storage, name, to_storage, name, id)
                 .await?;
         }
 
@@ -192,14 +192,12 @@ pub async fn move_container(
         .execute(&mut *trans)
         .await?;
 
-        return trans.commit().await;
-    }
-
-    if let Err(error) = result {
+        Ok(trans.commit().await?)
+    } else if let Err(error) = result {
         trans.rollback().await?;
-        Err(error)
+        Err(error.into())
     } else {
-        trans.commit().await
+        Ok(trans.commit().await?)
     }
 }
 

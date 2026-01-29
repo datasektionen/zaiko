@@ -6,8 +6,8 @@ use sqlx::{
 };
 use utoipa::ToSchema;
 
-use crate::db::interval::Interval;
 use crate::db::OrderState;
+use crate::{db::interval::Interval, error::Error};
 
 pub struct Location {
     pub storage: String,
@@ -675,13 +675,14 @@ pub async fn change_stored_item(
 pub async fn move_item(
     db: &mut Transaction<'static, Postgres>,
     item: &str,
+    amount: Option<f32>,
     from_storage: &str,
     from_container: &str,
     to_storage: &str,
     to_container: &str,
     id: &str,
-) -> Result<PgQueryResult, sqlx::Error> {
-    let amount = sqlx::query_scalar!(
+) -> Result<PgQueryResult, Error> {
+    let max_amount = sqlx::query_scalar!(
         r#"
             SELECT amount
             FROM stored_item
@@ -696,6 +697,12 @@ pub async fn move_item(
     )
     .fetch_one(&mut **db)
     .await?;
+
+    let amount = amount.unwrap_or(max_amount);
+
+    if amount > max_amount {
+        return Err(Error::BadRequest);
+    }
 
     if sqlx::query!(
         r#"
@@ -717,43 +724,53 @@ pub async fn move_item(
         sqlx::query!(
             r#"
                 UPDATE stored_item
-                SET amount =
-                    amount + (
-                        SELECT amount
-                        FROM stored_item
-                        WHERE
-                            item = $1 AND
-                            storage = $2 AND
-                            container = $3
-                    )
+                SET amount = amount + $1
                 WHERE
-                    item = $1 AND
-                    storage = $4 AND
-                    container = $5
+                    item = $2 AND
+                    storage = $3 AND
+                    container = $4
             "#,
+            amount,
             item,
-            from_storage,
-            from_container,
             to_storage,
             to_container
         )
         .execute(&mut **db)
         .await?;
 
-        sqlx::query!(
-            r#"
+        if amount == max_amount {
+            sqlx::query!(
+                r#"
                 DELETE FROM stored_item
                 WHERE
                     item = $1 AND
                     storage = $2 AND
                     container = $3
             "#,
-            item,
-            from_storage,
-            from_container
-        )
-        .execute(&mut **db)
-        .await?;
+                item,
+                from_storage,
+                from_container
+            )
+            .execute(&mut **db)
+            .await?;
+        } else {
+            sqlx::query!(
+                r#"
+                UPDATE stored_item
+                SET amount = amount - $4
+                WHERE
+                    item = $1 AND
+                    storage = $2 AND
+                    container = $3
+            "#,
+                item,
+                from_storage,
+                from_container,
+                amount
+            )
+            .execute(&mut **db)
+            .await?;
+        }
     } else {
         let result = sqlx::query!(
             r#"
@@ -776,7 +793,7 @@ pub async fn move_item(
         .await?;
 
         if result.rows_affected() != 1 {
-            return Err(sqlx::Error::RowNotFound);
+            return Err(sqlx::Error::RowNotFound.into());
         }
     }
 
@@ -803,6 +820,7 @@ pub async fn move_item(
     )
     .execute(&mut **db)
     .await
+    .map_err(|x| x.into())
 }
 
 pub async fn update_amount_in_transaction(
@@ -1706,7 +1724,7 @@ mod test {
 
         let mut trans = db.begin().await.unwrap();
 
-        super::move_item(&mut trans, "tejp", "meta", "", "örådet", "", "test")
+        super::move_item(&mut trans, "tejp", Some(7.0), "meta", "", "örådet", "", "test")
             .await
             .unwrap();
 
@@ -1777,7 +1795,7 @@ mod test {
 
         println!(
             "{:?}",
-            super::move_item(&mut trans, "tejp", "meta", "", "örådet", "", "test")
+            super::move_item(&mut trans, "tejp", Some(7.0), "meta", "", "örådet", "", "test")
                 .await
                 .unwrap()
         );
