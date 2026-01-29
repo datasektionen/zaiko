@@ -435,6 +435,11 @@ export interface components {
         };
         /** @description Info used to move an item */
         ItemMoveRequest: {
+            /**
+             * Format: float
+             * @description The amount of items to move
+             */
+            amount: number;
             /** @description The name of the container the items is moved from */
             from_container: string;
             /** @description The name of the storage the items is moved from */

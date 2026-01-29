@@ -1,6 +1,6 @@
 services:
   frontend:
-    build: 
+    build:
       dockerfile: ./Dockerfile.frontend
     tty: true
     ports:
@@ -100,6 +100,13 @@ configs:
           year_tag: D-85
 
       hive:
+        tokens:
+          - secret: 1234567890abcdefabcdef
+            permissions:
+              - id: admin
+                scope: null
+              - id: write
+                scope: meta
         groups:
           - name: Systemansvarig
             id: d-sys
@@ -109,6 +116,10 @@ configs:
             permissions:
               - id: admin
                 scope: null
+              - id: write
+                scope: örådet
+              - id: write
+                scope: meta
           - name: Metadorerna MISTER
             id: mister
             domain: example.com
@@ -131,4 +142,3 @@ configs:
                 scope: spritis
             tags:
               - id: supply-manager
-

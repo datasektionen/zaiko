@@ -1525,12 +1525,18 @@
         "description": "Info used to move an item",
         "required": [
           "name",
+          "amount",
           "from_storage",
           "from_container",
           "to_storage",
           "to_container"
         ],
         "properties": {
+          "amount": {
+            "type": "number",
+            "format": "float",
+            "description": "The amount of items to move"
+          },
           "from_container": {
             "type": "string",
             "description": "The name of the container the items is moved from"
