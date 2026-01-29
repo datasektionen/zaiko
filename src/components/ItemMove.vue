@@ -89,6 +89,7 @@ const MoveItem = () => {
     from_container: props.item.container,
     to_container: container.value,
     to_storage: storage.value,
+    amount: amount.value,
   }
   console.log('Creating item with payload:', payload)
   moveItem(payload)
