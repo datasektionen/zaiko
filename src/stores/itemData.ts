@@ -10,6 +10,7 @@ import type {
   Notification,
   ItemStorageEditRequest,
   ItemMoveRequest,
+  ItemEditLinkSupplierRequest,
 } from '@/types'
 import { useNotificationsStore } from './notifications'
 import { fetchOrRedirect } from '@/common'
@@ -223,6 +224,36 @@ export async function supplierUnlinkItem(
   }
   notificationsStore.add(noti)
   console.log('Unlinked supplier from item:', link)
+  return Promise.resolve()
+}
+
+export async function supplierEditLinkItem(
+  link: ItemEditLinkSupplierRequest,
+): Promise<void> {
+  const res = await fetch('/api/supply', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(link),
+  })
+  const notificationsStore = useNotificationsStore()
+  if (!res.ok) {
+    const noti: Notification = {
+      id: Date.now(),
+      title: res.statusText,
+      message: await res.text(),
+      severity: 'error',
+    }
+    notificationsStore.add(noti)
+    return Promise.reject(noti)
+  }
+  const noti: Notification = {
+    id: Date.now(),
+    title: 'Leverantör länk uppdaterad',
+    message: `"${link.supplier}" är uppdaterad för "${link.name}".`,
+    severity: 'info',
+  }
+  notificationsStore.add(noti)
+  console.log('Edited supplier link for item:', link)
   return Promise.resolve()
 }
 

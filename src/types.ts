@@ -12,6 +12,8 @@ export type ItemLinkSupplierRequest =
   operations['supply_item']['requestBody']['content']['application/json']
 export type ItemUnlinkSupplierRequest =
   operations['unsupply_item']['parameters']['query']
+export type ItemEditLinkSupplierRequest =
+  operations['change_supply_item']['requestBody']['content']['application/json']
 export type ItemEditRequest =
   operations['change_item']['requestBody']['content']['application/json']
 export type ItemStorageEditRequest =
