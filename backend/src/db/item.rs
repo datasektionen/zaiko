@@ -567,8 +567,8 @@ pub async fn update_supplier(
         "#,
         link,
         prefered,
-        supplier,
-        item
+        item,
+        supplier
     )
     .execute(db)
     .await
