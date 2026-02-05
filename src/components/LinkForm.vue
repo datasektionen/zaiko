@@ -1,12 +1,13 @@
 <template>
   <div>
-    <form v-on:submit.prevent="linkItem()">
+    <form v-on:submit.prevent="edit ? linkItemEdit() : linkItem()">
       <InputSelect
         name="Leverantör*"
         :icon="ShoppingCartIcon"
         v-model="supplier"
         :items="suppliers"
         required
+        v-if="!edit"
       >
         <template #row="item">
           <option :key="item.row.name" :value="item.row.name">
@@ -42,8 +43,12 @@ import {
 } from '@heroicons/vue/16/solid'
 import InputText from '@/components/InputText.vue'
 import InputSelect from '@/components/InputSelect.vue'
-import { type ItemLinkSupplierRequest, type SupplierGetResponse } from '@/types'
-import { supplierLinkItem } from '@/stores/itemData'
+import {
+  type ItemEditLinkSupplierRequest,
+  type ItemLinkSupplierRequest,
+  type SupplierGetResponse,
+} from '@/types'
+import { supplierEditLinkItem, supplierLinkItem } from '@/stores/itemData'
 import { usePopupStore } from '@/stores/popup'
 import InputCheckbox from '@/components/InputCheckbox.vue'
 import { getSuppliers } from '@/stores/supplierData'
@@ -51,16 +56,22 @@ import { TrophyIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
   name: string
+  edit?: boolean
+  editPrefered?: boolean
+  editLink?: string
+  editSupplier?: string
 }>()
 
-const link = ref<string>()
-const supplier = ref<string>('')
-const prefered = ref<boolean>(false)
+const link = ref<string>(props.editLink || '')
+const supplier = ref<string>(props.editSupplier || '')
+const prefered = ref<boolean>(props.editPrefered || false)
 
 const suppliers = ref<SupplierGetResponse>([])
-getSuppliers().then(data => {
-  suppliers.value = data
-})
+if (!props.edit) {
+  getSuppliers().then(data => {
+    suppliers.value = data
+  })
+}
 
 const linkItem = () => {
   const payload: ItemLinkSupplierRequest = {
@@ -70,6 +81,24 @@ const linkItem = () => {
     prefered: prefered.value,
   }
   supplierLinkItem(payload)
+    .then(() => {
+      const popupStore = usePopupStore()
+      popupStore.callCurrent(payload)
+      popupStore.pop()
+    })
+    .catch(err => {
+      console.error('Error creating item:', err)
+    })
+}
+
+const linkItemEdit = () => {
+  const payload: ItemEditLinkSupplierRequest = {
+    name: props.name,
+    link: link.value,
+    supplier: props.editSupplier!,
+    prefered: prefered.value,
+  }
+  supplierEditLinkItem(payload)
     .then(() => {
       const popupStore = usePopupStore()
       popupStore.callCurrent(payload)

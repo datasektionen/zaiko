@@ -326,10 +326,19 @@ const SettingsSupplier = (action: string, name: string) => {
   let cb = undefined
   switch (action) {
     case 'edit':
-      // comp = StorageForm;
-      props = {} // add item
+      comp = LinkForm
+      const editLink = item.value.supplier?.find(s => s.name === name)
+      props = {
+        name: item.value.name,
+        edit: true,
+        editLink: editLink?.link,
+        editName: editLink?.name,
+        editPrefered: editLink?.prfered,
+        editSupplier: name,
+      }
+      title = 'Redigera ' + name
       icon = PencilSquareIcon
-      cb = undefined
+      cb = editSupplierGhost
       break
     case 'unsupply':
       comp = DeleteForm
@@ -384,6 +393,14 @@ function addSupplierGhost(result?: any) {
 }
 
 function editItemGhost(result?: any) {
+  if (result) {
+    getItemByName(item.value.name).then(data => {
+      item.value = data
+    })
+  }
+}
+
+function editSupplierGhost(result?: any) {
   if (result) {
     getItemByName(item.value.name).then(data => {
       item.value = data
