@@ -548,6 +548,32 @@ pub async fn add_supplier(
     .await
 }
 
+pub async fn update_supplier(
+    db: &Pool<Postgres>,
+    supplier: &str,
+    item: &str,
+    link: Option<&str>,
+    prefered: bool,
+) -> Result<PgQueryResult, sqlx::Error> {
+    sqlx::query!(
+        r#"
+            UPDATE supplier_item
+            SET
+                link = $1,
+                prefered = $2
+            WHERE
+                item = $3 AND
+                supplier = $4
+        "#,
+        link,
+        prefered,
+        supplier,
+        item
+    )
+    .execute(db)
+    .await
+}
+
 pub async fn change(
     db: &Pool<Postgres>,
     name: &str,

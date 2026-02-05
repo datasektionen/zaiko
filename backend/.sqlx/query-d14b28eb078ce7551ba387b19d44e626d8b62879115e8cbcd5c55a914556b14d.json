@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE supplier_item\n            SET\n                link = $1,\n                prefered = $2\n            WHERE\n                item = $3 AND\n                supplier = $4\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Bool",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d14b28eb078ce7551ba387b19d44e626d8b62879115e8cbcd5c55a914556b14d"
+}

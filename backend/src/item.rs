@@ -156,6 +156,7 @@ pub fn config() -> impl FnOnce(&mut ServiceConfig) {
             .service(change_stored_item)
             .service(move_item)
             .service(supply_item)
+            .service(change_supply_item)
             .service(delete_item)
             .service(unsupply_item);
     }
@@ -324,6 +325,50 @@ async fn supply_item(
     check_auth(CheckType::Item(&supplier.name), &db, &permissions).await?;
 
     db::item::add_supplier(
+        &db,
+        &supplier.supplier,
+        &supplier.name,
+        supplier.link.as_deref(),
+        supplier.prefered,
+    )
+    .await?;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[utoipa::path(
+    tag = "item",
+    request_body = SupplierAddRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            description = "Success"
+        ),
+        (
+            status = StatusCode::BAD_REQUEST,
+            description = "Bad Request"
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            description = "Unauthorized"
+        ),
+        (
+            status = StatusCode::INTERNAL_SERVER_ERROR,
+            description = "Internal Server Error"
+        )
+    )
+)]
+#[patch("/supply")]
+async fn change_supply_item(
+    body: String,
+    db: web::Data<Pool<Postgres>>,
+    permissions: web::ReqData<Vec<HivePermission>>,
+) -> Result<HttpResponse, Error> {
+    let supplier: SupplierAddRequest = serde_json::from_str(&body)?;
+
+    check_auth(CheckType::Item(&supplier.name), &db, &permissions).await?;
+
+    db::item::update_supplier(
         &db,
         &supplier.supplier,
         &supplier.name,
