@@ -236,40 +236,54 @@ pub async fn get_all_filtered_basic(
     max: Option<f32>,
     permitted_storages: &[String],
 ) -> Result<Vec<BasicItem>, sqlx::Error> {
-    // DISTINCT feals like a shortcut but works
     sqlx::query_as!(
         BasicItem,
         r#"
-            SELECT
-                item.name,
-                SUM(stored_item.amount) as "amount!",
-                item.unit,
-                ARRAY(
-                    SELECT DISTINCT (
+            WITH storages AS (
+                SELECT 
+                    stored_item.item,
+                    stored_item.amount,
+                    stored_item.storage,
+                    stored_item.container,
+                    (
                         stored_item.storage,
                         stored_item.container,
                         current_state.state
-                    )::storage_listing_basic
-                    FROM stored_item
-                    JOIN current_state ON current_state.item = stored_item.item
-                    JOIN storage ON stored_item.storage = storage.name
-                    WHERE
-                        stored_item.item = item.name AND
-                        (
-                            storage.protected <> true OR
-                            LOWER(stored_item.storage) IN (SELECT UNNEST($7::TEXT[]))
-                        )
+                    )::storage_listing_basic AS "entry"
+                FROM stored_item
+                JOIN current_state ON
+                    current_state.item = stored_item.item AND
+                    current_state.storage = stored_item.storage AND
+                    current_state.container = stored_item.container
+                JOIN storage ON stored_item.storage = storage.name
+                WHERE storage.protected <> true OR
+                        LOWER(stored_item.storage) IN (SELECT UNNEST($7::TEXT[]))
+                GROUP BY
+                    stored_item.item,
+                    stored_item.storage,
+                    stored_item.container,
+                    current_state.state
+                ORDER BY stored_item.storage, stored_item.container
+            )
+            SELECT
+                item.name,
+                SUM(storages.amount) as "amount!",
+                item.unit,
+                ARRAY (
+                    SELECT entry
+                    FROM storages
+                    WHERE storages.item = item.name
                 ) AS "storage!: Vec<BasicItemStorage>"
             FROM item
-            JOIN stored_item ON stored_item.item = item.name
+            JOIN storages ON item.name = storages.item
             LEFT JOIN supplier_item ON supplier_item.item = item.name
             WHERE
                 ($1::TEXT IS NULL OR levenshtein(item.name, $1) <= 5) AND
-                ($2::TEXT IS NULL OR storage = $2) AND
-                ($3::TEXT IS NULL OR container = $3) AND
+                ($2::TEXT IS NULL OR storages.storage = $2) AND
+                ($3::TEXT IS NULL OR storages.container = $3) AND
                 ($4::TEXT IS NULL OR supplier_item.supplier = $4) AND
-                ($5::REAL IS NULL OR stored_item.amount >= $5) AND
-                ($6::REAL IS NULL OR stored_item.amount <= $6)
+                ($5::REAL IS NULL OR storages.amount >= $5) AND
+                ($6::REAL IS NULL OR storages.amount <= $6)
             GROUP BY item.name
         "#,
         name,
@@ -293,12 +307,12 @@ pub async fn get_item_by_name_detailed(
     sqlx::query_as!(
         DetailedItem,
         r#"
-            SELECT
-                item.name,
-                item.unit,
-                item.inventory_interval as "inventory_interval: Interval",
-                ARRAY(
-                    SELECT DISTINCT (
+            WITH storages AS (
+                SELECT 
+                    stored_item.item,
+                    stored_item.storage,
+                    stored_item.container,
+                    (
                         stored_item.storage,
                         stored_item.container,
                         stored_item.amount,
@@ -306,30 +320,45 @@ pub async fn get_item_by_name_detailed(
                         stored_item.max,
                         current_state.state,
                         next_inventory.time
-                    )::storage_listing
-                    FROM stored_item
-                    JOIN storage ON stored_item.storage = storage.name
-                    LEFT JOIN next_inventory ON 
-                        next_inventory.item = stored_item.item AND
-                        next_inventory.storage = stored_item.storage AND
-                        next_inventory.container = stored_item.container
-                    JOIN current_state ON current_state.item = stored_item.item
-                    WHERE
-                        stored_item.item = $1 AND
-                        (
-                            storage.protected <> true OR
-                            LOWER(storage.name) In (SELECT UNNEST($2::TEXT[]))
-                        )
-                    GROUP BY stored_item.item, stored_item.storage, stored_item.container, current_state.state, next_inventory.time
-                ) AS "storage!: Vec<StorageListing>",
-                ARRAY(
-                    SELECT (
+                    )::storage_listing AS "entry"
+                FROM stored_item
+                JOIN storage ON stored_item.storage = storage.name
+                LEFT JOIN next_inventory ON 
+                    next_inventory.item = stored_item.item AND
+                    next_inventory.storage = stored_item.storage AND
+                    next_inventory.container = stored_item.container
+                JOIN current_state ON
+                    current_state.item = stored_item.item AND
+                    current_state.storage = stored_item.storage AND
+                    current_state.container = stored_item.container
+                WHERE
+                    storage.protected <> true OR
+                    LOWER(storage.name) In (SELECT UNNEST($2::TEXT[]))
+                ORDER BY stored_item.storage, stored_item.container
+            ),
+            suppliers AS (
+                SELECT
+                    item,
+                    (
                         supplier,
                         link,
                         prefered
-                    )::supplier_listing
-                    FROM supplier_item
-                    WHERE item = $1
+                    )::supplier_listing AS "supplier"
+                FROM supplier_item
+            )
+            SELECT
+                item.name,
+                item.unit,
+                item.inventory_interval as "inventory_interval: Interval",
+                ARRAY(
+                    SELECT entry
+                    FROM storages
+                    WHERE storages.item = item.name
+                ) AS "storage!: Vec<StorageListing>",
+                ARRAY(
+                    SELECT supplier
+                    FROM suppliers
+                    WHERE suppliers.item = item.name
                 ) AS "supplier!: Vec<SupplierListing>"
             FROM item
             WHERE item.name = $1
@@ -392,28 +421,45 @@ pub async fn items_due(
     Ok(sqlx::query_as!(
         DueStorage,
         r#"
+            WITH items AS (
+                SELECT 
+                    stored_item.item,
+                    stored_item.storage,
+                    stored_item.container,
+                    (
+                        name,
+                        unit,
+                        amount
+                    )::shortage_item AS "entry"
+                FROM stored_item
+                JOIN item ON item.name = stored_item.item
+                JOIN next_inventory ON
+                    next_inventory.item = stored_item.item AND
+                    next_inventory.storage = stored_item.storage AND
+                    next_inventory.container = stored_item.container AND
+                    next_inventory.time < CURRENT_TIMESTAMP
+            ),
+            containers AS (
+                SELECT
+                    container.storage,
+                    (
+                        name,
+                        ARRAY(
+                            SELECT entry
+                            FROM items
+                            WHERE
+                                items.container = container.name AND
+                                items.storage = container.storage
+                        )
+                    )::shortage_listing AS "entry"
+                FROM container
+            )
             SELECT
                 name,
                 ARRAY(
-                    SELECT
-                        (
-                            name,
-                            ARRAY(
-                                SELECT (name, unit, amount)::shortage_item
-                                FROM stored_item
-                                JOIN item ON item.name = stored_item.item
-                                JOIN next_inventory ON
-                                    next_inventory.item = stored_item.item AND
-                                    next_inventory.storage = stored_item.storage AND
-                                    next_inventory.container = stored_item.container AND
-                                    next_inventory.time < CURRENT_TIMESTAMP
-                                WHERE
-                                    stored_item.container = container.name
-                                    AND stored_item.storage = storage.name
-                            )
-                        )::shortage_listing
-                    FROM container
-                    WHERE container.storage = storage.name
+                    SELECT entry
+                    FROM containers
+                    WHERE containers.storage = storage.name
                 ) AS "containers!: Vec<DueContainer>"
             FROM storage
             WHERE LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))
