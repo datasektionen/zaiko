@@ -208,6 +208,8 @@ GROUP BY
 CREATE VIEW current_state AS
 SELECT
     stored_item.item,
+    stored_item.storage,
+    stored_item.container,
     STATE(
         stored_item.amount,
         stored_item.min,
