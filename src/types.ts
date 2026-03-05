@@ -70,11 +70,15 @@ export type SupplierGetResponse =
   operations['get_suppliers']['responses']['200']['content']['application/json']
 export type SupplierAddRequest =
   operations['create_supplier']['requestBody']['content']['application/json']
+export type SupplierEditRequest =
+  operations['update_supplier']['requestBody']['content']['application/json']
 export type SupplierDeleteRequest =
   operations['delete_supplier']['parameters']['query']
 
 export type UserInfoGetResponse =
   operations['user_info']['responses']['200']['content']['application/json']
+
+export type HivePermission = components['schemas']['HivePermission']
 
 export type Duration = {
   years?: number

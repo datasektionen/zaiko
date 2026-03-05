@@ -76,7 +76,7 @@ const Interval = (interval: Duration): string | undefined => {
 }
 
 const storages = ref<StorageContainersGetResponse>([])
-getStorageContainers().then(data => {
+getStorageContainers(true).then(data => {
   storages.value = data
 })
 

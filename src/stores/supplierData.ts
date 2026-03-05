@@ -3,6 +3,7 @@ import type {
   Notification,
   SupplierAddRequest,
   SupplierDeleteRequest,
+  SupplierEditRequest,
 } from '@/types'
 import { useNotificationsStore } from './notifications'
 
@@ -84,7 +85,7 @@ export async function deleteSupplier(
 }
 
 export async function updateSupplier(
-  supplier: SupplierAddRequest,
+  supplier: SupplierEditRequest,
 ): Promise<void> {
   const res = await fetch('/api/supplier', {
     method: 'PATCH',

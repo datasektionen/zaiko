@@ -30,12 +30,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import {
-  ArchiveBoxIcon,
-  HomeIcon,
-  DocumentCheckIcon,
-} from '@heroicons/vue/16/solid'
-import InputText from '@/components/InputText.vue'
+import { HomeIcon, DocumentCheckIcon } from '@heroicons/vue/16/solid'
 import InputSelect from '@/components/InputSelect.vue'
 import { getStorageContainers } from '@/stores/storageData'
 import { moveContainer } from '@/stores/containerData'
@@ -60,7 +55,7 @@ const merge = ref<boolean>(false)
 const storage = ref<string>('')
 
 const storages = ref<StorageContainersGetResponse>([])
-getStorageContainers().then(data => {
+getStorageContainers(true).then(data => {
   storages.value = data
 })
 

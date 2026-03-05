@@ -9,8 +9,11 @@ import type {
   StorageContainersTreeGetResponse,
 } from '@/types'
 import { useNotificationsStore } from './notifications'
+import { usePermsStore } from './permissions'
 
-export async function getStorageContainers(): Promise<StorageContainersGetResponse> {
+export async function getStorageContainers(
+  filter?: boolean,
+): Promise<StorageContainersGetResponse> {
   const res = await fetch('/api/storages/containers', { method: 'GET' })
   if (!res.ok) {
     const notificationsStore = useNotificationsStore()
@@ -23,8 +26,18 @@ export async function getStorageContainers(): Promise<StorageContainersGetRespon
     notificationsStore.add(noti)
     return Promise.reject(noti)
   }
-  const storage = await res.json()
+  const storage: StorageContainersGetResponse = await res.json()
+  const permsStore = usePermsStore()
+  const perms = permsStore.perms?.permissions || []
   console.log('Fetched storage:', storage)
+  if (filter) {
+    const storageWithPerms = storage.filter(
+      s =>
+        perms.find(p => p.scope === s.name.toLowerCase() && p.id === 'write') ||
+        perms.find(p => p.id === 'admin'),
+    )
+    return Promise.resolve(storageWithPerms)
+  }
   return Promise.resolve(storage)
 }
 
