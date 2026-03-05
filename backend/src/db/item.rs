@@ -185,12 +185,7 @@ pub async fn get_location(db: &Pool<Postgres>, item: &str) -> Result<Vec<Locatio
             SELECT storage, container
             FROM stored_item
             JOIN storage ON stored_item.storage = storage.name
-            WHERE
-                item = $1 AND
-                (
-                    storage.protected <> true OR
-                    LOWER(storage.name) IN (SELECT UNNEST($1::TEXT[]))
-                )
+            WHERE item = $1
         "#,
         item
     )
@@ -1796,9 +1791,18 @@ mod test {
 
         let mut trans = db.begin().await.unwrap();
 
-        super::move_item(&mut trans, "tejp", Some(7.0), "meta", "", "örådet", "", "test")
-            .await
-            .unwrap();
+        super::move_item(
+            &mut trans,
+            "tejp",
+            Some(7.0),
+            "meta",
+            "",
+            "örådet",
+            "",
+            "test",
+        )
+        .await
+        .unwrap();
 
         trans.commit().await.unwrap();
 
@@ -1867,9 +1871,18 @@ mod test {
 
         println!(
             "{:?}",
-            super::move_item(&mut trans, "tejp", Some(7.0), "meta", "", "örådet", "", "test")
-                .await
-                .unwrap()
+            super::move_item(
+                &mut trans,
+                "tejp",
+                Some(7.0),
+                "meta",
+                "",
+                "örådet",
+                "",
+                "test"
+            )
+            .await
+            .unwrap()
         );
 
         trans.commit().await.unwrap();
@@ -1974,47 +1987,23 @@ mod test {
         .await
         .unwrap();
 
-        sqlx::query!(
-            r#"
-                UPDATE log
-                    SET time = CURRENT_TIMESTAMP - INTERVAL '1 month'
-                WHERE item = 'tändvätska' AND storage = 'örådet' AND container = ''
-            "#
-        )
-        .execute(&db)
-        .await
-        .unwrap();
-
         let shortage = super::items_due(&db, &vec![String::from("meta"), String::from("örådet")])
             .await
             .unwrap();
 
         assert_eq!(
             shortage,
-            vec![
-                DueStorage {
-                    name: String::from("meta"),
-                    containers: vec![DueContainer {
-                        name: String::from(""),
-                        items: vec![DueItem {
-                            name: String::from("tejp"),
-                            unit: String::from("st"),
-                            amount: 7.0
-                        },]
-                    }]
-                },
-                DueStorage {
-                    name: String::from("örådet"),
-                    containers: vec![DueContainer {
-                        name: String::from(""),
-                        items: vec![DueItem {
-                            name: String::from("tändvätska"),
-                            unit: String::from("st"),
-                            amount: 7.0
-                        }]
-                    }]
-                }
-            ]
+            vec![DueStorage {
+                name: String::from("meta"),
+                containers: vec![DueContainer {
+                    name: String::from(""),
+                    items: vec![DueItem {
+                        name: String::from("tejp"),
+                        unit: String::from("st"),
+                        amount: 7.0
+                    },]
+                }]
+            },]
         )
     }
 }
