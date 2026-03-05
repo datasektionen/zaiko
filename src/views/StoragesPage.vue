@@ -35,14 +35,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import PanelTemplate from '@/components/PanelTemplate.vue'
-import {
-  InboxIcon,
-  PlusIcon,
-  ShoppingCartIcon,
-} from '@heroicons/vue/24/outline'
-import type { StorageContainersGetResponse, SupplierGetResponse } from '@/types'
-import SupplierForm from '@/components/SupplierForm.vue'
-import { getSuppliers } from '@/stores/supplierData'
+import { InboxIcon } from '@heroicons/vue/24/outline'
+import type { StorageContainersGetResponse } from '@/types'
 import DynamicTable from '@/components/DynamicTable.vue'
 import { getStorageContainers } from '@/stores/storageData'
 

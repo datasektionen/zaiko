@@ -45,14 +45,10 @@ import {
   PencilSquareIcon,
   BackspaceIcon,
 } from '@heroicons/vue/24/outline'
-import type { StorageContainersGetResponse, StoragesGetResponse } from '@/types'
+import type { StoragesGetResponse } from '@/types'
 import { markRaw, ref, type FunctionalComponent } from 'vue'
 import { durationToReadableString, parseISODuration } from '@/common'
-import {
-  deleteStorage,
-  getStorageContainers,
-  getStorages,
-} from '@/stores/storageData'
+import { deleteStorage, getStorages } from '@/stores/storageData'
 import { usePopupStore } from '@/stores/popup'
 import StorageForm from '@/components/StorageForm.vue'
 import HamMenu from '@/components/HamMenu.vue'

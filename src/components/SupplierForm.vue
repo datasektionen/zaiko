@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SupplierAddRequest } from '@/types'
+import type { SupplierAddRequest, SupplierEditRequest } from '@/types'
 import {
   ShoppingCartIcon,
   LinkIcon,
@@ -71,7 +71,6 @@ import {
 import { ref } from 'vue'
 import InputText from '@/components/InputText.vue'
 import InputTextArea from '@/components/InputTextArea.vue'
-import InputNumber from '@/components/InputNumber.vue'
 import InputSelect from '@/components/InputSelect.vue'
 import { UserGroupIcon } from '@heroicons/vue/24/outline'
 import { createSupplier, updateSupplier } from '@/stores/supplierData'
@@ -118,9 +117,10 @@ const addSupplier = async () => {
 }
 
 const EditSupplier = async () => {
-  const supplier: SupplierAddRequest = {
+  const supplier: SupplierEditRequest = {
     group: group.value,
     name: name.value,
+    old_name: props.editSupplier!.name,
     username: username.value,
     password: password.value,
     link: link.value,

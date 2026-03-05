@@ -78,7 +78,7 @@ const storage = ref<string>('')
 const container = ref<string>('')
 
 const storages = ref<StorageContainersGetResponse>([])
-getStorageContainers().then(data => {
+getStorageContainers(true).then(data => {
   storages.value = data
 })
 
