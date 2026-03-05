@@ -5,6 +5,7 @@ import ItemsPage from '@/views/ItemsPage.vue'
 import ItemPage from '@/views/ItemPage.vue'
 import StockPage from '@/views/StockPage.vue'
 import AdminPage from '@/views/AdminPage.vue'
+import AlcoholPage from '@/views/AlcoholPage.vue'
 import { usePermsStore } from '@/stores/permissions'
 import StoragesPage from '@/views/StoragesPage.vue'
 import StoragePage from '@/views/StoragePage.vue'
@@ -41,6 +42,19 @@ const router = createRouter({
       path: '/suppliers',
       name: 'Leverantörer',
       component: SupplierPage,
+    },
+    {
+      path: '/alcohol',
+      name: 'Alkohol',
+      component: AlcoholPage,
+      beforeEnter: (to, from, next) => {
+        const permsStore = usePermsStore()
+        if (permsStore.hasWriteAccess() || permsStore.isAdmin()) {
+          next()
+        } else {
+          next('/')
+        }
+      },
     },
     {
       path: '/stock',

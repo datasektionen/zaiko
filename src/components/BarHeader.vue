@@ -215,6 +215,13 @@
           v-if="permsStore.hasGroup()"
         />
         <NavLink
+          to="/alcohol"
+          title="Alkohol"
+          :compact="!barOpen"
+          :icon="BeakerIcon"
+          v-if="permsStore.hasWriteAccess()"
+        />
+        <NavLink
           to="/stock"
           title="Inventera"
           :compact="!barOpen"
@@ -267,6 +274,7 @@ import {
   ClipboardDocumentListIcon,
   WrenchIcon,
   InboxIcon,
+  BeakerIcon,
 } from '@heroicons/vue/24/outline'
 import { computed, ref } from 'vue'
 import NotificationList from '@/components/NotificationList.vue'

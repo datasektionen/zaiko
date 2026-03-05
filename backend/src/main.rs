@@ -12,6 +12,7 @@ use utoipa::OpenApi;
 use utoipa_actix_web::{scope, AppExt};
 use utoipa_redoc::{Redoc, Servable};
 
+mod alcohol;
 mod auth;
 mod db;
 mod error;
@@ -85,6 +86,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(stats::config())
                     .configure(logging::config())
                     .configure(shipment::config())
+                    .configure(alcohol::config())
                     .service(auth::user_info),
             )
             .openapi_service(|api| Redoc::with_url("/docs/api", api))

@@ -80,6 +80,77 @@ export type UserInfoGetResponse =
 
 export type HivePermission = components['schemas']['HivePermission']
 
+// Alcohol Types
+export enum AlcoholType {
+  Cider = 'cider',
+  Beer = 'beer',
+  Spirits = 'spirits',
+  Wine = 'wine',
+}
+
+export interface AlcoholProduct {
+  item_name: string
+  alcohol_type: AlcoholType
+  volume_cl: number
+  supplier: string
+  current_bottles: number
+  previous_bottles: number
+  current_purchase_price: number
+  previous_purchase_price: number | null
+  minimum_sale_price: number
+  sale_price: number
+  price_per_cl: number | null
+  last_updated: string | null
+}
+
+export interface AlcoholProductCreateRequest {
+  item_name: string
+  alcohol_type: AlcoholType
+  volume_cl: number
+  supplier: string
+}
+
+export interface AlcoholInventoryUpdateRequest {
+  item_name: string
+  current_bottles: number
+  previous_bottles: number
+  current_purchase_price: number
+  previous_purchase_price?: number
+  sale_price?: number
+  price_per_cl?: number
+}
+
+export interface AlcoholReportEntry {
+  item_name: string
+  alcohol_type: AlcoholType
+  supplier: string
+  volume_cl: number
+  current_bottles: number
+  previous_bottles: number
+  bottle_change: number
+  current_total_value: number
+  previous_total_value: number
+  value_change: number
+  current_purchase_price: number
+  previous_purchase_price: number | null
+  sale_price: number
+}
+
+export interface AlcoholTypeSummary {
+  alcohol_type: AlcoholType
+  count: number
+  total_bottles: number
+  total_value: number
+  value_change: number
+}
+
+export interface AlcoholInventoryReport {
+  report_date: string
+  entries: AlcoholReportEntry[]
+  summary_by_type: AlcoholTypeSummary[]
+  total_value: number
+}
+
 export type Duration = {
   years?: number
   months?: number
