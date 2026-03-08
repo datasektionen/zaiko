@@ -36,7 +36,7 @@ RUN bun run build-only # FIXME
 ## -------------build backend-------------------------
 ##
 
-FROM rust:1.84-alpine AS build
+FROM rust:1.94-alpine AS build
 WORKDIR /build
 
 RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash postgresql nginx
@@ -57,7 +57,7 @@ COPY backend/migrations/ migrations
 
 COPY backend/src src
 
-RUN cargo build
+# RUN cargo build
 
 COPY --from=prerelease /usr/src/app/dist/ dist/
 
