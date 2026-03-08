@@ -36,7 +36,7 @@ RUN bun run build-only # FIXME
 ENV SQLX_OFFLINE=true
 ENV RUST_LOG=info
 
-FROM rust:1.84-alpine AS build
+FROM rust:1.94-alpine AS build
 WORKDIR /build
 
 RUN apk update && apk add git alpine-sdk make libffi-dev openssl-dev pkgconfig bash postgresql
