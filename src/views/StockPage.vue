@@ -11,7 +11,11 @@
     </div>
     <template v-if="data.length > 0">
       <template v-for="storage in data" :key="storage.name">
-        <PanelTemplate :title="storage.name" :icon="ClipboardDocumentListIcon">
+        <PanelTemplate
+          :title="storage.name"
+          :icon="ClipboardDocumentListIcon"
+          :titleLink="`/storage/${encodeURIComponent(storage.name)}`"
+        >
           <DynamicTree
             :rows="storage.containers || []"
             :columns="columns"

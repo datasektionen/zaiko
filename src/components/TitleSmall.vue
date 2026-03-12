@@ -4,9 +4,7 @@
       :is="icon"
       class="flex justify-center align-center max-w-8 max-h-8 text-(--zaiko-text)"
     />
-    <h4
-      class="m-0 text-xl font-bold text-(--zaiko-text) font-left w-fit text-nowrap"
-    >
+    <h4 class="m-0 text-xl font-bold text-(--zaiko-text) font-left w-fit">
       {{ title }}
     </h4>
   </div>
