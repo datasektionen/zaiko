@@ -273,7 +273,12 @@ pub async fn get_all_filtered_basic(
             JOIN storages ON item.name = storages.item
             LEFT JOIN supplier_item ON supplier_item.item = item.name
             WHERE
-                ($1::TEXT IS NULL OR levenshtein(item.name, $1) <= 5) AND
+                ($1::TEXT IS NULL OR
+                    (
+                        levenshtein(item.name, $1) <= char_length($1)/2 OR
+                        item.name ILIKE '%' || $1 || '%'
+                    )
+                ) AND
                 ($2::TEXT IS NULL OR storages.storage = $2) AND
                 ($3::TEXT IS NULL OR storages.container = $3) AND
                 ($4::TEXT IS NULL OR supplier_item.supplier = $4) AND
