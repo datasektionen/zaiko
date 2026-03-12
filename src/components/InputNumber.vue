@@ -7,6 +7,7 @@
       </div>
       <input
         type="number"
+        step="any"
         v-model.number="model"
         :placeholder="placeholder || name"
         :required

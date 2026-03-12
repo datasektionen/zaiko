@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="overflow-x-scroll md:overflow-x-visible">
     <table
       class="w-full border-collapse table-auto m-4 bg-(--zaiko-bg-0) text-(--zaiko-text) rounded-lg shadow-md p-4"
     >

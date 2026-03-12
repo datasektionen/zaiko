@@ -186,45 +186,45 @@
             />
           </g>
         </svg>
-        <h1 v-if="barOpen">Zaiko</h1>
+        <h1 v-if="isBarOpen">Zaiko</h1>
       </RouterLink>
       <div class="navLinks" @click="isMobileClose()">
         <NavLink
           to="/"
           title="Dashboard"
-          :compact="!barOpen"
+          :compact="!isBarOpen"
           :icon="CommandLineIcon"
         />
         <NavLink
           to="/items"
           title="Produkter"
-          :compact="!barOpen"
+          :compact="!isBarOpen"
           :icon="ArchiveBoxIcon"
         />
         <NavLink
           to="/storages"
           title="Lager"
-          :compact="!barOpen"
+          :compact="!isBarOpen"
           :icon="InboxIcon"
         />
         <NavLink
           to="/suppliers"
           title="Leverantörer"
-          :compact="!barOpen"
+          :compact="!isBarOpen"
           :icon="ShoppingCartIcon"
           v-if="permsStore.hasGroup()"
         />
         <NavLink
           to="/stock"
           title="Inventera"
-          :compact="!barOpen"
+          :compact="!isBarOpen"
           :icon="ClipboardDocumentListIcon"
           v-if="permsStore.hasWriteAccess()"
         />
         <NavLink
           to="/admin"
           title="Admin"
-          :compact="!barOpen"
+          :compact="!isBarOpen"
           :icon="WrenchIcon"
           v-if="permsStore.isAdmin()"
         />
@@ -233,7 +233,7 @@
     <div class="barPanel">
       <div class="barHeader">
         <div class="pageHeader">
-          <button class="hamIcon" @click="barOpen = !barOpen">
+          <button class="hamIcon" @click="isBarOpen = !isBarOpen">
             <Bars3Icon class="icon" />
           </button>
           <h1>
@@ -277,18 +277,21 @@ import { useThemeStore } from '@/stores/theme'
 import { SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
 
 const isMobile = useMediaQuery('(max-width: 768px)')
-const isSmallScreen = useMediaQuery('(max-width: 1250px)')
+const isSmallScreen = useMediaQuery('(max-width: 1024px)')
+console.log('isMobile:', isMobile.value)
+console.log('isSmallScreen:', isSmallScreen.value)
 
-const barOpen = ref<boolean>(isSmallScreen || isMobile.value ? true : false)
+const isBarOpen = ref<boolean>(!(isMobile.value || isSmallScreen.value))
+console.log('Initial isBarOpen state:', isBarOpen.value)
 
 const permsStore = usePermsStore()
 
 const barSidePanel = computed<string>(() => {
-  return barOpen.value ? 'barSidePanel' : 'barSidePanel closed'
+  return isBarOpen.value ? 'barSidePanel' : 'barSidePanel closed'
 })
 
 const Main = computed<string>(() => {
-  return barOpen.value ? 'Main' : 'Main MainClosed'
+  return isBarOpen.value ? 'Main' : 'Main MainClosed'
 })
 
 const themeStore = useThemeStore()
@@ -304,7 +307,7 @@ const themeIcon = computed(() => {
 
 const isMobileClose = () => {
   if (isMobile.value) {
-    barOpen.value = false
+    isBarOpen.value = false
   }
 }
 </script>
