@@ -8,11 +8,21 @@ use sqlx::{
     Decode, Encode, Postgres, Type,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, PartialOrd)]
 pub struct Interval {
     pub months: i32,
     pub days: i32,
     pub microseconds: i64,
+}
+
+impl Interval {
+    pub fn new(months: i32, days: i32, microseconds: i64) -> Self {
+        Interval {
+            months,
+            days,
+            microseconds,
+        }
+    }
 }
 
 impl From<PgInterval> for Interval {

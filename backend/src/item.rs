@@ -285,7 +285,13 @@ async fn create_item(
         item.max,
         item.amount,
         item.unit.as_deref(),
-        item.inventory_interval,
+        item.inventory_interval.and_then(|interval| {
+            if interval < Interval::new(0, 1, 0) {
+                None
+            } else {
+                Some(interval)
+            }
+        }),
     )
     .await?;
 
@@ -416,7 +422,13 @@ async fn change_item(
         &item.name,
         item.new_name.as_deref(),
         &item.unit,
-        item.inventory_interval,
+        item.inventory_interval.and_then(|interval| {
+            if interval < Interval::new(0, 1, 0) {
+                None
+            } else {
+                Some(interval)
+            }
+        }),
     )
     .await?;
 

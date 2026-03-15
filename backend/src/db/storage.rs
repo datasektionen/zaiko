@@ -70,7 +70,7 @@ pub async fn change(
     name: &str,
     new_name: Option<&str>,
     protected: bool,
-    inventory_interval: Option<PgInterval>,
+    inventory_interval: Option<Interval>,
 ) -> Result<PgQueryResult, sqlx::Error> {
     let new_name = if let Some(name) = new_name {
         name
@@ -90,7 +90,7 @@ pub async fn change(
         name,
         new_name,
         protected,
-        inventory_interval
+        inventory_interval.map(Into::<PgInterval>::into)
     )
     .execute(db)
     .await
@@ -271,7 +271,7 @@ mod test {
     async fn update_values(db: Pool<Postgres>) {
         super::create(&db, "meta", false, None).await.unwrap();
 
-        super::change(&db, "meta", None, true, Some(PgInterval::default()))
+        super::change(&db, "meta", None, true, Some(Interval::new(0, 1, 0)))
             .await
             .unwrap();
 
@@ -288,7 +288,7 @@ mod test {
 
         assert_eq!(storage.name, "meta");
         assert_eq!(storage.protected, true);
-        assert_eq!(storage.inventory_interval, Some(Interval::default()));
+        assert_eq!(storage.inventory_interval, Some(Interval::new(0, 1, 0)));
     }
 
     #[sqlx::test]

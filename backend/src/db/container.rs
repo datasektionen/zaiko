@@ -5,7 +5,10 @@ use sqlx::{
 };
 use utoipa::ToSchema;
 
-use crate::{db::{self, item::MinimalItem}, error::Error};
+use crate::{
+    db::{self, interval::Interval, item::MinimalItem},
+    error::Error,
+};
 
 #[cfg(test)]
 pub struct Container {
@@ -90,7 +93,7 @@ pub async fn create(
     db: &Pool<Postgres>,
     name: &str,
     storage: &str,
-    inventory_interval: Option<PgInterval>,
+    inventory_interval: Option<Interval>,
 ) -> Result<PgQueryResult, sqlx::Error> {
     sqlx::query!(
         r#"
@@ -99,7 +102,7 @@ pub async fn create(
         "#,
         name,
         storage,
-        inventory_interval
+        inventory_interval.map(Into::<PgInterval>::into)
     )
     .execute(db)
     .await
@@ -177,8 +180,17 @@ pub async fn move_container(
         .await?;
 
         for Item { item } in items {
-            db::item::move_item(&mut trans, &item, None, from_storage, name, to_storage, name, id)
-                .await?;
+            db::item::move_item(
+                &mut trans,
+                &item,
+                None,
+                from_storage,
+                name,
+                to_storage,
+                name,
+                id,
+            )
+            .await?;
         }
 
         sqlx::query!(
