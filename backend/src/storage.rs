@@ -263,7 +263,13 @@ async fn create_storage(
         &db,
         &storage.name,
         storage.protected,
-        storage.inventory_interval.map(|time| time.into()),
+        storage.inventory_interval.and_then(|interval| {
+            if interval < Interval::new(0, 1, 0) {
+                None
+            } else {
+                Some(interval)
+            }
+        }),
     )
     .await?;
 
@@ -307,7 +313,13 @@ async fn change_storage(
         &storage.name,
         storage.new_name.as_deref(),
         storage.protected,
-        storage.inventory_interval.map(|time| time.into()),
+        storage.inventory_interval.and_then(|interval| {
+            if interval < Interval::new(0, 1, 0) {
+                None
+            } else {
+                Some(interval)
+            }
+        }),
     )
     .await?;
 
@@ -391,7 +403,13 @@ async fn create_container(
         &db,
         &container.name,
         &container.storage,
-        container.inventory_interval.map(|time| time.into()),
+        container.inventory_interval.and_then(|interval| {
+            if interval < Interval::new(0, 1, 0) {
+                None
+            } else {
+                Some(interval)
+            }
+        }),
     )
     .await?;
 

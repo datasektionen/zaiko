@@ -206,13 +206,18 @@ pub async fn get_all_in_storage_grouped_by_container_minimal(
                 stored_item.amount,
                 item.unit,
                 current_state.state as "state!: OrderState",
-                next_inventory.time as "next_inventory"
+                next_inventory(stored_item.item, stored_item.container, stored_item.storage)
             FROM stored_item
             JOIN item ON item.name = stored_item.item
-            JOIN next_inventory ON next_inventory.item = stored_item.item
             JOIN current_state ON current_state.item = stored_item.item
             WHERE stored_item.storage = $1 AND stored_item.container = $2
-            GROUP BY item.name, stored_item.amount, current_state.state, next_inventory.time
+            GROUP BY
+                item.name,
+                stored_item.item,
+                stored_item.container,
+                stored_item.storage,
+                stored_item.amount,
+                current_state.state
         "#,
         storage,
         container
@@ -319,14 +324,10 @@ pub async fn get_item_by_name_detailed(
                         stored_item.min,
                         stored_item.max,
                         current_state.state,
-                        next_inventory.time
+                        next_inventory(stored_item.item, stored_item.container, stored_item.storage)
                     )::storage_listing AS "entry"
                 FROM stored_item
                 JOIN storage ON stored_item.storage = storage.name
-                LEFT JOIN next_inventory ON 
-                    next_inventory.item = stored_item.item AND
-                    next_inventory.storage = stored_item.storage AND
-                    next_inventory.container = stored_item.container
                 JOIN current_state ON
                     current_state.item = stored_item.item AND
                     current_state.storage = stored_item.storage AND
@@ -433,11 +434,7 @@ pub async fn items_due(
                     )::shortage_item AS "entry"
                 FROM stored_item
                 JOIN item ON item.name = stored_item.item
-                JOIN next_inventory ON
-                    next_inventory.item = stored_item.item AND
-                    next_inventory.storage = stored_item.storage AND
-                    next_inventory.container = stored_item.container AND
-                    next_inventory.time < CURRENT_TIMESTAMP
+                WHERE next_inventory(stored_item.item, stored_item.container, stored_item.storage) < CURRENT_TIMESTAMP
             ),
             containers AS (
                 SELECT

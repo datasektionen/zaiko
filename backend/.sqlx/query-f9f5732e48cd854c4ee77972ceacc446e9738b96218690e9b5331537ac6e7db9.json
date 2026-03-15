@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                item.name,\n                stored_item.amount,\n                item.unit,\n                current_state.state as \"state!: OrderState\",\n                next_inventory.time as \"next_inventory\"\n            FROM stored_item\n            JOIN item ON item.name = stored_item.item\n            JOIN next_inventory ON next_inventory.item = stored_item.item\n            JOIN current_state ON current_state.item = stored_item.item\n            WHERE stored_item.storage = $1 AND stored_item.container = $2\n            GROUP BY item.name, stored_item.amount, current_state.state, next_inventory.time\n        ",
+  "query": "\n            SELECT\n                item.name,\n                stored_item.amount,\n                item.unit,\n                current_state.state as \"state!: OrderState\",\n                next_inventory(stored_item.item, stored_item.container, stored_item.storage)\n            FROM stored_item\n            JOIN item ON item.name = stored_item.item\n            JOIN current_state ON current_state.item = stored_item.item\n            WHERE stored_item.storage = $1 AND stored_item.container = $2\n            GROUP BY\n                item.name,\n                stored_item.item,\n                stored_item.container,\n                stored_item.storage,\n                stored_item.amount,\n                current_state.state\n        ",
   "describe": {
     "columns": [
       {
@@ -53,8 +53,8 @@
       false,
       false,
       true,
-      true
+      null
     ]
   },
-  "hash": "180f0a6660a1dd8436d076e2807b92ef8f8bb0abbae1f845fd3be07e9eccd904"
+  "hash": "f9f5732e48cd854c4ee77972ceacc446e9738b96218690e9b5331537ac6e7db9"
 }
