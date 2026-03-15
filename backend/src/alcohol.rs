@@ -52,12 +52,14 @@ impl std::str::FromStr for AlcoholType {
 pub struct AlcoholProductCreateRequest {
     /// Item name (must be unique)
     pub item_name: String,
+    /// Optional product ID
+    pub product_id: Option<String>,
     /// Type of alcohol
     pub alcohol_type: AlcoholType,
     /// Volume in centiliters
     pub volume_cl: f32,
-    /// Supplier name
-    pub supplier: String,
+    /// Optional supplier name
+    pub supplier: Option<String>,
 }
 
 /// Request to update alcohol inventory
@@ -83,9 +85,10 @@ pub struct AlcoholInventoryUpdateRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AlcoholProduct {
     pub item_name: String,
+    pub product_id: Option<String>,
     pub alcohol_type: AlcoholType,
     pub volume_cl: f32,
-    pub supplier: String,
+    pub supplier: Option<String>,
     pub current_bottles: f32,
     pub previous_bottles: f32,
     pub current_purchase_price: f32,
@@ -100,8 +103,9 @@ pub struct AlcoholProduct {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AlcoholReportEntry {
     pub item_name: String,
+    pub product_id: Option<String>,
     pub alcohol_type: AlcoholType,
-    pub supplier: String,
+    pub supplier: Option<String>,
     pub volume_cl: f32,
     pub current_bottles: f32,
     pub previous_bottles: f32,
@@ -167,9 +171,10 @@ async fn create_alcohol_product_handler(
     db::create_alcohol_product(
         &db,
         &body.item_name,
+        body.product_id.as_deref(),
         &body.alcohol_type.to_string(),
         body.volume_cl,
-        &body.supplier,
+        body.supplier.as_deref(),
     )
     .await?;
 
@@ -317,25 +322,44 @@ pub mod db {
     pub async fn create_alcohol_product(
         pool: &Pool<Postgres>,
         item_name: &str,
+        product_id: Option<&str>,
         alcohol_type: &str,
         volume_cl: f32,
-        supplier: &str,
+        supplier: Option<&str>,
     ) -> Result<(), Error> {
+        let mut tx = pool.begin().await
+            .map_err(|e| Error::InternalServerError(e.to_string()))?;
+
         sqlx::query(
-            "INSERT INTO alcohol_product (item_name, alcohol_type, volume_cl, supplier)
-             VALUES ($1, $2::alcohol_type, $3, $4)
+            "INSERT INTO item (name)
+             VALUES ($1)
+             ON CONFLICT (name) DO NOTHING"
+        )
+        .bind(item_name)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| Error::InternalServerError(e.to_string()))?;
+
+        sqlx::query(
+            "INSERT INTO alcohol_product (item_name, product_id, alcohol_type, volume_cl, supplier)
+             VALUES ($1, $2, $3::alcohol_type, $4, $5)
              ON CONFLICT (item_name) DO UPDATE SET
+             product_id = EXCLUDED.product_id,
              alcohol_type = EXCLUDED.alcohol_type,
              volume_cl = EXCLUDED.volume_cl,
              supplier = EXCLUDED.supplier"
         )
         .bind(item_name)
+        .bind(product_id)
         .bind(alcohol_type)
         .bind(volume_cl)
         .bind(supplier)
-        .execute(pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| Error::InternalServerError(e.to_string()))?;
+
+        tx.commit().await
+            .map_err(|e| Error::InternalServerError(e.to_string()))?;
 
         Ok(())
     }
@@ -346,10 +370,14 @@ pub mod db {
     ) -> Result<Option<AlcoholProduct>, Error> {
         let row = sqlx::query(
             "SELECT 
-                ap.item_name, ap.alcohol_type, ap.volume_cl, ap.supplier,
-                ai.current_bottles, ai.previous_bottles,
-                ai.current_purchase_price, ai.previous_purchase_price,
-                ai.minimum_sale_price, ai.sale_price, ai.price_per_cl,
+                ap.item_name, ap.product_id, ap.alcohol_type::text AS alcohol_type, ap.volume_cl, ap.supplier,
+                COALESCE(ai.current_bottles, 0)::REAL as current_bottles,
+                COALESCE(ai.previous_bottles, 0)::REAL as previous_bottles,
+                COALESCE(ai.current_purchase_price, 0)::REAL as current_purchase_price,
+                ai.previous_purchase_price::REAL as previous_purchase_price,
+                COALESCE(ai.minimum_sale_price, 0)::REAL as minimum_sale_price,
+                COALESCE(ai.sale_price, 0)::REAL as sale_price,
+                ai.price_per_cl::REAL as price_per_cl,
                 ai.last_updated
             FROM alcohol_product ap
             LEFT JOIN alcohol_inventory ai ON ap.item_name = ai.item_name
@@ -364,6 +392,7 @@ pub mod db {
             let alcohol_type_str: String = r.get("alcohol_type");
             AlcoholProduct {
                 item_name: r.get("item_name"),
+                product_id: r.get("product_id"),
                 alcohol_type: alcohol_type_str.parse().unwrap_or(AlcoholType::Beer),
                 volume_cl: r.get("volume_cl"),
                 supplier: r.get("supplier"),
@@ -384,14 +413,14 @@ pub mod db {
     ) -> Result<Vec<AlcoholProduct>, Error> {
         let rows = sqlx::query(
             "SELECT 
-                ap.item_name, ap.alcohol_type, ap.volume_cl, ap.supplier,
-                COALESCE(ai.current_bottles, 0) as current_bottles,
-                COALESCE(ai.previous_bottles, 0) as previous_bottles,
-                COALESCE(ai.current_purchase_price, 0) as current_purchase_price,
-                ai.previous_purchase_price,
-                COALESCE(ai.minimum_sale_price, 0) as minimum_sale_price,
-                COALESCE(ai.sale_price, 0) as sale_price,
-                ai.price_per_cl,
+                ap.item_name, ap.product_id, ap.alcohol_type::text AS alcohol_type, ap.volume_cl, ap.supplier,
+                COALESCE(ai.current_bottles, 0)::REAL as current_bottles,
+                COALESCE(ai.previous_bottles, 0)::REAL as previous_bottles,
+                COALESCE(ai.current_purchase_price, 0)::REAL as current_purchase_price,
+                ai.previous_purchase_price::REAL as previous_purchase_price,
+                COALESCE(ai.minimum_sale_price, 0)::REAL as minimum_sale_price,
+                COALESCE(ai.sale_price, 0)::REAL as sale_price,
+                ai.price_per_cl::REAL as price_per_cl,
                 ai.last_updated
             FROM alcohol_product ap
             LEFT JOIN alcohol_inventory ai ON ap.item_name = ai.item_name
@@ -405,6 +434,7 @@ pub mod db {
             let alcohol_type_str: String = r.get("alcohol_type");
             AlcoholProduct {
                 item_name: r.get("item_name"),
+                product_id: r.get("product_id"),
                 alcohol_type: alcohol_type_str.parse().unwrap_or(AlcoholType::Beer),
                 volume_cl: r.get("volume_cl"),
                 supplier: r.get("supplier"),
@@ -510,10 +540,12 @@ pub mod db {
     ) -> Result<AlcoholInventoryReport, Error> {
         let rows = sqlx::query(
             "SELECT 
-                ap.item_name, ap.alcohol_type, ap.supplier, ap.volume_cl,
-                ai.current_bottles, ai.previous_bottles,
-                ai.current_purchase_price, ai.previous_purchase_price,
-                ai.sale_price
+                ap.item_name, ap.product_id, ap.alcohol_type::text AS alcohol_type, ap.supplier, ap.volume_cl,
+                COALESCE(ai.current_bottles, 0)::REAL as current_bottles,
+                COALESCE(ai.previous_bottles, 0)::REAL as previous_bottles,
+                COALESCE(ai.current_purchase_price, 0)::REAL as current_purchase_price,
+                ai.previous_purchase_price::REAL as previous_purchase_price,
+                COALESCE(ai.sale_price, 0)::REAL as sale_price
             FROM alcohol_product ap
             LEFT JOIN alcohol_inventory ai ON ap.item_name = ai.item_name
             ORDER BY ap.alcohol_type, ap.item_name"
@@ -548,6 +580,7 @@ pub mod db {
 
             let entry = AlcoholReportEntry {
                 item_name: row.get("item_name"),
+                product_id: row.get("product_id"),
                 alcohol_type: alcohol_type.clone(),
                 supplier: row.get("supplier"),
                 volume_cl: row.get("volume_cl"),

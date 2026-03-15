@@ -69,12 +69,16 @@
 
           <div class="grid grid-cols-2 gap-2 text-sm mb-3">
             <div>
+              <p class="text-gray-600">Produkt-ID</p>
+              <p class="font-semibold">{{ product.product_id || '—' }}</p>
+            </div>
+            <div>
               <p class="text-gray-600">Volym</p>
               <p class="font-semibold">{{ product.volume_cl }} cl</p>
             </div>
             <div>
               <p class="text-gray-600">Leverantör</p>
-              <p class="font-semibold">{{ product.supplier }}</p>
+              <p class="font-semibold">{{ product.supplier || '—' }}</p>
             </div>
             <div>
               <p class="text-gray-600">Flaskor</p>

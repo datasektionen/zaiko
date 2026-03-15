@@ -50,6 +50,7 @@
             <thead class="bg-gray-200">
               <tr>
                 <th class="border border-gray-300 p-2 text-left">Produkt</th>
+                <th class="border border-gray-300 p-2 text-left">Produkt-ID</th>
                 <th class="border border-gray-300 p-2 text-left">Typ</th>
                 <th class="border border-gray-300 p-2 text-left">Leverantör</th>
                 <th class="border border-gray-300 p-2 text-right">Volym (cl)</th>
@@ -67,8 +68,9 @@
                 class="hover:bg-gray-50"
               >
                 <td class="border border-gray-300 p-2 font-semibold">{{ entry.item_name }}</td>
+                <td class="border border-gray-300 p-2">{{ entry.product_id || '—' }}</td>
                 <td class="border border-gray-300 p-2">{{ formatAlcoholType(entry.alcohol_type) }}</td>
-                <td class="border border-gray-300 p-2">{{ entry.supplier }}</td>
+                <td class="border border-gray-300 p-2">{{ entry.supplier || '—' }}</td>
                 <td class="border border-gray-300 p-2 text-right">{{ entry.volume_cl }}</td>
                 <td class="border border-gray-300 p-2 text-right">
                   {{ entry.current_bottles }}

@@ -90,9 +90,10 @@ export enum AlcoholType {
 
 export interface AlcoholProduct {
   item_name: string
+  product_id: string | null
   alcohol_type: AlcoholType
   volume_cl: number
-  supplier: string
+  supplier: string | null
   current_bottles: number
   previous_bottles: number
   current_purchase_price: number
@@ -105,9 +106,10 @@ export interface AlcoholProduct {
 
 export interface AlcoholProductCreateRequest {
   item_name: string
+  product_id?: string
   alcohol_type: AlcoholType
   volume_cl: number
-  supplier: string
+  supplier?: string
 }
 
 export interface AlcoholInventoryUpdateRequest {
@@ -122,8 +124,9 @@ export interface AlcoholInventoryUpdateRequest {
 
 export interface AlcoholReportEntry {
   item_name: string
+  product_id: string | null
   alcohol_type: AlcoholType
-  supplier: string
+  supplier: string | null
   volume_cl: number
   current_bottles: number
   previous_bottles: number

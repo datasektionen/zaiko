@@ -26,6 +26,15 @@
         </InputSelect>
       </fieldset>
       <fieldset>
+        <InputText
+          name="Produkt-ID"
+          :icon="ArchiveBoxIcon"
+          v-model="form.product_id"
+          :disabled="edit"
+          placeholder="e.g., 12345"
+        />
+      </fieldset>
+      <fieldset>
         <InputNumber
           name="Volym (cl)*"
           :icon="Square3Stack3DIcon"
@@ -35,15 +44,14 @@
           placeholder="e.g., 33, 50, 70"
         />
         <InputSelect
-          name="Leverantör*"
+          name="Leverantör"
           :icon="ShoppingCartIcon"
           v-model="form.supplier"
-          :items="suppliers"
-          required
+          :items="supplierNames"
         >
           <template #row="item">
-            <option :key="item.row.name" :value="item.row.name">
-              {{ item.row.name }}
+            <option :key="item.row || '__none__'" :value="item.row">
+              {{ item.row || 'Ingen leverantör' }}
             </option>
           </template>
         </InputSelect>
@@ -63,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import {
   ArchiveBoxIcon,
   DocumentCheckIcon,
@@ -102,12 +110,26 @@ const notificationsStore = useNotificationsStore()
 
 const alcoholTypes = Object.values(AlcoholTypeEnum)
 
-const form = ref<AlcoholProductCreateRequest>({
+type AlcoholProductForm = {
+  item_name: string
+  product_id: string
+  alcohol_type: AlcoholType
+  volume_cl: number
+  supplier: string
+}
+
+const form = ref<AlcoholProductForm>({
   item_name: '',
+  product_id: '',
   alcohol_type: AlcoholTypeEnum.Beer,
   volume_cl: 0,
   supplier: '',
 })
+
+const supplierNames = computed(() => [
+  '',
+  ...suppliers.value.map((supplier) => supplier.name),
+])
 
 const formatAlcoholType = (type: AlcoholType): string => {
   const labels: Record<AlcoholType, string> = {
@@ -123,7 +145,13 @@ onMounted(async () => {
   try {
     suppliers.value = await getSuppliers()
     if (props.initialData) {
-      form.value = { ...props.initialData }
+      form.value = {
+        item_name: props.initialData.item_name,
+        product_id: props.initialData.product_id ?? '',
+        alcohol_type: props.initialData.alcohol_type,
+        volume_cl: props.initialData.volume_cl,
+        supplier: props.initialData.supplier ?? '',
+      }
     }
   } catch (error) {
     notificationsStore.addNotification({
@@ -137,7 +165,15 @@ onMounted(async () => {
 
 const submitForm = async () => {
   try {
-    const result = await createAlcoholProduct(form.value)
+    const payload: AlcoholProductCreateRequest = {
+      item_name: form.value.item_name,
+      product_id: form.value.product_id.trim() || undefined,
+      alcohol_type: form.value.alcohol_type,
+      volume_cl: form.value.volume_cl,
+      supplier: form.value.supplier.trim() || undefined,
+    }
+
+    const result = await createAlcoholProduct(payload)
     notificationsStore.addNotification({
       id: Math.random(),
       title: 'Success',
